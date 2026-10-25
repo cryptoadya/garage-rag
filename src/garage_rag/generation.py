@@ -155,29 +155,14 @@ def _normal_space(text):
     return " ".join(text.split())
 
 
-def answer(question, hits, llm, *, answer_language="auto", max_context_chars=12000):
-    if not question.strip() or len(question) > 4000:
-        raise ValueError("Question must contain 1–4000 characters")
-    language = resolve_answer_language(question, answer_language)
+@dataclass(frozen=True)
+class Candidate:
+    answer: Answer
+    draft: Draft | None = None
 
-    def refuse(reason):
-        return Answer(False, REFUSALS[language], reason, language)
 
-    context = build_context(hits, max_chars=max_context_chars)
-    if not context.sources:
-        return refuse("no_context")
-    messages = [
-        SystemMessage(content=SYSTEM_PROMPT + f"\nWrite every claim in {LANGUAGES[language]}."),
-        HumanMessage(
-            content=json.dumps(
-                {
-                    "question": question,
-                    "sources": json.loads(context.text),
-                },
-                ensure_ascii=False,
-            )
-        ),
-    ]
+def invoke_model(llm, messages):
+    """One attempt, sanitized errors, no tracing or repair request."""
     try:
         # Disable inherited LangSmith tracing so retrieved private text isn't exported there.
         with tracing_context(enabled=False):
@@ -193,34 +178,77 @@ def answer(question, hits, llm, *, answer_language="auto", max_context_chars=120
         else:
             message = "OpenRouter request failed or timed out; retry manually (no paid fallback)"
         raise GenerationError(message) from None
+    return response
+
+
+def parse_response(response, schema):
     if getattr(response, "response_metadata", {}).get("finish_reason") == "length":
-        return refuse("output_token_limit")
-    try:
-        if not isinstance(response.content, str) or len(response.content) > 20000:
-            return refuse("invalid_model_output")
-        content = response.content.strip()
-        if content.startswith("```json") and content.endswith("```"):
-            content = content[7:-3].strip()
-        draft = Draft.model_validate_json(content)
-        if not draft.supported:
-            return refuse("insufficient_evidence")
-        if not draft.claims:
-            return refuse("invalid_model_output")
-        lines = []
-        for claim in draft.claims:
-            if detect_language(claim.text) != language or re.search(r"[\[\]]", claim.text):
-                return refuse("invalid_model_output")
-            citations = []
-            for evidence in claim.evidence:
-                document = context.sources.get(evidence.source_id)
-                if document is None or _normal_space(evidence.quote) not in _normal_space(
-                    document.page_content
-                ):
-                    return refuse("invalid_model_output")
-                metadata = document.metadata
-                reference = f"{metadata['document']}, PDF page {metadata['pdf_page']}"
-                citations.append(f'[{reference}] "{evidence.quote}"')
-            lines.append(claim.text + "\n" + "\n".join(citations))
-        return Answer(True, "\n\n".join(lines), "verified_citations", language)
-    except (ValidationError, ValueError, TypeError):
+        raise ValueError("output_token_limit")
+    if not isinstance(response.content, str) or len(response.content) > 20000:
+        raise ValueError("invalid_model_output")
+    content = response.content.strip()
+    if content.startswith("```json") and content.endswith("```"):
+        content = content[7:-3].strip()
+    return schema.model_validate_json(content)
+
+
+def validate_draft(draft, context, language):
+    """Shared local trust boundary for direct answering and the graph."""
+
+    def refuse(reason):
+        return Candidate(Answer(False, REFUSALS[language], reason, language))
+
+    if not draft.supported:
+        return refuse("insufficient_evidence")
+    if not draft.claims:
         return refuse("invalid_model_output")
+    lines = []
+    for claim in draft.claims:
+        if detect_language(claim.text) != language or re.search(r"[\[\]]", claim.text):
+            return refuse("invalid_model_output")
+        citations = []
+        for evidence in claim.evidence:
+            document = context.sources.get(evidence.source_id)
+            if document is None or _normal_space(evidence.quote) not in _normal_space(
+                document.page_content
+            ):
+                return refuse("invalid_model_output")
+            metadata = document.metadata
+            reference = f"{metadata['document']}, PDF page {metadata['pdf_page']}"
+            citations.append(f'[{reference}] "{evidence.quote}"')
+        lines.append(claim.text + "\n" + "\n".join(citations))
+    return Candidate(Answer(True, "\n\n".join(lines), "verified_citations", language), draft)
+
+
+def generate_candidate(question, context, llm, language):
+    if not context.sources:
+        return Candidate(Answer(False, REFUSALS[language], "no_context", language))
+    messages = [
+        SystemMessage(content=SYSTEM_PROMPT + f"\nWrite every claim in {LANGUAGES[language]}."),
+        HumanMessage(
+            content=json.dumps(
+                {
+                    "question": question,
+                    "sources": json.loads(context.text),
+                },
+                ensure_ascii=False,
+            )
+        ),
+    ]
+    response = invoke_model(llm, messages)
+    try:
+        return validate_draft(parse_response(response, Draft), context, language)
+    except (ValidationError, ValueError, TypeError) as exc:
+        reason = (
+            "output_token_limit" if str(exc) == "output_token_limit" else "invalid_model_output"
+        )
+        return Candidate(Answer(False, REFUSALS[language], reason, language))
+
+
+def answer(question, hits, llm, *, answer_language="auto", max_context_chars=12000):
+    """Original single-completion baseline, with unchanged prompt and local checks."""
+    if not question.strip() or len(question) > 4000:
+        raise ValueError("Question must contain 1–4000 characters")
+    language = resolve_answer_language(question, answer_language)
+    context = build_context(hits, max_chars=max_context_chars)
+    return generate_candidate(question, context, llm, language).answer

@@ -1,8 +1,8 @@
 # Architecture and safety boundaries
 
-GarageRAG uses explicit Python pipeline stages. LangChain supplies `Document`,
-`Embeddings` and message interfaces plus the ChatOpenRouter integration; a
-chain framework or agent runtime is not required. The source is under
+GarageRAG uses explicit Python stages and a bounded LangGraph answering workflow.
+LangChain supplies `Document`, `Embeddings` and message interfaces plus the
+ChatOpenRouter integration. Retrieval does not require an LLM or agent runtime. The source is under
 [`src/garage_rag`](../src/garage_rag).
 
 ## Extraction and chunking
@@ -67,8 +67,11 @@ multi-user production service. CPU and MPS results can differ numerically.
    the sent context, and its quote must occur in that passage after whitespace
    normalization. Translated, altered or fabricated evidence is rejected.
 6. PDF references are rendered from local metadata, not model-supplied page
-   fields. Empty context, unsupported claims or invalid output yield a localized
-   refusal. There is no extra LLM repair request.
+   fields. Direct mode finishes here. Grounded mode applies a conservative numeric
+   gate and a separate semantic audit of entailment, applicability, conflicts and
+   whole-question completeness. Only insufficient context may trigger one local
+   top-20 expansion and another draft/audit, within four completion attempts.
+   There is no LLM repair request. See the [workflow design](grounded-answering.md).
 
 Exact source and quote checks prevent fabricated evidence references; they do
 **not** prove that a claim follows logically from its quote, that all conditions
@@ -91,7 +94,7 @@ deterministic rank fusion and optional top-20 reranking. It delegates scheduling
 and page metrics to the unmodified Phase 2A evaluator. These adapters do not
 change the production dense retrieval or generation path.
 
-There is no OCR, conversation memory, LangGraph, agent/MCP integration,
+There is no OCR, conversation memory, autonomous agent/MCP integration,
 Web UI, Docker integration or production concurrency.
 Direct dependencies are pinned; there is no complete cross-platform transitive
 lockfile. See [usage](usage.md) for operational settings and

@@ -6,7 +6,7 @@ A local-first RAG assistant for automotive documentation. Ask in **English,
 German or Russian**, retrieve English source passages locally, and receive an
 answer with verbatim evidence and locally verified PDF page references.
 
-GarageRAG is a working CLI prototype for finding information in an owner's
+GarageRAG is a working CLI for finding information in an owner's
 manual. It does not replace professional diagnosis or repair instructions.
 
 ## Features
@@ -15,9 +15,10 @@ manual. It does not replace professional diagnosis or repair instructions.
 - Local multilingual semantic search with persistent, resumable indexing.
 - EN/DE/RU answers, automatic language selection and an explicit override.
 - Free-only OpenRouter generation with validated source IDs and evidence quotes.
-- Localized refusals when context is missing or generated output fails validation.
+- Bounded LangGraph answering with semantic claim review, one optional local
+  expansion and localized refusals for insufficient or unsafe evidence.
 
-**Stack:** Python 3.12+, LangChain Core / ChatOpenRouter, Sentence Transformers
+**Stack:** Python 3.12+, LangGraph, LangChain Core / ChatOpenRouter, Sentence Transformers
 (`intfloat/multilingual-e5-small` by default; optional `BAAI/bge-m3`),
 Qdrant Local, pypdf, Pydantic and Lingua.
 No Qdrant server or OpenRouter account is required for indexing and search.
@@ -70,8 +71,10 @@ garage-rag ask 'How do I check the engine oil level?' --answer-language de
 with English as the fallback. Evidence quotes remain in the source's English.
 Only `openrouter/free` or an explicit `provider/model:free` is accepted; price
 caps are zero, and there are no automatic retries or paid fallbacks. Free models
-can be unavailable or rate limited. `ask` sends your question and selected
-passages to OpenRouter/providers; indexing and retrieval stay local.
+can be unavailable or rate limited. Grounded answering uses up to four completion
+attempts and two local searches; an ordinary accepted answer uses two completions.
+Use `ask --workflow direct` for the original one-call path. `ask` sends your question,
+selected passages and draft claims to OpenRouter/providers; indexing and retrieval stay local.
 
 See the [usage guide](docs/usage.md) for configuration, index management,
 troubleshooting and privacy precautions.
@@ -85,9 +88,12 @@ flowchart LR
     E5 --> Index[Qdrant Local]
     Question[EN / DE / RU question] --> Retrieval[Local retrieval]
     Index --> Retrieval
-    Retrieval --> Model[Free OpenRouter model]
+    Retrieval --> Model[Free model draft]
     Model --> Validation[Local language and evidence validation]
-    Validation --> Answer[Answer with PDF pages or refusal]
+    Validation --> Audit[Semantic audit]
+    Audit --> Answer[Answer with PDF pages or refusal]
+    Audit -->|Insufficient, once only| Expansion[Local top-20 expansion]
+    Expansion --> Model
 ```
 
 Source IDs refer only to passages actually sent to the model. Pydantic validates
@@ -120,7 +126,7 @@ what these checks establish and how to reproduce them.
   Model, market, body-style and equipment qualifications must still be checked.
 - Language detection and generation are heuristic. Valid answers may be rejected;
   models can misinterpret evidence. Inspect the sources before acting.
-- Qdrant Local permits one process per index. No API, Web UI, LangGraph, agents, MCP or Docker integration is implemented.
+- Qdrant Local permits one process per index. No API, Web UI, autonomous agents, MCP or Docker integration is implemented.
 - Keep `.env`, PDFs, extracted text, vectors, indexes and answer captures private.
   Custom index directories also contain source text; `.gitignore` does not
   protect files already tracked by Git.
@@ -142,6 +148,10 @@ separate private indexes. BGE-M3 improves DE/RU retrieval in the measured
 comparison, at higher latency and with some English ordering regressions.
 Use `--profile bge-m3 --index-dir data/qdrant-bge-m3` for **index, search and ask**;
 see the report for preparation commands, metrics and limits.
+
+Phase 3 adds [bounded grounded answering](docs/grounded-answering.md) and a
+[separate answer-quality comparison](docs/benchmarks/grounded-answering.md).
+Semantic review is fallible and adds latency; its verdict is not evaluation truth.
 
 - [Usage and configuration](docs/usage.md)
 - [Architecture and safety boundaries](docs/architecture.md)

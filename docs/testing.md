@@ -82,3 +82,21 @@ Phase 2B adds synthetic checks for pinned profile isolation, active-only BM25,
 deterministic rank fusion, finite reranker scores, strict chunk evidence labels,
 disjoint datasets and EN/DE/RU `ask` compatibility. Model-quality comparisons
 remain explicit local experiments; see the [Phase 2B report](benchmarks/phase2b-retrieval.md).
+
+## Phase 3 workflow and answer evaluation
+
+The offline suite executes the real LangGraph with controlled replies, including
+semantic mismatches despite valid quotations, all-claim audit coverage,
+applicability/conflict decisions, source retention during expansion, no-novel-
+context termination, lower budgets, truncated output, number-word/unit-adjacent
+numeric bypasses, table corruption, safe failures and whole-graph tracing
+suppression. SDK mock transport additionally checks actual completion count,
+zero price caps, fallback suppression, network timeout configuration and usage.
+CLI checks cover direct/grounded EN/DE/RU answers and the selected BGE profile.
+
+Run `python -m garage_rag.answer_evaluation --trials 3 --output output/answers.json`
+for the separate offline answer comparison. Live evaluation requires explicit
+opt-in and an API-call budget; it is not part of CI. See the [methodology and
+results](benchmarks/grounded-answering.md). The pipeline's own audit is never
+used as semantic evaluation ground truth. No independent human or vehicle
+verification is claimed.

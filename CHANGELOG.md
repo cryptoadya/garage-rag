@@ -5,6 +5,23 @@ is available in [Git commits](https://github.com/cryptoadya/garage-rag/commits/m
 
 ## [Unreleased]
 
+### Added
+
+- Bounded LangGraph answering with a separate semantic claim/completeness audit,
+  one conditional local top-20 expansion, explicit request/search budgets,
+  conservative numeric-table refusals and privacy-safe local observations.
+- Separate EN/DE/RU answer-quality scenarios and a paired direct/grounded
+  evaluator: offline scripted regressions, explicitly budgeted free-only live
+  runs, hash-bound claim review, refusal/false-refusal metrics, latency and calls.
+- Workflow architecture, evaluation methodology and measured limitations in docs.
+
+### Changed
+
+- `ask` defaults to grounded answering; `--workflow direct` retains the original
+  single-completion behavior. Existing JSON fields and local citation/language
+  validation remain; workflow observations are additive.
+- Prepare package version 0.3.0. No Phase 3 release/tag is published before merge.
+
 ## [0.2.0] - 2026-10-25
 
 ### Added

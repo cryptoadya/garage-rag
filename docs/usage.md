@@ -84,7 +84,8 @@ score is not an answer probability, and absence from top-k does not establish
 absence from the document. Questions must contain 1–4000 characters and fit
 E5's 512-token input limit, including its query prefix and special tokens.
 
-`ask --json` includes `supported`, `text`, `reason` and the resolved `language`.
+`ask --json` retains `supported`, `text`, `reason` and the resolved `language`,
+and adds privacy-safe `workflow` counts, limits, timings, token usage and node events.
 `index --language en` describes the source document; `ask --answer-language`
 controls the answer. CLI diagnostics and the `PDF page N` citation label stay
 English. Quotes stay in their original English even in German or Russian answers.
@@ -101,8 +102,12 @@ No translation or language-detection LLM call is made.
 
 ## Generation failures
 
-Each `ask` command makes at most one completion request, with a 60-second
-timeout. SDK retries and provider fallback are disabled; prompt, completion and
+Default `ask` uses bounded grounded answering: up to four completion attempts
+(including semantic audits) and two local searches. A normal accepted answer
+uses two completions. `--max-llm-calls 2 --max-searches 1` disables recovery;
+`--workflow direct` selects the original one-completion path. Each completion
+has a 60-second network-operation timeout, not a total wall-clock deadline. See [workflow design](grounded-answering.md) for
+all routes, budgets, numerical restrictions and observation fields. SDK retries and provider fallback are disabled; prompt, completion and
 request [price caps](https://openrouter.ai/docs/guides/routing/provider-selection#max-price)
 are zero. An explicit free model can be selected with
 `--model provider/model:free`; availability still depends on the provider.
@@ -114,6 +119,10 @@ are zero. An explicit free model can be selected with
 | Free model unavailable | Select another `:free` model; no paid route is attempted |
 | `output_token_limit` | Increase `OPENROUTER_MAX_TOKENS` within its bounds or select another free model |
 | `invalid_model_output` | Output failed format, language or evidence checks; inspect local retrieval before retrying |
+| `invalid_audit_output` / `unsupported_claims` | Inspect evidence and applicability; the audit cannot certify truth |
+| `ambiguous_question` / `conflicting_sources` | Clarify the vehicle/conditions or resolve conflicting documents |
+| `unsafe_numeric_evidence` | Inspect the original PDF layout; do not infer table cells from extracted text |
+| `llm_budget_exhausted` / `no_new_context` | No unaudited answer is returned; inspect retrieval before changing budgets |
 | `no_context` / `insufficient_evidence` | Rephrase the question, inspect search results or supply relevant documentation |
 
 [Reasoning tokens share the completion budget](https://openrouter.ai/docs/guides/best-practices/reasoning-tokens#reasoning-tokens-and-max_tokens)
