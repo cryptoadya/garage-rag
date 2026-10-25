@@ -9,6 +9,12 @@ The package version is 0.2.0; these changes are not yet tagged as a release.
 
 ### Added
 
+- Isolated, revision-pinned local embedding profiles via `--profile`, preserving
+  the original E5 Small default, CLI and generation validation.
+- Phase 2B offline comparison of dense, BM25, hybrid and reranked retrieval,
+  frozen development/held-out EN/DE/RU questions, separate chunk-sufficiency
+  metrics, latency/resource measurements and reproducibility provenance.
+
 - Offline Phase 2A retrieval benchmark with 18 EN/DE/RU information needs,
   four separate unanswerable cases, original-PDF agent review provenance,
   Hit@1/5/10, MRR@10, warm latency, and a tire-pressure failure analysis.

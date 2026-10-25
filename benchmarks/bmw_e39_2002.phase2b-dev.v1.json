@@ -1,0 +1,363 @@
+{
+  "schema_version": 1,
+  "id": "bmw-e39-2002-phase2b-dev-v1",
+  "source": {
+    "sha256": "9faf9c33f9958f037c77032e514295378ddb490217c1d37015d6ca0fb48b4574",
+    "pages": 186,
+    "edition": "US English VIII/2001, part 01 41 0 156 213; 2002 model-year owner manual",
+    "url": "https://www.ge39.com/files/2002Manual-5ser.pdf"
+  },
+  "design": {
+    "split": "dev",
+    "frozen_before_first_retrieval": true,
+    "author": "Codex agent",
+    "human_reviewed": false,
+    "independent_human_review": false,
+    "selection": "New needs absent from Phase 2A. Held-out needs are excluded from configuration selection; same author/corpus, not an independently collected test set.",
+    "chunk_reference": "Phase 2A E5 small 384/48 chunks; compare exact text/metadata hashes before scoring evidence.",
+    "chunks_sha256": "808cfb5e7ef6cf11d343c863f79a4ac562bbe83627a12d52c85c74b81b450a24"
+  },
+  "cases": [
+    {
+      "id": "door_windows",
+      "kind": "answerable",
+      "questions": {
+        "en": "How can I close the windows using the key in the door lock?",
+        "de": "Wie kann ich die Fenster mit dem Schlüssel im Türschloss schließen?",
+        "ru": "Как закрыть окна ключом в дверном замке?"
+      },
+      "gold_pages": [
+        33
+      ],
+      "review": {
+        "status": "agent_verified_pdf",
+        "method": "Original Poppler text and rendered PDF page inspection; no retrieval candidates used.",
+        "reviewed_on": "2026-10-25",
+        "human_verified": false
+      },
+      "evidence": {
+        "sufficient_chunks": [
+          {
+            "pdf_page": 33,
+            "chunk_index": 0
+          }
+        ],
+        "requires_layout": false,
+        "review": "Agent-only sufficiency labels for frozen 384/48-token E5 chunks; table requires original visual layout."
+      }
+    },
+    {
+      "id": "sunroof_stop",
+      "kind": "answerable",
+      "questions": {
+        "en": "How can I stop the automatic sunroof movement?",
+        "de": "Wie kann ich die automatische Bewegung des Schiebedachs anhalten?",
+        "ru": "Как остановить автоматическое движение люка?"
+      },
+      "gold_pages": [
+        46
+      ],
+      "review": {
+        "status": "agent_verified_pdf",
+        "method": "Original Poppler text and rendered PDF page inspection; no retrieval candidates used.",
+        "reviewed_on": "2026-10-25",
+        "human_verified": false
+      },
+      "evidence": {
+        "sufficient_chunks": [
+          {
+            "pdf_page": 46,
+            "chunk_index": 0
+          },
+          {
+            "pdf_page": 46,
+            "chunk_index": 1
+          }
+        ],
+        "requires_layout": false,
+        "review": "Agent-only sufficiency labels for frozen 384/48-token E5 chunks; table requires original visual layout."
+      }
+    },
+    {
+      "id": "belt_accident",
+      "kind": "answerable",
+      "questions": {
+        "en": "What should be done with the safety belts after an accident has loaded them?",
+        "de": "Was soll mit den Sicherheitsgurten geschehen, wenn sie bei einem Unfall belastet wurden?",
+        "ru": "Что следует сделать с ремнями безопасности после нагрузки при аварии?"
+      },
+      "gold_pages": [
+        53
+      ],
+      "review": {
+        "status": "agent_verified_pdf",
+        "method": "Original Poppler text and rendered PDF page inspection; no retrieval candidates used.",
+        "reviewed_on": "2026-10-25",
+        "human_verified": false
+      },
+      "evidence": {
+        "sufficient_chunks": [
+          {
+            "pdf_page": 53,
+            "chunk_index": 0
+          }
+        ],
+        "requires_layout": false,
+        "review": "Agent-only sufficiency labels for frozen 384/48-token E5 chunks; table requires original visual layout."
+      }
+    },
+    {
+      "id": "heated_wheel",
+      "kind": "answerable",
+      "questions": {
+        "en": "In which ignition key position does the heated steering wheel operate?",
+        "de": "In welcher Zündschlüsselstellung funktioniert die Lenkradheizung?",
+        "ru": "В каком положении ключа зажигания работает подогрев руля?"
+      },
+      "gold_pages": [
+        56
+      ],
+      "review": {
+        "status": "agent_verified_pdf",
+        "method": "Original Poppler text and rendered PDF page inspection; no retrieval candidates used.",
+        "reviewed_on": "2026-10-25",
+        "human_verified": false
+      },
+      "evidence": {
+        "sufficient_chunks": [
+          {
+            "pdf_page": 56,
+            "chunk_index": 0
+          }
+        ],
+        "requires_layout": false,
+        "review": "Agent-only sufficiency labels for frozen 384/48-token E5 chunks; table requires original visual layout."
+      }
+    },
+    {
+      "id": "parking_release",
+      "kind": "answerable",
+      "questions": {
+        "en": "How do I release the parking brake?",
+        "de": "Wie löse ich die Feststellbremse?",
+        "ru": "Как отпустить стояночный тормоз?"
+      },
+      "gold_pages": [
+        68
+      ],
+      "review": {
+        "status": "agent_verified_pdf",
+        "method": "Original Poppler text and rendered PDF page inspection; no retrieval candidates used.",
+        "reviewed_on": "2026-10-25",
+        "human_verified": false
+      },
+      "evidence": {
+        "sufficient_chunks": [
+          {
+            "pdf_page": 68,
+            "chunk_index": 0
+          }
+        ],
+        "requires_layout": false,
+        "review": "Agent-only sufficiency labels for frozen 384/48-token E5 chunks; table requires original visual layout."
+      }
+    },
+    {
+      "id": "rain_carwash",
+      "kind": "answerable",
+      "questions": {
+        "en": "What should I do with the rain sensor before an automatic car wash?",
+        "de": "Was muss ich vor einer automatischen Waschanlage mit dem Regensensor tun?",
+        "ru": "Что нужно сделать с датчиком дождя перед автоматической мойкой?"
+      },
+      "gold_pages": [
+        77
+      ],
+      "review": {
+        "status": "agent_verified_pdf",
+        "method": "Original Poppler text and rendered PDF page inspection; no retrieval candidates used.",
+        "reviewed_on": "2026-10-25",
+        "human_verified": false
+      },
+      "evidence": {
+        "sufficient_chunks": [
+          {
+            "pdf_page": 77,
+            "chunk_index": 0
+          }
+        ],
+        "requires_layout": false,
+        "review": "Agent-only sufficiency labels for frozen 384/48-token E5 chunks; table requires original visual layout."
+      }
+    },
+    {
+      "id": "fuel_reserve",
+      "kind": "answerable",
+      "questions": {
+        "en": "Approximately how much fuel remains in a 540i when the fuel warning lamp stays on?",
+        "de": "Wie viel Kraftstoff ist im 540i ungefähr übrig, wenn die Kraftstoffwarnleuchte dauerhaft leuchtet?",
+        "ru": "Сколько примерно топлива осталось в 540i, если контрольная лампа запаса топлива горит постоянно?"
+      },
+      "gold_pages": [
+        81
+      ],
+      "review": {
+        "status": "agent_verified_pdf",
+        "method": "Original Poppler text and rendered PDF page inspection; no retrieval candidates used.",
+        "reviewed_on": "2026-10-25",
+        "human_verified": false
+      },
+      "evidence": {
+        "sufficient_chunks": [
+          {
+            "pdf_page": 81,
+            "chunk_index": 0
+          }
+        ],
+        "requires_layout": false,
+        "review": "Agent-only sufficiency labels for frozen 384/48-token E5 chunks; table requires original visual layout."
+      }
+    },
+    {
+      "id": "pdc_continuous",
+      "kind": "answerable",
+      "questions": {
+        "en": "While parking normally, what distance does a continuous PDC tone indicate?",
+        "de": "Welchen Abstand zeigt ein Dauerton der PDC beim normalen Einparken an?",
+        "ru": "Какое расстояние означает непрерывный сигнал PDC при обычной парковке?"
+      },
+      "gold_pages": [
+        96
+      ],
+      "review": {
+        "status": "agent_verified_pdf",
+        "method": "Original Poppler text and rendered PDF page inspection; no retrieval candidates used.",
+        "reviewed_on": "2026-10-25",
+        "human_verified": false
+      },
+      "evidence": {
+        "sufficient_chunks": [
+          {
+            "pdf_page": 96,
+            "chunk_index": 0
+          }
+        ],
+        "requires_layout": false,
+        "review": "Agent-only sufficiency labels for frozen 384/48-token E5 chunks; table requires original visual layout."
+      }
+    },
+    {
+      "id": "fog_highbeam",
+      "kind": "answerable",
+      "questions": {
+        "en": "What happens to the front fog lamps when the high beams are switched on?",
+        "de": "Was geschieht mit den Nebelscheinwerfern beim Einschalten des Fernlichts?",
+        "ru": "Что происходит с передними противотуманными фарами при включении дальнего света?"
+      },
+      "gold_pages": [
+        102
+      ],
+      "review": {
+        "status": "agent_verified_pdf",
+        "method": "Original Poppler text and rendered PDF page inspection; no retrieval candidates used.",
+        "reviewed_on": "2026-10-25",
+        "human_verified": false
+      },
+      "evidence": {
+        "sufficient_chunks": [
+          {
+            "pdf_page": 102,
+            "chunk_index": 0
+          }
+        ],
+        "requires_layout": false,
+        "review": "Agent-only sufficiency labels for frozen 384/48-token E5 chunks; table requires original visual layout."
+      }
+    },
+    {
+      "id": "tires_breakin",
+      "kind": "answerable",
+      "questions": {
+        "en": "For how many miles should I drive especially carefully with new tires?",
+        "de": "Wie viele Meilen soll ich mit neuen Reifen besonders vorsichtig fahren?",
+        "ru": "Сколько миль следует ехать особенно осторожно на новых шинах?"
+      },
+      "gold_pages": [
+        130
+      ],
+      "review": {
+        "status": "agent_verified_pdf",
+        "method": "Original Poppler text and rendered PDF page inspection; no retrieval candidates used.",
+        "reviewed_on": "2026-10-25",
+        "human_verified": false
+      },
+      "evidence": {
+        "sufficient_chunks": [
+          {
+            "pdf_page": 130,
+            "chunk_index": 0
+          }
+        ],
+        "requires_layout": false,
+        "review": "Agent-only sufficiency labels for frozen 384/48-token E5 chunks; table requires original visual layout."
+      }
+    },
+    {
+      "id": "washer_mix",
+      "kind": "answerable",
+      "questions": {
+        "en": "Should I mix the washer fluid before adding it to the reservoir?",
+        "de": "Soll ich die Scheibenwaschflüssigkeit vor dem Einfüllen in den Behälter mischen?",
+        "ru": "Нужно ли смешивать жидкость омывателя перед заливкой в бачок?"
+      },
+      "gold_pages": [
+        139
+      ],
+      "review": {
+        "status": "agent_verified_pdf",
+        "method": "Original Poppler text and rendered PDF page inspection; no retrieval candidates used.",
+        "reviewed_on": "2026-10-25",
+        "human_verified": false
+      },
+      "evidence": {
+        "sufficient_chunks": [
+          {
+            "pdf_page": 139,
+            "chunk_index": 0
+          }
+        ],
+        "requires_layout": false,
+        "review": "Agent-only sufficiency labels for frozen 384/48-token E5 chunks; table requires original visual layout."
+      }
+    },
+    {
+      "id": "brake_interval",
+      "kind": "answerable",
+      "questions": {
+        "en": "How often should the brake fluid be changed?",
+        "de": "Wie oft muss die Bremsflüssigkeit gewechselt werden?",
+        "ru": "Как часто нужно менять тормозную жидкость?"
+      },
+      "gold_pages": [
+        143
+      ],
+      "review": {
+        "status": "agent_verified_pdf",
+        "method": "Original Poppler text and rendered PDF page inspection; no retrieval candidates used.",
+        "reviewed_on": "2026-10-25",
+        "human_verified": false
+      },
+      "evidence": {
+        "sufficient_chunks": [
+          {
+            "pdf_page": 143,
+            "chunk_index": 0
+          }
+        ],
+        "requires_layout": false,
+        "review": "Agent-only sufficiency labels for frozen 384/48-token E5 chunks; table requires original visual layout."
+      }
+    }
+  ],
+  "diagnostics": []
+}

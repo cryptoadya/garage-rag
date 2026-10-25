@@ -17,7 +17,7 @@ For an explicitly offline test run:
 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 OPENROUTER_API_KEY= python -m pytest
 ```
 
-The suite currently has 130 cases. Tests generate PDFs from the original,
+Tests generate PDFs from the original,
 fictional [Aurora corpus](../tests/fixtures/corpus.json). A local tokenizer and
 deterministic embeddings keep tests independent of BMW material, Hugging Face
 downloads and live API calls. Qdrant persistence and retrieval are real; remote
@@ -77,3 +77,8 @@ benchmark. Before publishing artifacts,
 inspect `git status` and `git ls-files`; ignored files already in Git history
 remain public. Source-distribution packaging has an explicit file allowlist;
 include public documentation in that allowlist when adding new document paths.
+
+Phase 2B adds synthetic checks for pinned profile isolation, active-only BM25,
+deterministic rank fusion, finite reranker scores, strict chunk evidence labels,
+disjoint datasets and EN/DE/RU `ask` compatibility. Model-quality comparisons
+remain explicit local experiments; see the [Phase 2B report](benchmarks/phase2b-retrieval.md).
