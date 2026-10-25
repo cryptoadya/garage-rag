@@ -9,6 +9,10 @@ The package version is 0.2.0; these changes are not yet tagged as a release.
 
 ### Added
 
+- Offline Phase 2A retrieval benchmark with 18 EN/DE/RU information needs,
+  four separate unanswerable cases, original-PDF agent review provenance,
+  Hit@1/5/10, MRR@10, warm latency, and a tire-pressure failure analysis.
+  Existing retrieval and embedding behavior is unchanged.
 - EN/DE/RU answer selection with local language detection, English fallback and
   `--answer-language auto|en|de|ru`.
 - Localized refusals and a resolved `language` field in JSON answers, while

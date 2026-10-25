@@ -1,0 +1,486 @@
+{
+  "schema_version": 1,
+  "id": "bmw-e39-2002-retrieval-v1",
+  "source": {
+    "sha256": "9faf9c33f9958f037c77032e514295378ddb490217c1d37015d6ca0fb48b4574",
+    "pages": 186,
+    "edition": "US English VIII/2001, part 01 41 0 156 213; 2002 model-year owner manual",
+    "url": "https://www.ge39.com/files/2002Manual-5ser.pdf"
+  },
+  "design": {
+    "frozen_before_first_retrieval": true,
+    "author": "Codex agent",
+    "human_reviewed": false,
+    "translation_review": "Agent-authored equivalent EN/DE/RU questions; no independent native-speaker review.",
+    "page_numbering": "One-based physical PDF page; printed body page numbers agree for the gold pages. PDF page_label metadata is not assumed to be a printed label.",
+    "relevance": "A page directly supports the requested information, rather than merely naming the topic or pointing elsewhere."
+  },
+  "cases": [
+    {
+      "id": "pressure_label",
+      "kind": "answerable",
+      "topic": "tires",
+      "questions": {
+        "en": "Where is the sticker showing the recommended tire inflation pressures?",
+        "de": "Wo befindet sich der Aufkleber mit den empfohlenen Reifendrücken?",
+        "ru": "Где находится наклейка с рекомендованным давлением в шинах?"
+      },
+      "gold_pages": [
+        26
+      ],
+      "review": {
+        "status": "agent_verified_pdf",
+        "method": "Independent Poppler text and visual inspection of original PDF; no retrieval candidates used.",
+        "reviewed_on": "2026-10-25",
+        "human_verified": false,
+        "note": "Locate the vehicle-specific inflation sticker; a generic tire page is insufficient."
+      }
+    },
+    {
+      "id": "pressure_table",
+      "kind": "answerable",
+      "topic": "tires",
+      "questions": {
+        "en": "Which cold front and rear tire pressures are listed for a US/Canadian 530i sedan with 225/55 R16 95 H M+S tires?",
+        "de": "Welche Kaltreifendrücke für Vorder- und Hinterräder sind für eine 530i Limousine in den USA/Kanada mit 225/55 R16 95 H M+S angegeben?",
+        "ru": "Какое давление в холодных передних и задних шинах указано для седана 530i для США/Канады с шинами 225/55 R16 95 H M+S?"
+      },
+      "gold_pages": [
+        27
+      ],
+      "review": {
+        "status": "agent_verified_pdf",
+        "method": "Independent Poppler text and visual inspection of original PDF; no retrieval candidates used.",
+        "reviewed_on": "2026-10-25",
+        "human_verified": false,
+        "note": "Specific sedan, market and tire specification; table evidence, not the pressure-monitor page. Load columns remain visually qualified."
+      }
+    },
+    {
+      "id": "alarm_sensors",
+      "kind": "answerable",
+      "topic": "security",
+      "questions": {
+        "en": "How can I disable the tilt sensor and interior motion sensor when transporting the locked car on a train?",
+        "de": "Wie kann ich Neigungsgeber und Innenraumschutz ausschalten, wenn das verschlossene Auto auf einem Zug transportiert wird?",
+        "ru": "Как отключить датчик наклона и охрану салона при перевозке запертой машины на поезде?"
+      },
+      "gold_pages": [
+        43
+      ],
+      "review": {
+        "status": "agent_verified_pdf",
+        "method": "Independent Poppler text and visual inspection of original PDF; no retrieval candidates used.",
+        "reviewed_on": "2026-10-25",
+        "human_verified": false,
+        "note": "Temporary deactivation of both sensors while retaining the armed alarm."
+      }
+    },
+    {
+      "id": "rear_window_lock",
+      "kind": "answerable",
+      "topic": "controls",
+      "questions": {
+        "en": "How can I prevent children in the rear from operating the rear power windows?",
+        "de": "Wie verhindere ich, dass Kinder hinten die elektrischen Fensterheber bedienen?",
+        "ru": "Как запретить детям сзади управлять задними электростеклоподъёмниками?"
+      },
+      "gold_pages": [
+        45
+      ],
+      "review": {
+        "status": "agent_verified_pdf",
+        "method": "Independent Poppler text and visual inspection of original PDF; no retrieval candidates used.",
+        "reviewed_on": "2026-10-25",
+        "human_verified": false,
+        "note": "Rear-window safety switch, rather than rear-door child locks."
+      }
+    },
+    {
+      "id": "seat_memory",
+      "kind": "answerable",
+      "topic": "controls",
+      "questions": {
+        "en": "How do I save my seat, exterior mirror and steering wheel positions in memory?",
+        "de": "Wie speichere ich meine Sitz-, Außenspiegel- und Lenkradposition?",
+        "ru": "Как сохранить положения сиденья, наружных зеркал и рулевого колеса в памяти?"
+      },
+      "gold_pages": [
+        54
+      ],
+      "review": {
+        "status": "agent_verified_pdf",
+        "method": "Independent Poppler text and visual inspection of original PDF; no retrieval candidates used.",
+        "reviewed_on": "2026-10-25",
+        "human_verified": false,
+        "note": "Store a seat, exterior-mirror and steering-wheel position with the memory buttons."
+      }
+    },
+    {
+      "id": "airbag_lamp",
+      "kind": "answerable",
+      "topic": "warnings",
+      "questions": {
+        "en": "What does it mean if the airbag indicator lamp does not light when the ignition is switched on?",
+        "de": "Was bedeutet es, wenn die Airbag-Kontrollleuchte beim Einschalten der Zündung nicht aufleuchtet?",
+        "ru": "Что означает, если лампа подушек безопасности не загорается при включении зажигания?"
+      },
+      "gold_pages": [
+        60
+      ],
+      "review": {
+        "status": "agent_verified_pdf",
+        "method": "Independent Poppler text and visual inspection of original PDF; no retrieval candidates used.",
+        "reviewed_on": "2026-10-25",
+        "human_verified": false,
+        "note": "Lamp failing to light at ignition is a fault; illustrated child seating is not the target."
+      }
+    },
+    {
+      "id": "key_identification",
+      "kind": "answerable",
+      "topic": "controls",
+      "questions": {
+        "en": "How can different drivers distinguish their remote keys for Key Memory?",
+        "de": "Wie können verschiedene Fahrer ihre Funkschlüssel für Key Memory unterscheiden?",
+        "ru": "Как разным водителям различать свои дистанционные ключи для Key Memory?"
+      },
+      "gold_pages": [
+        65
+      ],
+      "review": {
+        "status": "agent_verified_pdf",
+        "method": "Independent Poppler text and visual inspection of original PDF; no retrieval candidates used.",
+        "reviewed_on": "2026-10-25",
+        "human_verified": false,
+        "note": "Distinguishing personalized remote keys by the supplied identifiers."
+      }
+    },
+    {
+      "id": "cruise_minimum",
+      "kind": "answerable",
+      "topic": "driving",
+      "questions": {
+        "en": "Above what minimum speed can cruise control maintain the vehicle speed?",
+        "de": "Ab welcher Mindestgeschwindigkeit kann der Tempomat die Geschwindigkeit halten?",
+        "ru": "Начиная с какой минимальной скорости круиз-контроль может поддерживать скорость?"
+      },
+      "gold_pages": [
+        78
+      ],
+      "review": {
+        "status": "agent_verified_pdf",
+        "method": "Independent Poppler text and visual inspection of original PDF; no retrieval candidates used.",
+        "reviewed_on": "2026-10-25",
+        "human_verified": false,
+        "note": "Minimum operating speed, rather than stored-speed adjustment."
+      }
+    },
+    {
+      "id": "ice_warning",
+      "kind": "answerable",
+      "topic": "warnings",
+      "questions": {
+        "en": "At what outside temperature does the ice warning sound?",
+        "de": "Bei welcher Außentemperatur ertönt die Eiswarnung?",
+        "ru": "При какой наружной температуре звучит предупреждение о гололёде?"
+      },
+      "gold_pages": [
+        80
+      ],
+      "review": {
+        "status": "agent_verified_pdf",
+        "method": "Independent Poppler text and visual inspection of original PDF; no retrieval candidates used.",
+        "reviewed_on": "2026-10-25",
+        "human_verified": false,
+        "note": "Trigger temperature for the outside-temperature warning."
+      }
+    },
+    {
+      "id": "dsc_startup",
+      "kind": "answerable",
+      "topic": "driving",
+      "questions": {
+        "en": "Do I need to activate ASC+T or DSC manually every time I start the engine?",
+        "de": "Muss ich ASC+T oder DSC nach jedem Motorstart von Hand einschalten?",
+        "ru": "Нужно ли вручную включать ASC+T или DSC после каждого запуска двигателя?"
+      },
+      "gold_pages": [
+        97
+      ],
+      "review": {
+        "status": "agent_verified_pdf",
+        "method": "Independent Poppler text and visual inspection of original PDF; no retrieval candidates used.",
+        "reviewed_on": "2026-10-25",
+        "human_verified": false,
+        "note": "Automatic activation on each engine start."
+      }
+    },
+    {
+      "id": "rdc_reset",
+      "kind": "answerable",
+      "topic": "tires",
+      "questions": {
+        "en": "How do I reinitialize the RDC tire pressure monitor after correcting tire pressures?",
+        "de": "Wie initialisiere ich die Reifendruckkontrolle RDC nach einer Korrektur des Reifendrucks neu?",
+        "ru": "Как заново инициализировать контроль давления RDC после корректировки давления в шинах?"
+      },
+      "gold_pages": [
+        99
+      ],
+      "review": {
+        "status": "agent_verified_pdf",
+        "method": "Independent Poppler text and visual inspection of original PDF; no retrieval candidates used.",
+        "reviewed_on": "2026-10-25",
+        "human_verified": false,
+        "note": "Full activation procedure after correcting pressures; mere cross-references do not count."
+      }
+    },
+    {
+      "id": "cabin_filter",
+      "kind": "answerable",
+      "topic": "maintenance",
+      "questions": {
+        "en": "What symptom indicates that the cabin microfilter needs replacement before scheduled maintenance?",
+        "de": "Welches Anzeichen deutet darauf hin, dass der Innenraum-Mikrofilter vor dem Wartungstermin ersetzt werden muss?",
+        "ru": "Какой признак указывает, что салонный микрофильтр нужно заменить до планового обслуживания?"
+      },
+      "gold_pages": [
+        106,
+        112
+      ],
+      "review": {
+        "status": "agent_verified_pdf",
+        "method": "Independent Poppler text and visual inspection of original PDF; no retrieval candidates used.",
+        "reviewed_on": "2026-10-25",
+        "human_verified": false,
+        "note": "Both air-conditioning variants independently describe the early-replacement symptom."
+      }
+    },
+    {
+      "id": "flashlight",
+      "kind": "answerable",
+      "topic": "equipment",
+      "questions": {
+        "en": "Where is the rechargeable flashlight stored?",
+        "de": "Wo befindet sich die wiederaufladbare Taschenlampe?",
+        "ru": "Где хранится перезаряжаемый фонарик?"
+      },
+      "gold_pages": [
+        116
+      ],
+      "review": {
+        "status": "agent_verified_pdf",
+        "method": "Independent Poppler text and visual inspection of original PDF; no retrieval candidates used.",
+        "reviewed_on": "2026-10-25",
+        "human_verified": false,
+        "note": "Location of the optional rechargeable flashlight, not the lighter socket."
+      }
+    },
+    {
+      "id": "oil_level",
+      "kind": "answerable",
+      "topic": "maintenance",
+      "questions": {
+        "en": "How should I check the engine oil level with the dipstick?",
+        "de": "Wie prüfe ich den Motorölstand mit dem Ölmessstab?",
+        "ru": "Как проверить уровень моторного масла щупом?"
+      },
+      "gold_pages": [
+        140
+      ],
+      "review": {
+        "status": "agent_verified_pdf",
+        "method": "Independent Poppler text and visual inspection of original PDF; no retrieval candidates used.",
+        "reviewed_on": "2026-10-25",
+        "human_verified": false,
+        "note": "Dipstick checking procedure, not oil grade or oil-pressure warnings."
+      }
+    },
+    {
+      "id": "coolant_float",
+      "kind": "answerable",
+      "topic": "maintenance",
+      "questions": {
+        "en": "With the engine cold, where should the red float be when checking the coolant level?",
+        "de": "Wo muss der rote Schwimmer bei kaltem Motor stehen, wenn ich den Kühlmittelstand prüfe?",
+        "ru": "Где должен находиться красный поплавок при проверке уровня охлаждающей жидкости на холодном двигателе?"
+      },
+      "gold_pages": [
+        142
+      ],
+      "review": {
+        "status": "agent_verified_pdf",
+        "method": "Independent Poppler text and visual inspection of original PDF; no retrieval candidates used.",
+        "reviewed_on": "2026-10-25",
+        "human_verified": false,
+        "note": "Cold-engine float-level criterion and warning; no coolant quantity inferred."
+      }
+    },
+    {
+      "id": "wheel_torque",
+      "kind": "answerable",
+      "topic": "roadside",
+      "questions": {
+        "en": "What tightening torque is specified for the wheel lug bolts after changing a wheel?",
+        "de": "Welches Anzugsdrehmoment ist nach einem Radwechsel für die Radschrauben vorgeschrieben?",
+        "ru": "Каким моментом нужно затягивать колёсные болты после замены колеса?"
+      },
+      "gold_pages": [
+        159
+      ],
+      "review": {
+        "status": "agent_verified_pdf",
+        "method": "Independent Poppler text and visual inspection of original PDF; no retrieval candidates used.",
+        "reviewed_on": "2026-10-25",
+        "human_verified": false,
+        "note": "Wheel lug-bolt torque, not engine output torque or a repair-engine fastener specification."
+      }
+    },
+    {
+      "id": "glovebox_fuses",
+      "kind": "answerable",
+      "topic": "roadside",
+      "questions": {
+        "en": "How do I access the fuses in the glove compartment?",
+        "de": "Wie gelange ich an die Sicherungen im Handschuhfach?",
+        "ru": "Как добраться до предохранителей в бардачке?"
+      },
+      "gold_pages": [
+        160
+      ],
+      "review": {
+        "status": "agent_verified_pdf",
+        "method": "Independent Poppler text and visual inspection of original PDF; no retrieval candidates used.",
+        "reviewed_on": "2026-10-25",
+        "human_verified": false,
+        "note": "Opening the glove-compartment fuse access, not the separate luggage-compartment boxes."
+      }
+    },
+    {
+      "id": "jump_positive",
+      "kind": "answerable",
+      "topic": "roadside",
+      "questions": {
+        "en": "Where should I attach the positive jumper cable on the BMW when jump-starting it?",
+        "de": "Wo schließe ich beim Fremdstarten das positive Starthilfekabel am BMW an?",
+        "ru": "Куда подключать положительный провод на BMW при запуске от другого автомобиля?"
+      },
+      "gold_pages": [
+        162
+      ],
+      "review": {
+        "status": "agent_verified_pdf",
+        "method": "Independent Poppler text and visual inspection of original PDF; no retrieval candidates used.",
+        "reviewed_on": "2026-10-25",
+        "human_verified": false,
+        "note": "Positive jumper-cable attachment point and its identifying cover."
+      }
+    },
+    {
+      "id": "head_bolt_torque",
+      "kind": "unanswerable",
+      "topic": "repair specification",
+      "questions": {
+        "en": "What are the cylinder-head bolt tightening torque and angle stages for the E39 530i engine?",
+        "de": "Welche Drehmoment- und Drehwinkelstufen gelten für die Zylinderkopfschrauben des E39 530i?",
+        "ru": "Какие моменты и углы затяжки болтов головки блока цилиндров двигателя E39 530i?"
+      },
+      "gold_pages": [],
+      "review": {
+        "status": "agent_scope_checked",
+        "method": "Whole-original-PDF lexical absence checks and independent inspection of closest source sections; not an exhaustive proof of absence.",
+        "reviewed_on": "2026-10-25",
+        "human_verified": false,
+        "checked_pages": [
+          159,
+          168
+        ],
+        "note": "Whole-PDF search for cylinder-head, tightening and torque; closest torque pages describe wheels and engine output, not head-bolt repair stages."
+      }
+    },
+    {
+      "id": "ncs_coding",
+      "kind": "unanswerable",
+      "topic": "unsupported procedure",
+      "questions": {
+        "en": "Which NCS Expert coding parameter enables automatic door locking when driving off?",
+        "de": "Welcher NCS-Expert-Codierparameter aktiviert das automatische Verriegeln beim Anfahren?",
+        "ru": "Какой параметр кодирования NCS Expert включает автоматическое запирание дверей при начале движения?"
+      },
+      "gold_pages": [],
+      "review": {
+        "status": "agent_scope_checked",
+        "method": "Whole-original-PDF lexical absence checks and independent inspection of closest source sections; not an exhaustive proof of absence.",
+        "reviewed_on": "2026-10-25",
+        "human_verified": false,
+        "checked_pages": [
+          65,
+          146
+        ],
+        "note": "Whole-PDF search for NCS, coding, OBD and diagnostics; Key Memory describes the feature but no ECU coding parameter; OBD section describes the socket."
+      }
+    },
+    {
+      "id": "carplay",
+      "kind": "unanswerable",
+      "topic": "absent technology",
+      "questions": {
+        "en": "How do I pair my iPhone for wireless Apple CarPlay in this car?",
+        "de": "Wie kopple ich mein iPhone für kabelloses Apple CarPlay in diesem Fahrzeug?",
+        "ru": "Как подключить iPhone к беспроводному Apple CarPlay в этом автомобиле?"
+      },
+      "gold_pages": [],
+      "review": {
+        "status": "agent_scope_checked",
+        "method": "Whole-original-PDF lexical absence checks and independent inspection of closest source sections; not an exhaustive proof of absence.",
+        "reviewed_on": "2026-10-25",
+        "human_verified": false,
+        "checked_pages": [],
+        "note": "Whole-PDF searches for CarPlay, Android Auto and Bluetooth found no matches. Negative remains a scoped absence judgment."
+      }
+    },
+    {
+      "id": "diesel_dpf",
+      "kind": "unanswerable",
+      "topic": "out of corpus variant",
+      "questions": {
+        "en": "How do I start a forced diesel particulate filter regeneration on an E39 530d?",
+        "de": "Wie starte ich eine erzwungene Dieselpartikelfilter-Regeneration beim E39 530d?",
+        "ru": "Как запустить принудительную регенерацию сажевого фильтра на E39 530d?"
+      },
+      "gold_pages": [],
+      "review": {
+        "status": "agent_scope_checked",
+        "method": "Whole-original-PDF lexical absence checks and independent inspection of closest source sections; not an exhaustive proof of absence.",
+        "reviewed_on": "2026-10-25",
+        "human_verified": false,
+        "checked_pages": [
+          2,
+          168
+        ],
+        "note": "Whole-PDF searches for diesel, particulate and regeneration found no matches; this edition covers petrol 525i, 530i and 540i, not 530d."
+      }
+    }
+  ],
+  "diagnostics": [
+    {
+      "id": "tire_broad",
+      "questions": {
+        "en": "What is the correct tire pressure for a BMW E39?",
+        "de": "Was ist der richtige Reifendruck für einen BMW E39?",
+        "ru": "Какое правильное давление в шинах BMW E39?"
+      },
+      "note": "Underspecified: no unique numeric answer without tire, market, body, load and model. Unscored."
+    },
+    {
+      "id": "tire_short",
+      "questions": {
+        "en": "Tire inflation pressure",
+        "de": "Reifendruck",
+        "ru": "Давление в шинах"
+      },
+      "note": "Heading-like short query; unscored sensitivity probe, not an equivalent fully specified need."
+    }
+  ]
+}

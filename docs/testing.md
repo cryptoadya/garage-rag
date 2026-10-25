@@ -17,7 +17,7 @@ For an explicitly offline test run:
 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 OPENROUTER_API_KEY= python -m pytest
 ```
 
-The suite currently has 108 cases. Tests generate PDFs from the original,
+The suite currently has 130 cases. Tests generate PDFs from the original,
 fictional [Aurora corpus](../tests/fixtures/corpus.json). A local tokenizer and
 deterministic embeddings keep tests independent of BMW material, Hugging Face
 downloads and live API calls. Qdrant persistence and retrieval are real; remote
@@ -70,8 +70,10 @@ retrieval evaluation from generation and citation checks, and distinguish
 measured results from conclusions. Publish only permitted aggregate results;
 exclude copyrighted passages, credentials and private model replies.
 
-No retrieval benchmark is implemented yet. Do not treat one successful query,
-one refusal or an isolated timing as a benchmark. Before publishing artifacts,
+Phase 2A provides a reproducible [offline retrieval benchmark](benchmarks/retrieval-evaluation.md)
+and a [measured EN/DE/RU baseline](benchmarks/phase2a-report.md).
+Do not treat one successful query, one refusal or an isolated timing as a
+benchmark. Before publishing artifacts,
 inspect `git status` and `git ls-files`; ignored files already in Git history
 remain public. Source-distribution packaging has an explicit file allowlist;
 include public documentation in that allowlist when adding new document paths.
