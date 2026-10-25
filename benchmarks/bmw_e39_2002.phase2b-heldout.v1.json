@@ -1,0 +1,358 @@
+{
+  "schema_version": 1,
+  "id": "bmw-e39-2002-phase2b-heldout-v1",
+  "source": {
+    "sha256": "9faf9c33f9958f037c77032e514295378ddb490217c1d37015d6ca0fb48b4574",
+    "pages": 186,
+    "edition": "US English VIII/2001, part 01 41 0 156 213; 2002 model-year owner manual",
+    "url": "https://www.ge39.com/files/2002Manual-5ser.pdf"
+  },
+  "design": {
+    "split": "heldout",
+    "frozen_before_first_retrieval": true,
+    "author": "Codex agent",
+    "human_reviewed": false,
+    "independent_human_review": false,
+    "selection": "New needs absent from Phase 2A. Held-out needs are excluded from configuration selection; same author/corpus, not an independently collected test set.",
+    "chunk_reference": "Phase 2A E5 small 384/48 chunks; compare exact text/metadata hashes before scoring evidence.",
+    "chunks_sha256": "808cfb5e7ef6cf11d343c863f79a4ac562bbe83627a12d52c85c74b81b450a24"
+  },
+  "cases": [
+    {
+      "id": "seat_height",
+      "kind": "answerable",
+      "questions": {
+        "en": "How is the height of a manually adjusted seat changed?",
+        "de": "Wie wird die Höhe eines manuell verstellbaren Sitzes geändert?",
+        "ru": "Как изменить высоту сиденья с ручной регулировкой?"
+      },
+      "gold_pages": [
+        49
+      ],
+      "review": {
+        "status": "agent_verified_pdf",
+        "method": "Original Poppler text and rendered PDF page inspection; no retrieval candidates used.",
+        "reviewed_on": "2026-10-25",
+        "human_verified": false
+      },
+      "evidence": {
+        "sufficient_chunks": [
+          {
+            "pdf_page": 49,
+            "chunk_index": 0
+          }
+        ],
+        "requires_layout": false,
+        "review": "Agent-only sufficiency labels for frozen 384/48-token E5 chunks; table requires original visual layout."
+      }
+    },
+    {
+      "id": "mirror_defrost",
+      "kind": "answerable",
+      "questions": {
+        "en": "When are the exterior mirrors automatically defrosted?",
+        "de": "Wann werden die Außenspiegel automatisch beheizt?",
+        "ru": "Когда автоматически включается обогрев наружных зеркал?"
+      },
+      "gold_pages": [
+        57
+      ],
+      "review": {
+        "status": "agent_verified_pdf",
+        "method": "Original Poppler text and rendered PDF page inspection; no retrieval candidates used.",
+        "reviewed_on": "2026-10-25",
+        "human_verified": false
+      },
+      "evidence": {
+        "sufficient_chunks": [
+          {
+            "pdf_page": 57,
+            "chunk_index": 0
+          }
+        ],
+        "requires_layout": false,
+        "review": "Agent-only sufficiency labels for frozen 384/48-token E5 chunks; table requires original visual layout."
+      }
+    },
+    {
+      "id": "reverse_manual",
+      "kind": "answerable",
+      "questions": {
+        "en": "When may reverse gear be selected with a manual transmission?",
+        "de": "Wann darf bei einem Schaltgetriebe der Rückwärtsgang eingelegt werden?",
+        "ru": "Когда можно включать заднюю передачу на механической коробке?"
+      },
+      "gold_pages": [
+        69
+      ],
+      "review": {
+        "status": "agent_verified_pdf",
+        "method": "Original Poppler text and rendered PDF page inspection; no retrieval candidates used.",
+        "reviewed_on": "2026-10-25",
+        "human_verified": false
+      },
+      "evidence": {
+        "sufficient_chunks": [
+          {
+            "pdf_page": 69,
+            "chunk_index": 0
+          }
+        ],
+        "requires_layout": false,
+        "review": "Agent-only sufficiency labels for frozen 384/48-token E5 chunks; table requires original visual layout."
+      }
+    },
+    {
+      "id": "coolant_red",
+      "kind": "answerable",
+      "questions": {
+        "en": "What should I do if the coolant temperature warning comes on during driving?",
+        "de": "Was soll ich tun, wenn während der Fahrt die Kühlmitteltemperaturwarnung aufleuchtet?",
+        "ru": "Что делать, если во время движения загорелось предупреждение о температуре охлаждающей жидкости?"
+      },
+      "gold_pages": [
+        82
+      ],
+      "review": {
+        "status": "agent_verified_pdf",
+        "method": "Original Poppler text and rendered PDF page inspection; no retrieval candidates used.",
+        "reviewed_on": "2026-10-25",
+        "human_verified": false
+      },
+      "evidence": {
+        "sufficient_chunks": [
+          {
+            "pdf_page": 82,
+            "chunk_index": 0
+          }
+        ],
+        "requires_layout": false,
+        "review": "Agent-only sufficiency labels for frozen 384/48-token E5 chunks; table requires original visual layout."
+      }
+    },
+    {
+      "id": "follow_home",
+      "kind": "answerable",
+      "questions": {
+        "en": "How do I activate the follow me home lighting after parking?",
+        "de": "Wie aktiviere ich nach dem Parken die Heimleuchtfunktion?",
+        "ru": "Как включить провожающее освещение после парковки?"
+      },
+      "gold_pages": [
+        101
+      ],
+      "review": {
+        "status": "agent_verified_pdf",
+        "method": "Original Poppler text and rendered PDF page inspection; no retrieval candidates used.",
+        "reviewed_on": "2026-10-25",
+        "human_verified": false
+      },
+      "evidence": {
+        "sufficient_chunks": [
+          {
+            "pdf_page": 101,
+            "chunk_index": 0
+          }
+        ],
+        "requires_layout": false,
+        "review": "Agent-only sufficiency labels for frozen 384/48-token E5 chunks; table requires original visual layout."
+      }
+    },
+    {
+      "id": "socket_power",
+      "kind": "answerable",
+      "questions": {
+        "en": "What maximum appliance wattage is specified for the cigarette lighter socket?",
+        "de": "Welche maximale Geräteleistung ist für die Zigarettenanzündersteckdose angegeben?",
+        "ru": "Какая максимальная мощность прибора указана для розетки прикуривателя?"
+      },
+      "gold_pages": [
+        118
+      ],
+      "review": {
+        "status": "agent_verified_pdf",
+        "method": "Original Poppler text and rendered PDF page inspection; no retrieval candidates used.",
+        "reviewed_on": "2026-10-25",
+        "human_verified": false
+      },
+      "evidence": {
+        "sufficient_chunks": [
+          {
+            "pdf_page": 118,
+            "chunk_index": 0
+          }
+        ],
+        "requires_layout": false,
+        "review": "Agent-only sufficiency labels for frozen 384/48-token E5 chunks; table requires original visual layout."
+      }
+    },
+    {
+      "id": "wagon_backrest",
+      "kind": "answerable",
+      "questions": {
+        "en": "How can I tell that the sport wagon rear backrest has locked securely?",
+        "de": "Woran erkenne ich, dass die Rücksitzlehne im Touring sicher eingerastet ist?",
+        "ru": "Как понять, что спинка заднего сиденья универсала надежно зафиксирована?"
+      },
+      "gold_pages": [
+        123
+      ],
+      "review": {
+        "status": "agent_verified_pdf",
+        "method": "Original Poppler text and rendered PDF page inspection; no retrieval candidates used.",
+        "reviewed_on": "2026-10-25",
+        "human_verified": false
+      },
+      "evidence": {
+        "sufficient_chunks": [
+          {
+            "pdf_page": 123,
+            "chunk_index": 0
+          }
+        ],
+        "requires_layout": false,
+        "review": "Agent-only sufficiency labels for frozen 384/48-token E5 chunks; table requires original visual layout."
+      }
+    },
+    {
+      "id": "chains_speed",
+      "kind": "answerable",
+      "questions": {
+        "en": "What is the maximum speed with approved snow chains fitted?",
+        "de": "Welche Höchstgeschwindigkeit gilt mit montierten zugelassenen Schneeketten?",
+        "ru": "Какова максимальная скорость с установленными разрешенными цепями противоскольжения?"
+      },
+      "gold_pages": [
+        136
+      ],
+      "review": {
+        "status": "agent_verified_pdf",
+        "method": "Original Poppler text and rendered PDF page inspection; no retrieval candidates used.",
+        "reviewed_on": "2026-10-25",
+        "human_verified": false
+      },
+      "evidence": {
+        "sufficient_chunks": [
+          {
+            "pdf_page": 136,
+            "chunk_index": 0
+          },
+          {
+            "pdf_page": 136,
+            "chunk_index": 1
+          }
+        ],
+        "requires_layout": false,
+        "review": "Agent-only sufficiency labels for frozen 384/48-token E5 chunks; table requires original visual layout."
+      }
+    },
+    {
+      "id": "hood_release",
+      "kind": "answerable",
+      "questions": {
+        "en": "Where is the lever that unlocks the hood?",
+        "de": "Wo befindet sich der Hebel zum Entriegeln der Motorhaube?",
+        "ru": "Где расположен рычаг отпирания капота?"
+      },
+      "gold_pages": [
+        137
+      ],
+      "review": {
+        "status": "agent_verified_pdf",
+        "method": "Original Poppler text and rendered PDF page inspection; no retrieval candidates used.",
+        "reviewed_on": "2026-10-25",
+        "human_verified": false
+      },
+      "evidence": {
+        "sufficient_chunks": [
+          {
+            "pdf_page": 137,
+            "chunk_index": 0
+          }
+        ],
+        "requires_layout": false,
+        "review": "Agent-only sufficiency labels for frozen 384/48-token E5 chunks; table requires original visual layout."
+      }
+    },
+    {
+      "id": "obd_location",
+      "kind": "answerable",
+      "questions": {
+        "en": "Where is the OBD interface socket located?",
+        "de": "Wo befindet sich die OBD-Diagnosebuchse?",
+        "ru": "Где находится диагностический разъем OBD?"
+      },
+      "gold_pages": [
+        146
+      ],
+      "review": {
+        "status": "agent_verified_pdf",
+        "method": "Original Poppler text and rendered PDF page inspection; no retrieval candidates used.",
+        "reviewed_on": "2026-10-25",
+        "human_verified": false
+      },
+      "evidence": {
+        "sufficient_chunks": [
+          {
+            "pdf_page": 146,
+            "chunk_index": 0
+          }
+        ],
+        "requires_layout": false,
+        "review": "Agent-only sufficiency labels for frozen 384/48-token E5 chunks; table requires original visual layout."
+      }
+    },
+    {
+      "id": "toolkit_access",
+      "kind": "answerable",
+      "questions": {
+        "en": "Where is the onboard tool kit and how do I access it?",
+        "de": "Wo befindet sich das Bordwerkzeug und wie komme ich daran?",
+        "ru": "Где находится бортовой инструмент и как получить к нему доступ?"
+      },
+      "gold_pages": [
+        150
+      ],
+      "review": {
+        "status": "agent_verified_pdf",
+        "method": "Original Poppler text and rendered PDF page inspection; no retrieval candidates used.",
+        "reviewed_on": "2026-10-25",
+        "human_verified": false
+      },
+      "evidence": {
+        "sufficient_chunks": [
+          {
+            "pdf_page": 150,
+            "chunk_index": 0
+          }
+        ],
+        "requires_layout": false,
+        "review": "Agent-only sufficiency labels for frozen 384/48-token E5 chunks; table requires original visual layout."
+      }
+    },
+    {
+      "id": "engine_cylinders",
+      "kind": "answerable",
+      "questions": {
+        "en": "How many cylinders does the 540i engine have according to the specifications table?",
+        "de": "Wie viele Zylinder hat der Motor des 540i laut der Tabelle der technischen Daten?",
+        "ru": "Сколько цилиндров у двигателя 540i согласно таблице технических характеристик?"
+      },
+      "gold_pages": [
+        168
+      ],
+      "review": {
+        "status": "agent_verified_pdf",
+        "method": "Original Poppler text and rendered PDF page inspection; no retrieval candidates used.",
+        "reviewed_on": "2026-10-25",
+        "human_verified": false
+      },
+      "evidence": {
+        "sufficient_chunks": [],
+        "requires_layout": true,
+        "review": "Agent-only sufficiency labels for frozen 384/48-token E5 chunks; table requires original visual layout."
+      }
+    }
+  ],
+  "diagnostics": []
+}
