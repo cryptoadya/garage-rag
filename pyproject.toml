@@ -39,7 +39,10 @@ packages = ["src/garage_rag"]
 
 # Allow only public code, docs and synthetic fixtures in source distributions.
 [tool.hatch.build.targets.sdist]
-include = ["/src", "/tests", "/README.md", "/LICENSE", "/pyproject.toml", "/.env.example"]
+include = [
+  "/src", "/tests", "/docs", "/README.md", "/CHANGELOG.md",
+  "/LICENSE", "/pyproject.toml", "/.env.example",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
