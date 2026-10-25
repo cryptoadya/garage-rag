@@ -89,6 +89,17 @@ fallback list is sent. A free model may be unavailable or rate limited: the
 program reports an error instead of switching to a paid model. SDK retries are
 disabled; one command makes at most one completion request with a 60 s timeout.
 
+`OPENROUTER_MAX_TOKENS` controls the combined reasoning and visible-answer budget
+(default **8,192**, accepted range **512–32,768**). The previous 1,800-token limit
+could be consumed entirely by reasoning before the model emitted any JSON.
+A larger budget does not permit longer evidence or bypass validation: the same
+20,000-character response limit, Pydantic schema, language check, source-ID
+lookup and verbatim-quote check still apply. A response ending with
+`finish_reason=length` is rejected as `output_token_limit`, even if its JSON
+looks complete. CLI diagnostics suggest changing the budget or selecting another
+explicit free model; there is no automatic retry or paid fallback. Models can
+still exhaust a larger budget or time out.
+
 Run `garage-rag --help` and `garage-rag <command> --help` for options. Put global
 options before the command, for example:
 
@@ -260,7 +271,53 @@ Hugging Face downloads, BMW material and real API calls. These tests verify the
 pipeline's contracts, not the quality of E5's real multilingual ranking or a
 remote model's reasoning. GitHub Actions runs the same checks on Python 3.12.
 
-## Multilingual verification (2026-10-25)
+## Token-budget fix and successful live checks (2026-10-25)
+
+The default shared reasoning/answer budget is now 8,192 tokens, configurable via
+`OPENROUTER_MAX_TOKENS`. Truncated responses are rejected explicitly without a
+repair request. Citation, quote, language and Pydantic validation are unchanged.
+The local `.env` was aligned with every setting in `.env.example`, preserving
+the existing API key; `.env` and all response captures remain ignored by Git.
+
+**Automated checks:** 108 offline tests passed, including configurable budget
+bounds, the actual SDK request budget and zero-price routing, rejection of
+truncated output even when it contains valid JSON, and CLI diagnostics. Ruff
+passed. Ingestion, embeddings, persistent Qdrant retrieval and multilingual
+citation regressions remain in the suite. These tests do not make live API calls.
+
+**Live checks:** five additional completion requests used the private BMW index,
+cached local E5 and an 8,192-token budget. The three automatic-language questions
+were the oil-level examples in Quick start. All successful answers below passed
+local source-ID, verbatim English quote, language and schema validation, with
+page references rendered from local metadata.
+
+| Question language / requested route | Actual free model | Result | PDF page | API cost | Time |
+| --- | --- | --- | --- | --- | --- |
+| EN / `openrouter/free` | `nvidia/nemotron-3.5-super-vl:free` | `verified_citations`, 5 claims, `stop` | 140 | $0 | 17.1 s |
+| DE / `openrouter/free` | `nvidia/nemotron-3-ultra-550b-a55b:free` | `verified_citations`, 6 claims, `stop` | 140 | $0 | 41.8 s |
+| RU / `openrouter/free` | `nvidia/nemotron-3.5-super-vl:free` | `verified_citations`, 5 claims, `stop` | 140 | $0 | 15.7 s |
+| DE / explicit `nvidia/nemotron-3.5-super-vl:free` | Same model | `verified_citations`, `stop` | 140 | $0 | 49.9 s |
+| EN / explicit `recursive/flint-v1.0:free` | Same model | Finished with `stop`, but malformed JSON was correctly rejected | — | $0 | 19.2 s |
+
+This demonstrates supported EN/DE/RU answers from the same concrete free model,
+`nvidia/nemotron-3.5-super-vl:free` (EN/RU selected by the router; DE selected
+explicitly). To request that model directly:
+
+```bash
+garage-rag ask 'How do I check the engine oil level?' --model nvidia/nemotron-3.5-super-vl:free
+garage-rag ask 'Wie prüfe ich den Motorölstand?' --model nvidia/nemotron-3.5-super-vl:free
+garage-rag ask 'Как проверить уровень моторного масла?' --model nvidia/nemotron-3.5-super-vl:free
+```
+
+The router's German completion reported 1,945 output tokens, exceeding the old
+1,800-token cap. The larger budget addresses truncation; it cannot make every
+model emit valid JSON or interpret evidence correctly. No validator was relaxed,
+no retries were added, and all provider price caps remain zero. Free-model
+availability, latency and outputs can change. A few successful examples are
+not a retrieval or generation quality benchmark. GitHub-hosted CI and MPS were
+not run during this fix.
+
+## Initial multilingual verification (2026-10-25, before the budget fix)
 
 Local checks on Python 3.12 / macOS arm64:
 
@@ -285,15 +342,15 @@ only zero-price OpenRouter routes. No paid fallback or automatic retry was used.
 | Oil-level question, EN/DE/RU, explicit `google/gemma-4-31b-it:free` | All three requests returned HTTP 429; sanitized errors, no fallback |
 
 **Successful supported answers in all three languages were not demonstrated by
-live API calls in this session.** They are verified with controlled offline
+live API calls in that initial run.** They are verified with controlled offline
 model replies, including real local Qdrant retrieval through the CLI. This is
 not evidence of remote-model multilingual quality. The diagnostic request
 demonstrates one cause of rejection; it does not establish the cause of every
 earlier rejected response.
 
 The free router can select reasoning models that exhaust the shared
-reasoning/output token budget before emitting JSON. GarageRAG retains its
-bounded generation budget and refuses empty or invalid output. See
+reasoning/output token budget before emitting JSON. The subsequent fix raises
+the bounded default budget and identifies truncated output explicitly. See
 [OpenRouter's reasoning-token budget documentation](https://openrouter.ai/docs/guides/best-practices/reasoning-tokens#reasoning-tokens-and-max_tokens).
 When a free model is available, choose it explicitly with `--model` or
 `OPENROUTER_MODEL`; rate limits still apply. Private response captures are not

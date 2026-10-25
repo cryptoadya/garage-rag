@@ -113,6 +113,39 @@ def test_missing_key_and_paid_model_are_rejected(monkeypatch):
         make_llm(model="paid/model", api_key="test-not-a-real-key")
 
 
+@pytest.mark.parametrize("configured", [None, "4096", "16384"])
+def test_completion_budget_leaves_room_for_reasoning(monkeypatch, configured):
+    monkeypatch.delenv("OPENROUTER_MAX_TOKENS", raising=False)
+    if configured is not None:
+        monkeypatch.setenv("OPENROUTER_MAX_TOKENS", configured)
+    llm = make_llm(api_key="test-not-a-real-key")
+    with llm.client:
+        assert llm.max_tokens == (int(configured) if configured else 8192)
+
+
+@pytest.mark.parametrize("configured", ["secret-token", "0", "511", "32769", "1.5"])
+def test_invalid_completion_budget_is_rejected_safely(monkeypatch, configured):
+    monkeypatch.setenv("OPENROUTER_MAX_TOKENS", configured)
+    with pytest.raises(GenerationError, match="OPENROUTER_MAX_TOKENS") as exc:
+        make_llm(api_key="test-not-a-real-key")
+    assert "secret-token" not in str(exc.value)
+
+
+@pytest.mark.parametrize("content", ["", "truncated JSON", json.dumps(valid_reply())])
+def test_token_limit_never_accepts_partial_output_or_retries(content):
+    calls = []
+
+    class Truncated:
+        def invoke(self, messages):
+            calls.append(messages)
+            return SimpleNamespace(content=content, response_metadata={"finish_reason": "length"})
+
+    result = answer("Как проверить шины?", hits(), Truncated())
+    assert not result.supported
+    assert result.reason == "output_token_limit"
+    assert len(calls) == 1
+
+
 @pytest.mark.parametrize("status", [401, 429, 503])
 def test_real_sdk_wire_disables_paid_fallback_and_hidden_retries(monkeypatch, status):
     import httpx
@@ -131,6 +164,7 @@ def test_real_sdk_wire_disables_paid_fallback_and_hidden_retries(monkeypatch, st
     monkeypatch.setattr(
         openrouter, "OpenRouter", lambda **kwargs: constructor(client=http, **kwargs)
     )
+    monkeypatch.delenv("OPENROUTER_MAX_TOKENS", raising=False)
     llm = make_llm(api_key="test-not-a-real-key")
     with llm.client, pytest.raises(GenerationError) as exc:
         answer("Как проверить шины?", hits(), llm)
@@ -142,6 +176,7 @@ def test_real_sdk_wire_disables_paid_fallback_and_hidden_retries(monkeypatch, st
     assert len(requests) == 1
     body = requests[0]
     assert body["model"] == "openrouter/free"
+    assert body["max_tokens"] == 8192
     assert body["provider"]["max_price"] == {"prompt": "0", "completion": "0", "request": "0"}
     assert body["provider"]["allow_fallbacks"] is False
     assert "models" not in body

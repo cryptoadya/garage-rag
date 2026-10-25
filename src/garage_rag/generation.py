@@ -116,6 +116,13 @@ def make_llm(model=None, api_key=None):
     model = model or os.environ.get("OPENROUTER_MODEL") or "openrouter/free"
     if not (model == "openrouter/free" or re.fullmatch(r"[\w.-]+/[\w.-]+:free", model)):
         raise GenerationError("Only openrouter/free or an explicit provider/model:free is allowed")
+    budget_error = "OPENROUTER_MAX_TOKENS must be an integer between 512 and 32768"
+    try:
+        max_tokens = int(os.environ.get("OPENROUTER_MAX_TOKENS", "8192"))
+    except ValueError:
+        raise GenerationError(budget_error) from None
+    if not 512 <= max_tokens <= 32768:
+        raise GenerationError(budget_error)
     api_key = api_key or os.environ.get("OPENROUTER_API_KEY", "").strip()
     if not api_key:
         raise GenerationError("Set OPENROUTER_API_KEY in .env; local search needs no API key")
@@ -134,7 +141,8 @@ def make_llm(model=None, api_key=None):
         max_retries=0,
         timeout=60000,
         temperature=0,
-        max_tokens=1800,
+        # OpenRouter counts reasoning and visible JSON against the same budget.
+        max_tokens=max_tokens,
         openrouter_provider={
             "allow_fallbacks": False,
             "require_parameters": True,
@@ -185,6 +193,8 @@ def answer(question, hits, llm, *, answer_language="auto", max_context_chars=120
         else:
             message = "OpenRouter request failed or timed out; retry manually (no paid fallback)"
         raise GenerationError(message) from None
+    if getattr(response, "response_metadata", {}).get("finish_reason") == "length":
+        return refuse("output_token_limit")
     try:
         if not isinstance(response.content, str) or len(response.content) > 20000:
             return refuse("invalid_model_output")

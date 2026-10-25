@@ -47,6 +47,7 @@ def test_missing_key_never_echoes_environment(tmp_path, monkeypatch, capsys, con
     assert "do-not-print-this-value" not in stderr
 
 
+@pytest.mark.parametrize("truncated", [False, True])
 @pytest.mark.parametrize(
     ("question", "language", "option", "claim"),
     [
@@ -73,6 +74,7 @@ def test_ask_language_through_cli(
     language,
     option,
     claim,
+    truncated,
 ):
     from garage_rag.index import Index
 
@@ -91,7 +93,10 @@ def test_ask_language_through_cli(
         ],
     }
     llm = SimpleNamespace(
-        invoke=lambda messages: SimpleNamespace(content=json.dumps(response)),
+        invoke=lambda messages: SimpleNamespace(
+            content=json.dumps(response),
+            response_metadata={"finish_reason": "length" if truncated else "stop"},
+        ),
         client=SimpleNamespace(__exit__=lambda *a: None),
     )
     monkeypatch.setattr("garage_rag.cli.load_dotenv", lambda *a, **kw: None)
@@ -99,7 +104,13 @@ def test_ask_language_through_cli(
     monkeypatch.setattr("garage_rag.cli.IndexConfig", lambda **kw: config)
     monkeypatch.setattr("garage_rag.cli.E5Embeddings", lambda *a, **kw: embeddings)
     assert main(["--index-dir", str(directory), "ask", question, "--json", *option]) == 0
-    result = json.loads(capsys.readouterr().out)
+    captured = capsys.readouterr()
+    result = json.loads(captured.out)
+    if truncated:
+        assert not result["supported"]
+        assert result["reason"] == "output_token_limit"
+        assert "OPENROUTER_MAX_TOKENS" in captured.err
+        return
     assert result["supported"]
     assert result["language"] == language
     assert "aurora.pdf, PDF page 1" in result["text"]

@@ -138,6 +138,12 @@ def main(argv=None):
                             print(
                                 "Model output failed evidence/format validation.", file=sys.stderr
                             )
+                    if result.reason == "output_token_limit":
+                        print(
+                            "Model reached its output token limit. Increase OPENROUTER_MAX_TOKENS "
+                            "or choose another explicit :free model; no automatic retry was made.",
+                            file=sys.stderr,
+                        )
         finally:
             if llm is not None:
                 llm.client.__exit__(None, None, None)
