@@ -18,7 +18,7 @@ line or commit it to Git.
 | `OPENROUTER_API_KEY` | Empty | Required only for `ask` |
 | `OPENROUTER_MODEL` | `openrouter/free` | Free router or explicit `provider/model:free`; `ask --model` overrides it |
 | `OPENROUTER_MAX_TOKENS` | `8192` | Combined reasoning and answer budget; integer from 512 to 32768 |
-| `GARAGE_RAG_INDEX` | `data/qdrant` | Private index directory; `--index-dir` overrides it |
+| `GARAGE_RAG_INDEX` | Profile-specific | Private index directory; `--index-dir` overrides it |
 | `HF_HOME` | `.cache/huggingface` under the working directory | Local Hugging Face cache |
 
 The first embedding operation downloads the pinned E5 snapshot. After the
@@ -55,6 +55,21 @@ be reused; search continues to use the last fully activated revision.
 diagnostics. `stats` reads persisted metadata without loading E5. Review pages
 without text, unusually short pages and suspicious chunks before trusting a
 new document. These heuristics do not certify extraction completeness.
+
+## Embedding profiles
+
+`--profile baseline` (the default) keeps E5 Small and `data/qdrant`.
+`--profile e5-base` and `--profile bge-m3` use pinned alternative embeddings,
+with default directories `data/qdrant-e5-base` and `data/qdrant-bge-m3` when
+`GARAGE_RAG_INDEX` is unset. An existing `.env` value still takes precedence
+over that directory default; use explicit `--index-dir` for experiments.
+Profiles never convert an existing index. A wrong profile fails as incompatible.
+Use the same profile for `index`, `stats`, `search` and `ask`.
+
+See the [Phase 2B comparison and complete commands](benchmarks/phase2b-retrieval.md).
+Every profile retains raw dense cosine search and the original CLI limits.
+Do not transfer score thresholds between models without separate calibration.
+BM25, fusion and reranking are experiment-only adapters, not CLI defaults.
 
 ## Search and answers
 

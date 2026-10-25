@@ -83,8 +83,16 @@ The initial BMW corpus is an owner's manual for the 2002 E39 525i, 530i and
 540i, not a workshop repair manual or evidence of applicability to every E39.
 Repair parameters must not be inferred from unrelated owner guidance.
 
-There is no OCR, reranking, hybrid retrieval, conversation memory, LangGraph,
-agent/MCP integration, Web UI, Docker integration or production concurrency.
+Pinned alternative embedding profiles change the model, dimension and required
+prefixes in the fingerprint, while retaining the same Index.search contract.
+Baseline remains the default; profiles use separate directories. Phase 2B's
+offline experiment adapter also implements active-only in-memory BM25,
+deterministic rank fusion and optional top-20 reranking. It delegates scheduling
+and page metrics to the unmodified Phase 2A evaluator. These adapters do not
+change the production dense retrieval or generation path.
+
+There is no OCR, conversation memory, LangGraph, agent/MCP integration,
+Web UI, Docker integration or production concurrency.
 Direct dependencies are pinned; there is no complete cross-platform transitive
 lockfile. See [usage](usage.md) for operational settings and
 [testing](testing.md) for validation scope.

@@ -14,16 +14,21 @@ from .config import IndexConfig
 from .embeddings import E5Embeddings
 from .generation import GenerationError, answer, make_llm
 from .index import Index
+from .profiles import profile_config
 
 
 def parser():
     cli = argparse.ArgumentParser(description="GarageRAG: local automotive document retrieval")
-    cli.add_argument(
-        "--index-dir", type=Path, default=Path(os.environ.get("GARAGE_RAG_INDEX", "data/qdrant"))
-    )
+    cli.add_argument("--index-dir", type=Path, default=os.environ.get("GARAGE_RAG_INDEX"))
     cli.add_argument("--chunk-tokens", type=int, default=384)
     cli.add_argument("--overlap-tokens", type=int, default=48)
     cli.add_argument("--device", choices=["cpu", "mps"], default="cpu")
+    cli.add_argument(
+        "--profile",
+        choices=["baseline", "e5-base", "bge-m3"],
+        default="baseline",
+        help="Pinned embedding profile; each profile needs a separate index directory",
+    )
     commands = cli.add_subparsers(dest="command", required=True)
     ingest = commands.add_parser("index", help="Index a PDF or resume its interrupted revision")
     ingest.add_argument("pdf", type=Path)
@@ -73,8 +78,15 @@ def main(argv=None):
     # Third-party debug output can contain request payloads and credentials.
     logging.disable(logging.CRITICAL)
     args = parser().parse_args(argv)
+    if args.index_dir is None:
+        directory = "data/qdrant" if args.profile == "baseline" else f"data/qdrant-{args.profile}"
+        args.index_dir = Path(directory)
     try:
         config = IndexConfig(chunk_tokens=args.chunk_tokens, overlap_tokens=args.overlap_tokens)
+        if args.profile != "baseline":
+            config = profile_config(
+                args.profile, chunk_tokens=args.chunk_tokens, overlap_tokens=args.overlap_tokens
+            )
         if args.command != "index" and not (args.index_dir / "manifest.json").exists():
             raise ValueError("No index found; run garage-rag index first")
         # Check credentials/model before loading E5 or opening storage for ask.

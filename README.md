@@ -97,7 +97,7 @@ prove that a claim correctly interprets its evidence.** See the
 
 ## Tests and status
 
-The suite contains **130 offline test cases**. [CI](https://github.com/cryptoadya/garage-rag/actions/workflows/ci.yml)
+The offline synthetic suite tests retrieval, persistence and generation contracts. [CI](https://github.com/cryptoadya/garage-rag/actions/workflows/ci.yml)
 runs pytest and Ruff on Python 3.12 using an original synthetic corpus, without
 BMW material, model downloads or live API calls. Limited live smoke checks have
 also produced validated EN/DE/RU answers; these are not quality benchmarks.
@@ -119,8 +119,7 @@ what these checks establish and how to reproduce them.
   Model, market, body-style and equipment qualifications must still be checked.
 - Language detection and generation are heuristic. Valid answers may be rejected;
   models can misinterpret evidence. Inspect the sources before acting.
-- Qdrant Local permits one process per index. No API, Web UI, hybrid search,
-  reranker, LangGraph, agents, MCP or Docker integration is implemented.
+- Qdrant Local permits one process per index. No API, Web UI, LangGraph, agents, MCP or Docker integration is implemented.
 - Keep `.env`, PDFs, extracted text, vectors, indexes and answer captures private.
   Custom index directories also contain source text; `.gitignore` does not
   protect files already tracked by Git.
@@ -135,9 +134,10 @@ source documents and model weights have their own licenses.
 offline EN/DE/RU baseline with agent-verified PDF page references and a
 [results report](docs/benchmarks/phase2a-report.md).
 
-Future directions: hybrid search and embedding benchmarks,
-LangGraph orchestration, an API and Web UI, deployment and observability.
-These are planned directions, not current features.
+Phase 2B compares local multilingual embedding profiles, BM25, hybrid search
+and reranking in a [separate technical report](docs/benchmarks/phase2b-retrieval.md).
+The original E5 Small route remains the default; alternative profiles use
+separate private indexes. No orchestration or UI is introduced.
 
 - [Usage and configuration](docs/usage.md)
 - [Architecture and safety boundaries](docs/architecture.md)
