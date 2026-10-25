@@ -97,7 +97,7 @@ prove that a claim correctly interprets its evidence.** See the
 
 ## Tests and status
 
-The suite contains **108 offline test cases**. [CI](https://github.com/cryptoadya/garage-rag/actions/workflows/ci.yml)
+The suite contains **130 offline test cases**. [CI](https://github.com/cryptoadya/garage-rag/actions/workflows/ci.yml)
 runs pytest and Ruff on Python 3.12 using an original synthetic corpus, without
 BMW material, model downloads or live API calls. Limited live smoke checks have
 also produced validated EN/DE/RU answers; these are not quality benchmarks.
@@ -131,7 +131,11 @@ source documents and model weights have their own licenses.
 
 ## Roadmap and documentation
 
-Future directions: retrieval evaluation, hybrid search and embedding benchmarks,
+[Retrieval evaluation](docs/benchmarks/retrieval-evaluation.md) now provides an
+offline EN/DE/RU baseline with agent-verified PDF page references and a
+[results report](docs/benchmarks/phase2a-report.md).
+
+Future directions: hybrid search and embedding benchmarks,
 LangGraph orchestration, an API and Web UI, deployment and observability.
 These are planned directions, not current features.
 
