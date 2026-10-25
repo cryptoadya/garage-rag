@@ -56,9 +56,9 @@ class TinyEmbeddings:
     @staticmethod
     def vector(text):
         text = text.lower()
-        if any(word in text for word in ["tire", "шин"]):
+        if any(word in text for word in ["tire", "reifen", "шин"]):
             return [1.0, 0.0, 0.0]
-        if any(word in text for word in ["coolant", "охлажд"]):
+        if any(word in text for word in ["coolant", "kühl", "охлажд"]):
             return [0.0, 1.0, 0.0]
         return [0.0, 0.0, 1.0]
 

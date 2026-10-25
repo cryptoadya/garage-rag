@@ -39,7 +39,7 @@ def parser():
             help=(
                 "Local retrieval only"
                 if name == "search"
-                else "Russian answer with verified citations"
+                else "EN/DE/RU answer with verified citations"
             ),
         )
         command.add_argument("question")
@@ -48,6 +48,12 @@ def parser():
         command.add_argument("--json", action="store_true")
         if name == "ask":
             command.add_argument("--model", help="openrouter/free or provider/model:free")
+            command.add_argument(
+                "--answer-language",
+                choices=["auto", "en", "de", "ru"],
+                default="auto",
+                help="Answer language (default: auto detects the question; English fallback)",
+            )
     commands.add_parser("stats", help="Read active index statistics without loading E5")
     return cli
 
@@ -123,7 +129,7 @@ def main(argv=None):
                         if not hits:
                             print("No matching passages in the active index.")
                 else:
-                    result = answer(args.question, hits, llm)
+                    result = answer(args.question, hits, llm, answer_language=args.answer_language)
                     if args.json:
                         _json(asdict(result))
                     else:

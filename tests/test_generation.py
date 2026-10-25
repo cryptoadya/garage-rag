@@ -56,7 +56,7 @@ def test_russian_answer_contains_locally_verified_page_and_quote():
     result = answer("Как проверить шины?", hits(), llm)
     assert result.supported
     assert "Проверяйте" in result.text
-    assert "aurora.pdf, PDF стр. 1" in result.text
+    assert "aurora.pdf, PDF page 1" in result.text
     assert "Check tire pressure when the tires are cold." in result.text
     assert llm.messages[0].type == "system"
     assert len(llm.messages) == 2

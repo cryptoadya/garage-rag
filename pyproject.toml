@@ -4,8 +4,15 @@ build-backend = "hatchling.build"
 
 [project]
 name = "garage-rag"
-version = "0.1.0"
+version = "0.2.0"
 description = "Local multilingual retrieval over automotive owner documentation"
+keywords = ["rag", "automotive", "multilingual", "qdrant", "grounded-generation"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
 readme = "README.md"
 requires-python = ">=3.12"
 license = "MIT"
@@ -18,6 +25,7 @@ dependencies = [
   "fonttools==4.67.0",
   "openrouter==0.11.46",
   "python-dotenv==1.2.4",
+  "lingua-language-detector==2.2.0",
 ]
 
 [project.optional-dependencies]
@@ -25,6 +33,13 @@ dev = ["pytest==9.1.1", "reportlab==5.1.0", "ruff==0.17.2"]
 
 [project.scripts]
 garage-rag = "garage_rag.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/garage_rag"]
+
+# Allow only public code, docs and synthetic fixtures in source distributions.
+[tool.hatch.build.targets.sdist]
+include = ["/src", "/tests", "/README.md", "/LICENSE", "/pyproject.toml", "/.env.example"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
