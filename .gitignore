@@ -2,8 +2,9 @@
 .env.*
 !.env.example
 .venv/
-data/private/
-data/qdrant/
+/data/
+/output/
+/outputs/
 __pycache__/
 *.py[cod]
 .DS_Store
@@ -19,6 +20,12 @@ build/
 *.db
 *.safetensors
 *.bin
+*.npy
+*.npz
+*.pt
+*.pth
+*.onnx
+*.pkl
 coverage.xml
 .coverage
 htmlcov/
