@@ -1,0 +1,12 @@
+{
+  "title": "Fictional Aurora A1 Owner Guide",
+  "language": "en",
+  "vehicle_models": ["Aurora A1"],
+  "document_type": "owner_manual",
+  "pages": [
+    "Aurora A1 - owner guide\nTire pressure\nCheck tire pressure when the tires are cold. The fictional Aurora A1 uses 2.4 bar for all four tires with a light load. Never use these invented values for a real vehicle.",
+    "Aurora A1 - owner guide\nCoolant warning\nIf the coolant warning appears, stop safely and switch off the engine. Wait until the engine has cooled before checking the level. Do not open a hot cooling system.",
+    "",
+    "Aurora A1 - owner guide\nService boundaries\nThis owner guide does not specify cylinder head bolt tightening torques or engine disassembly procedures. Contact a qualified workshop for repair instructions."
+  ]
+}

@@ -1,0 +1,37 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "garage-rag"
+version = "0.1.0"
+description = "Local multilingual retrieval over automotive owner documentation"
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+dependencies = [
+  "langchain-core==1.7.0",
+  "langchain-openrouter==0.2.9",
+  "sentence-transformers==6.2.0",
+  "qdrant-client==1.20.0",
+  "pypdf==6.21.2",
+  "fonttools==4.67.0",
+  "openrouter==0.11.46",
+  "python-dotenv==1.2.4",
+]
+
+[project.optional-dependencies]
+dev = ["pytest==9.1.1", "reportlab==5.1.0", "ruff==0.17.2"]
+
+[project.scripts]
+garage-rag = "garage_rag.cli:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
