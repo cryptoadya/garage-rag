@@ -5,7 +5,7 @@ is available in [Git commits](https://github.com/cryptoadya/garage-rag/commits/m
 
 ## [Unreleased]
 
-The package version is 0.2.0; these changes are not yet tagged as a release.
+## [0.2.0] - 2026-10-25
 
 ### Added
 
@@ -44,5 +44,6 @@ The package version is 0.2.0; these changes are not yet tagged as a release.
   and quote validation, and local PDF page references.
 - Synthetic test corpus, automated tests, CI and MIT-licensed project code.
 
-[Unreleased]: https://github.com/cryptoadya/garage-rag/compare/v0.1.0...main
+[Unreleased]: https://github.com/cryptoadya/garage-rag/compare/v0.2.0...main
+[0.2.0]: https://github.com/cryptoadya/garage-rag/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/cryptoadya/garage-rag/tree/v0.1.0
