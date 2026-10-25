@@ -18,7 +18,8 @@ manual. It does not replace professional diagnosis or repair instructions.
 - Localized refusals when context is missing or generated output fails validation.
 
 **Stack:** Python 3.12+, LangChain Core / ChatOpenRouter, Sentence Transformers
-(`intfloat/multilingual-e5-small`), Qdrant Local, pypdf, Pydantic and Lingua.
+(`intfloat/multilingual-e5-small` by default; optional `BAAI/bge-m3`),
+Qdrant Local, pypdf, Pydantic and Lingua.
 No Qdrant server or OpenRouter account is required for indexing and search.
 
 ## Quick start
@@ -137,7 +138,10 @@ offline EN/DE/RU baseline with agent-verified PDF page references and a
 Phase 2B compares local multilingual embedding profiles, BM25, hybrid search
 and reranking in a [separate technical report](docs/benchmarks/phase2b-retrieval.md).
 The original E5 Small route remains the default; alternative profiles use
-separate private indexes. No orchestration or UI is introduced.
+separate private indexes. BGE-M3 improves DE/RU retrieval in the measured
+comparison, at higher latency and with some English ordering regressions.
+Use `--profile bge-m3 --index-dir data/qdrant-bge-m3` for **index, search and ask**;
+see the report for preparation commands, metrics and limits.
 
 - [Usage and configuration](docs/usage.md)
 - [Architecture and safety boundaries](docs/architecture.md)

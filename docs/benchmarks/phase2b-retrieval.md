@@ -98,6 +98,129 @@ has higher latency. This decision is based on development only; it must not be
 revised after seeing held-out scores. Six candidates were compared, so model
 selection itself is a source of optimistic development estimates.
 
+## Final held-out and legacy comparison
+
+The decision above was committed as `bc984c0` before any held-out ranking.
+The following are the first complete final measurements, not the best of
+repeated runs. Accuracy uses one trial per need. Latency pools all three trials;
+legacy timing includes its four negatives and two diagnostics per language.
+The [consolidated numeric artifact](phase2b-results.v1.json) retains first-trial
+rankings/scores, later-trial score differences, every latency, consistency and provenance.
+Full per-trial local outputs remain private. Early development runs predate
+additional weight-size instrumentation; the artifact inventories pinned weight
+files separately rather than inventing missing measurements.
+
+### Heldout (12 needs per language)
+
+| Profile | Language | Hit@1 | Hit@5 | Hit@10 | MRR@10 | p50 ms | p95 ms |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| baseline | EN | 83.3% | 83.3% | 91.7% | 0.8452 | 12.99 | 15.28 |
+| baseline | DE | 33.3% | 58.3% | 83.3% | 0.4562 | 12.97 | 14.97 |
+| baseline | RU | 25.0% | 41.7% | 41.7% | 0.3333 | 13.08 | 15.17 |
+| bge-m3 | EN | 75.0% | 91.7% | 91.7% | 0.8125 | 99.40 | 107.70 |
+| bge-m3 | DE | 66.7% | 75.0% | 100.0% | 0.7226 | 100.43 | 121.78 |
+| bge-m3 | RU | 58.3% | 66.7% | 83.3% | 0.6435 | 99.80 | 125.52 |
+
+### Legacy (18 needs per language)
+
+| Profile | Language | Hit@1 | Hit@5 | Hit@10 | MRR@10 | p50 ms | p95 ms |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| baseline | EN | 77.8% | 100.0% | 100.0% | 0.8796 | 13.25 | 15.21 |
+| baseline | DE | 33.3% | 72.2% | 77.8% | 0.5065 | 13.11 | 15.98 |
+| baseline | RU | 33.3% | 61.1% | 66.7% | 0.4398 | 13.54 | 16.74 |
+| bge-m3 | EN | 72.2% | 100.0% | 100.0% | 0.8352 | 99.02 | 115.35 |
+| bge-m3 | DE | 61.1% | 83.3% | 88.9% | 0.7148 | 98.57 | 116.26 |
+| bge-m3 | RU | 66.7% | 94.4% | 94.4% | 0.7657 | 98.95 | 112.42 |
+
+Held-out gains are smaller than development: BGE-M3 is not a universal fix.
+English MRR declines from 0.8452 to 0.8125 on held-out and from 0.8796 to
+0.8352 on legacy, despite improved/preserved Hit@5. On legacy, coolant,
+wheel-torque and glovebox-fuse passages move down; the model-specific pressure
+table improves from rank two to one. These are measured ordering tradeoffs.
+Baseline remains the default, and a user prioritizing English MRR or low
+latency can keep the original profile. The multilingual gains justify the
+explicit BGE-M3 option, not an automatic migration or a claim of dominance.
+
+### Chunk sufficiency (held-out, 11 text-answerable needs)
+
+| Profile | Language | Evidence Hit@5 | Evidence MRR@10 |
+| --- | --- | ---: | ---: |
+| baseline | EN | 81.8% | 0.8312 |
+| baseline | DE | 54.5% | 0.4068 |
+| baseline | RU | 36.4% | 0.2727 |
+| bge-m3 | EN | 90.9% | 0.7955 |
+| bge-m3 | DE | 72.7% | 0.6973 |
+| bge-m3 | RU | 63.6% | 0.6566 |
+
+The denominator excludes the engine table for every language/profile. On the
+development set, hybrid DE and BM25 DE/RU can hit the PDC page while returning
+the chunk about malfunction rather than the distance explanation. Page Hit
+therefore must not be substituted for sufficient-evidence Hit. These manual
+chunk labels still require independent review.
+
+### Resource cost
+
+| Profile | Held-out peak RSS MiB | Legacy peak RSS MiB | Index MiB | Weights MiB | Cached load s (held-out) |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| baseline | 1482 | 1375 | 1.34 | 448.8 | 5.57 |
+| bge-m3 | 2269 | 2429 | 2.83 | 2165.9 | 5.06 |
+
+One-time BGE-M3 indexing took 96.1 s (7.1 s extraction/chunking and 89.0 s
+embedding/storage), compared with 33.7 s for E5 Base in this session. These
+index-build timings are not a controlled baseline-Small build comparison;
+the original Small index was deliberately not rebuilt. The two final BGE
+processes peaked at roughly 2.2–2.4 GiB RSS on the actual M1/16 GiB machine.
+CPU search near 0.1 s is practical for an interactive personal CLI, with a
+substantial model-download/disk/startup cost. No new paid service or dependency
+is required. Warm RSS and model-file size differ because of paging and runtime
+overhead; neither alone is a full system-memory budget or battery measurement.
+
+### Remaining errors and abstention
+
+- Held-out EN still misses `toolkit_access` at ten; DE finds it at seven and
+  RU at nine. The correct page 150 has the location sentence, mixed wiper
+  instructions and the tool-kit heading at the end of extracted text. Both
+  ranking and representation deserve investigation; this does not establish
+  that extraction caused the miss. No chunks or labels were changed afterward.
+- DE mirror defrost is rank nine, wagon backrest rank six; RU mirror defrost
+  is rank nine and the wagon-backrest and hood-release pages are absent at ten.
+  Related mirror/climate, seat and lock pages outrank the qualified evidence.
+  Multilingual specificity and body-style distinctions remain weak points.
+- Legacy DE still misses the cruise minimum-speed page and glovebox-fuse access
+  at ten; its flashlight passage drops from rank two to six. RU still misses
+  glovebox fuses. BGE-M3 improves many old failures but does not eliminate them.
+- The engine table and tire-pressure table require original layout review even
+  when their pages rank first. Better retrieval cannot verify column alignment,
+  load symbols, model applicability or generated numerical interpretation.
+- Both final dense profiles return nonempty results for every legacy negative
+  query. BGE's scores use a different distribution and still overlap positives;
+  there is no calibrated threshold, measured false-answer rate or improved
+  abstention claim. Free-provider answer quality was not benchmarked in Phase 2B.
+
+No held-out-specific reranking, prompt changes, dictionary, label correction
+or threshold was introduced. The measured English regressions and remaining
+misses are retained in the report instead of tuning against this final set.
+
+### Repeatability and compatibility
+
+All ten experiment rankings were stable across their three passes. The four
+final comparisons were repeated in fresh processes: all 648 ordered top-ten
+trial lists and every score matched exactly, with identical shuffled query
+orders. Within repeats, two queries (development BGE belt-accident EN and
+held-out baseline manual-reverse EN) have score-only differences of at most
+1.11e-16; their ordering is stable. The artifact preserves those differences.
+Latency varied, as expected. The original Phase 2A evaluator was used
+for the legacy baseline repeat; all 216 trials also matched the published
+Phase 2A artifact exactly. This is local CPU repeatability, not a promise of
+bitwise identity across other hardware or library versions.
+
+The original evaluator, Index, E5 adapter, chunking, baseline configuration,
+generation and language modules remain unchanged. Synthetic tests exercise
+selected-profile EN/DE/RU `ask`, verified citations and the existing free-only
+routing contracts. No live generation request or browser UI test is needed
+for this retrieval-only CLI change; no claim of improved answer reasoning is
+made. Benchmark models, PDFs, extracts and indexes remain private.
+
 ## Evidence quality and limitations
 
 Page Hit@1/5/10 and MRR@10 use the unchanged Phase 2A arithmetic and scheduler.
