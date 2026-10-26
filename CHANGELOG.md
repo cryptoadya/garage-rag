@@ -5,6 +5,8 @@ is available in [Git commits](https://github.com/cryptoadya/garage-rag/commits/m
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-26
+
 ### Added
 
 - Opt-in Phase 4A agentic LangGraph retrieval on Groq GPT-OSS 120B: model-selected
@@ -13,14 +15,29 @@ is available in [Git commits](https://github.com/cryptoadya/garage-rag/commits/m
 - Native serial Groq tool calls/results, a closed read-only tool allowlist and
   per-question call/search/token/step budgets on top of existing Free Plan guards.
 - Offline adaptive-path, safety and protocol acceptance tests. Direct/grounded
-  behavior and frozen metrics remain unchanged; live agent quality is unvalidated.
+  behavior and frozen metrics remain unchanged.
+- Real Groq Aurora acceptance of native tool/result delivery, evidence-driven
+  RU dense to EN BM25 search, cited writing and mandatory audit. The bounded
+  1024-token RU pair completed both modes within the shared guard: seven API
+  attempts, 8,081 actual tokens and 29,781/40,000 reserved tokens.
 
 ### Fixed
 
 - Separate agentic retrieval/control from structured answer writing after a Groq
   smoke exposed answer JSON instructions alongside native tools. Preserve native
   result IDs and full evidence without advertising tools to the writer; retain
-  the three-call one-search path and strict caps. Live confirmation remains pending.
+  the three-call one-search path and strict caps; the full cycle is live confirmed.
+
+### Validation and limitations
+
+- Offline tests, Ruff, dependency consistency, wheel/sdist inspection and
+  installed-wheel entry-point checks cover the release's software contracts.
+- Agentic retrieval is functionally confirmed; this synthetic comparison found
+  no quality or overall resource advantage over Grounded and establishes no
+  general superiority. Same-model auditing is not independent ground truth.
+- Valid quotations and semantic acceptance do not guarantee that the selected
+  quotes cover every part of a compound claim or retain every source warning.
+  OCR, full table/layout reconstruction and figure understanding remain absent.
 
 ## [0.3.0] - 2026-10-26
 
@@ -95,7 +112,8 @@ is available in [Git commits](https://github.com/cryptoadya/garage-rag/commits/m
   and quote validation, and local PDF page references.
 - Synthetic test corpus, automated tests, CI and MIT-licensed project code.
 
-[Unreleased]: https://github.com/cryptoadya/garage-rag/compare/v0.3.0...main
+[Unreleased]: https://github.com/cryptoadya/garage-rag/compare/v0.4.0...main
+[0.4.0]: https://github.com/cryptoadya/garage-rag/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/cryptoadya/garage-rag/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/cryptoadya/garage-rag/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/cryptoadya/garage-rag/tree/v0.1.0

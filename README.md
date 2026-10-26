@@ -81,7 +81,7 @@ organization's Free Plan, set `GROQ_API_KEY` and `GROQ_FREE_PLAN_CONFIRMED=true`
 then use `ask --provider groq`. Groq has no per-request zero-price guarantee.
 See [provider setup and quotas](docs/providers.md).
 
-### Agentic retrieval (Phase 4A, offline accepted)
+### Agentic retrieval
 
 ```bash
 # Verify Groq Free Plan and configure its key/attestation first.
@@ -104,9 +104,11 @@ control turn. Budgets/quotas can stop earlier. `--top-k` caps each search at 1â€
 Only predefined local read-only tools are exposed. No web/code/file-writing tool,
 API retry, paid fallback or automatic provider switch exists. OpenRouter remains
 an explicitly selected compatibility alternative (`--provider openrouter`),
-with its existing free-only controls. The first live smoke failed server tool
-validation. The revised split protocol is offline verified; its live behavior and
-Groq's autonomous search quality remain unvalidated.
+with its existing free-only controls. Real Groq synthetic acceptance confirms
+native tool/result delivery, adaptive query/tool/language changes, cited writing
+and mandatory audit. A bounded RU comparison also completed Grounded successfully;
+it established no quality or overall resource advantage for Agentic. General
+superiority remains unproven. See [live acceptance and limits](docs/providers.md#phase-4a-live-acceptance).
 See [agent architecture](docs/architecture.md#agentic-retrieval-phase-4a).
 
 ## Limitations and privacy
@@ -115,6 +117,9 @@ See [agent architecture](docs/architecture.md#agentic-retrieval-phase-4a).
   tables and vehicle/model/market/equipment applicability in the original PDF.
 - Retrieval can miss evidence. Similarity scores are not confidence; numeric
   heuristics and the same-model auditor can reject valid claims or share errors.
+- A same-model auditor is not independent ground truth. Quote existence and audit
+  acceptance do not guarantee that selected quotes cover every part of a compound
+  claim or preserve all warnings from its full source passage.
 - Free services can be unavailable or rate limited. There is no hard total
   workflow deadline, independent human quality acceptance or vehicle validation.
 - Qdrant Local allows one process per index. No Web UI, API server, conversation

@@ -6,7 +6,7 @@ The implementation lives in [`src/garage_rag`](../src/garage_rag):
 | Modules | Responsibility |
 | --- | --- |
 | `ingestion`, `embeddings`, `config`, `profiles` | Page extraction, token bounds and pinned model settings |
-| `index`, `retrieval` | Persistent dense search; experiment-only BM25, fusion and reranking |
+| `index`, `retrieval` | Persistent dense search; agentic/offline BM25, offline fusion and reranking |
 | `generation`, `language`, `groq` | Context, schemas, language selection and provider transport |
 | `workflow`, `agentic`, `local_tools`, `grounding`, `telemetry` | Bounded LangGraph, local numeric gate, audit and safe observations |
 | `evaluation`, `optimization` | Frozen retrieval evaluation and profile comparisons |
@@ -185,8 +185,12 @@ tracing. The selected LLM still receives the question and retrieved evidence.
 Offline acceptance exercises real LangGraph and local Qdrant/BM25 plus controlled
 policy/model/HTTP fixtures. The same evidence-sensitive policy takes different
 routes for an empty hit set, a cross-reference and sufficient evidence. This
-proves that orchestration supports adaptive choices; it does not show that the
-live Groq model will choose good searches or improve the frozen grounded metrics.
+proves that orchestration supports adaptive choices. Separately authorized Groq
+Aurora runs also confirmed real native tool/result delivery, an evidence-driven
+RU dense to EN BM25 change, cited writing and audit. A completed RU pair produced
+correct answers in both modes, without a demonstrated Agentic quality or overall
+resource advantage. These cases do not establish general superiority or improve
+the frozen grounded metrics; see [live acceptance](providers.md#phase-4a-live-acceptance).
 
 ## Budgets and failures
 
@@ -230,10 +234,14 @@ Chunk overlap or audit acceptance cannot override the gate. Some safe prose is
 rejected; subtle table corruption can still escape detection. `requires_layout`
 benchmark cases remain unsafe to answer from text alone.
 
-The same model drafts and audits; both calls can share errors or follow embedded
-instructions. Sources and questions are untrusted input, and prompt instructions
+The same model drafts and audits; it is not independent ground truth, and both
+calls can share errors or follow embedded instructions. Sources and questions are untrusted input, and prompt instructions
 are not proof of injection immunity. Quote containment does not establish entailment,
-completeness or vehicle applicability. Top-20 retrieval cannot establish document-wide
+completeness or vehicle applicability. In the synthetic RU pair, both modes quoted
+the cooldown sentence while adding stop/engine-off instructions from elsewhere in
+the same full passage. Both audits accepted: a real quote and semantic acceptance
+do not guarantee coverage of every component of a compound claim by its selected
+quotes. Both answers also omitted the explicit hot-system warning. Top-20 retrieval cannot establish document-wide
 absence or discover every conflict. The initial US-market E39 owner's manual is not
 a workshop repair manual or evidence for all E39 variants. Inspect the original PDF
 before acting. [Evaluation](benchmarks/grounded-answering.md) measures these boundaries

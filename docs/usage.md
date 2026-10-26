@@ -15,7 +15,7 @@ line or commit it to Git.
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `GARAGE_RAG_PROVIDER` | `openrouter` | `openrouter` or `groq`; `ask --provider` overrides it |
+| `GARAGE_RAG_PROVIDER` | `openrouter` | Direct/grounded provider; agentic defaults to Groq; `ask --provider` overrides either |
 | `OPENROUTER_API_KEY` | Empty | Required for OpenRouter generation |
 | `GROQ_API_KEY` | Empty | Required for Groq generation |
 | `GROQ_FREE_PLAN_CONFIRMED` | `false` | Required local attestation of Groq Free Plan |
@@ -78,7 +78,8 @@ Use the same profile for `index`, `stats`, `search` and `ask`.
 See the [Phase 2B comparison and complete commands](benchmarks/phase2b-retrieval.md).
 Every profile retains raw dense cosine search and the original CLI limits.
 Do not transfer score thresholds between models without separate calibration.
-BM25, fusion and reranking are experiment-only adapters, not CLI defaults.
+CLI `search` remains dense. BM25 is also available to opt-in agentic retrieval;
+fusion and reranking remain offline comparison adapters.
 
 ## Search and answers
 
@@ -141,6 +142,15 @@ Increasing the budget can prevent truncation but does not extend the timeout
 or relax validation. `finish_reason=length` is rejected even if the response
 looks like complete JSON. Responses are also limited to 20,000 characters;
 there is no automatic repair request.
+
+Opt-in `--workflow agentic` uses model-selected local dense/BM25 tools, with
+defaults of six LLM attempts including writer/audit, four searches, 24,000 reserved
+tokens and twelve graph steps. `--max-total-tokens` changes its reservation cap
+(1–48,000); `--top-k` caps each tool at 1–5. Direct/grounded retain their existing
+budgets and ignore this agentic token flag. With Groq, the per-call output budget
+is `GROQ_MAX_TOKENS`. See [agentic architecture](architecture.md#agentic-retrieval-phase-4a)
+for stopping rules and [live acceptance](providers.md#phase-4a-live-acceptance)
+for what has been confirmed and what remains unproven.
 
 ## Privacy
 

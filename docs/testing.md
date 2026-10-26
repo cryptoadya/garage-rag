@@ -60,9 +60,9 @@ Check relative Markdown paths/anchors and external links, CLI examples against
 tracked or present in Git history remain public. New benchmark outputs belong in
 ignored `output/`; publish reviewed aggregate summaries, not raw captures.
 
-Before publishing v0.3.0, verify the intended `main` commit, its green CI, tests,
+Before publishing a release, verify the intended `main` commit, its green CI, tests,
 lint, package builds and existing tags/releases. Move the existing `Unreleased`
-entries into a dated `0.3.0` section, leave an empty `Unreleased`, and update
-comparison links. Match package version, `v0.3.0` tag and GitHub Release; use that
+entries into a dated version section, leave an empty `Unreleased`, and update
+comparison links. Match package version, `v`-prefixed tag and GitHub Release; use that
 CHANGELOG section as release notes. Merge/tag/Release require separate owner
 authorization. Preparation alone does not publish a release.
