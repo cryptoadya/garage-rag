@@ -117,70 +117,11 @@ hashes/counts/decisions, never source passages or generated claim text. As befor
 semantic quality requires explicit external hash-bound review. The same-model
 LangGraph auditor is not independent evaluation ground truth.
 
-## Verified smoke on October 26, 2026
+## Evaluation results
 
-The [separate public artifact](benchmarks/groq-20261026-smoke.v1.json) records one
-English `cold_pressure` grounded run, with a two-attempt cap and one local search.
-Both completions succeeded; the returned claim retained the cold-tire condition
-and its exact source quote. Local citation/language validation and the semantic
-audit accepted it (`audited_evidence`). Agent inspection matched the claim to
-this synthetic source; independent human review was not performed.
-
-Reported usage was **1,054 input + 372 output tokens** across two calls. The
-10.824-second workflow elapsed time includes deliberate 6-RPM pacing and is not
-a provider latency estimate. Headers exposed RPD limit 1,000, TPM limit 8,000,
-and final remaining balances 998 RPD / 7,174 TPM. RPM/TPD were read from Console,
-not inferred from those headers. There were no errors, retries or fallbacks.
-No direct comparison, live DE/RU matrix or corpus/profile run followed.
-
-Offline verification passed 243 tests and Ruff; wheel/sdist builds succeeded.
-Five frozen Phase 2 dataset/result files matched their pre-change bytes.
-After that smoke, the proposed scope was the one EN pair shown above, with at
-most five new attempts, stop on first error and explicit resume. Its subsequent
-result is recorded below; wider quality conclusions remain outstanding.
-
-## Completed English pair on October 26, 2026
-
-The subsequently authorized one-pair `cold_pressure` comparison is complete;
-see the [Phase 3 comparison and explicit source review](benchmarks/grounded-answering.md#groq-one-english-cold-pressure-pair-october-26-2026)
-and [separate Groq result](benchmarks/groq-20261026-cold-pressure-en.v1.json).
-It used three of five allowed attempts at 6 RPM: direct one call, grounded two.
-Both returned the same complete condition-bearing answer and exact source quote;
-there were no errors or false refusals. Agent review is hash-bound and separate
-from Groq's audit, with no independent human-quality claim.
-
-The original ignored checkpoint now contains both completed modes. Repeating
-the exact comparison command with `--resume` was verified to make no API calls.
-Do not start a new EN report merely to repeat this pair. At that point the next
-proposed stage was DE/RU only, maximum ten new attempts at 6 RPM after quota
-verification; its subsequent completion is recorded below.
-
-## Completed DE/RU follow-up and multilingual summary
-
-The authorized DE/RU pairs are now complete, using six of ten new attempts at
-6 RPM, after rechecking Free Plan and limits. EN was not rerun. All six EN/DE/RU
-answer rows preserve the cold-tire condition and exact English evidence, with no
-observed errors or false refusals under explicit agent source/translation review.
-The [combined result and next proposal](benchmarks/grounded-answering.md#groq-deru-completion-and-combined-enderu-result-october-26-2026)
-separates HTTP/provider-reported time from limiter waits for DE/RU; that split was
-not recorded for EN. Current production code is unchanged. The next scope
-proposed then was four harder EN cases (unsupported entailment, conflicting
-sources, missing-source recovery and false-refusal control), maximum 20 attempts
-in separate five-attempt pairs. Its subsequent results are recorded below.
-No general quality gain or independent human review is claimed.
-
-
-## Completed harder English comparisons
-
-The four authorized EN cases have now completed, using 11 of 20 new attempts
-at 6 RPM. [Detailed results](benchmarks/groq-hard-en-20261026.md) show one useful
-missing-evidence recovery through expansion and three source-relative quality
-ties. Grounded added three calls, three searches and 2,398 tokens overall.
-No cold-pressure case was rerun, no unsupported draft reached audit, and no
-extra false refusal was observed given the actual sources. The report preserves
-the legacy recovery false-refusal metric alongside an explicit context-relative
-agent review; independent human review and general quality improvement remain
-outstanding. No further live stage is scheduled or executed by this report.
+Use the [single evaluation summary](benchmarks/grounded-answering.md) for recorded
+metrics, methodology and remaining acceptance. Raw historical exports, timing and
+reviews are in the [private archive](benchmarks/phase3-archive.md).
 
 ## Optional offline tokenizer accounting for real corpus contexts
 

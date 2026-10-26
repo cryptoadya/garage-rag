@@ -116,7 +116,7 @@ def run_workflow(question, search, llm, *, top_k=5, answer_language="auto", limi
             # Keep ALL previously seen constraints. An expansion must not make
             # the auditor forget a warning/conflict that the first draft saw.
             previous = [SearchHit(d, 0) for d in state["context"].sources.values()]
-            context = build_context([*previous, *novel])
+            context = build_context([*previous, *novel], compact=True)
             # Extra returned hits are useless unless they fit in the actual sent context.
             if not any(_identity(d) not in old for d in context.sources.values()):
                 return {"reason": "no_new_context", "route": "finish"}

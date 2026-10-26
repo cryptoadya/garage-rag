@@ -41,7 +41,11 @@ The first search respects `--top-k` and `--min-score`. Only a generator's
 `insufficient_evidence` or an auditor's `insufficient` can expand. Expansion
 uses the **unchanged original question and filters** at top-20 in the same
 active index. Every previously sent passage is retained first, including warnings and
-conflicts, and novel passages use the remaining context budget. Expansion
+conflicts, and novel passages use the remaining context budget. Expansion uses
+compact JSON and omits source URLs and page labels equal to the PDF page from
+model input; full local metadata remains available for provenance/citations.
+Titles, model/year information, language, document type and differing page
+labels remain in model input. No passage text or conditions are shortened. Expansion
 refuses when no new passage fits alongside all prior evidence. Source IDs are
 rebuilt and the draft must cite the resulting map. A returned chunk that cannot fit the
 12,000-character serialized context budget is not new usable evidence. No
@@ -129,8 +133,12 @@ EN/DE/RU are conservatively refused instead of converted. This lexical detector
 is not an exhaustive grammar of numerical language. The semantic
 auditor must additionally verify the quantity, conditions and variant.
 
-Cited sources with replacement characters, layout-required metadata, repeated
-numeric rows or orphaned numeric cells are rejected conservatively. This also
+For numeric claims, cited sources with replacement characters, layout-required
+metadata, suspicious numeric rows or orphaned cells are rejected conservatively.
+A wrapped prose line carrying one quantity in two explicit parenthesized units
+is distinguished from independent table cells; all numeric literals must still
+appear in cited linguistic prose. Nonnumeric claims proceed to the mandatory
+semantic audit even if unrelated numbers occur elsewhere in their sources. This also
 blocks values expressed as words. An audit verdict or duplicate/overlapping
 chunk cannot override the local gate. There is no facility to certify a
 reconstructed table in this phase. Valid numeric prose can still be rejected

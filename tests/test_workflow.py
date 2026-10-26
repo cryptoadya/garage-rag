@@ -480,3 +480,107 @@ def test_expansion_retains_previously_retrieved_safety_constraints():
     assert not result.answer.supported
     final_prompt = json.loads(llm.calls[-1][1].content)
     assert any(warning in s["text"] for s in final_prompt["sources"])
+
+
+@pytest.mark.parametrize(
+    "text,claim",
+    [
+        (
+            "Do not exceed a\nspeed of 20 mph (32 km/h) while\nusing the accessory.",
+            "Do not exceed 20 mph (32 km/h) while using the accessory.",
+        ),
+        (
+            "The clearance must remain\nat 8 in (20 cm) above\nthe equipment.",
+            "The clearance must remain at 8 in (20 cm) above the equipment.",
+        ),
+    ],
+)
+def test_wrapped_dual_unit_prose_reaches_semantic_audit(text, claim):
+    result = run(Scripted(draft(claim, " ".join(text.split())), audit()), lambda k: [hit(text)])
+    assert result.answer.supported
+    assert result.trace.llm_calls == 2
+
+
+def test_nonnumeric_claim_is_audited_despite_unrelated_numeric_source_rows():
+    text = "The release lever is below the dashboard.\nClosing height 8 in (20 cm)"
+    result = run(
+        Scripted(draft("The release lever is below the dashboard.", text.splitlines()[0]), audit()),
+        lambda k: [hit(text)],
+    )
+    assert result.answer.supported
+    assert result.trace.llm_calls == 2
+
+
+def test_dual_unit_table_still_cannot_confirm_numeric_claim():
+    text = "Accessory limits\nA1 20 mph (32 km/h)\nA2 40 mph (64 km/h)"
+    result = run(Scripted(draft("The limit is 20 mph.", text), audit()), lambda k: [hit(text)])
+    assert result.answer.reason == "unsafe_numeric_evidence"
+    assert result.trace.llm_calls == 1
+
+
+def test_dual_unit_prose_still_requires_conditions_and_supported_numbers():
+    text = "Do not exceed a\nspeed of 20 mph (32 km/h) while\nusing the accessory."
+    result = run(
+        Scripted(
+            draft("Always drive at 20 mph.", " ".join(text.split())),
+            audit("unsupported", entailed=False),
+        ),
+        lambda k: [hit(text)],
+    )
+    assert result.answer.reason == "unsupported_claims"
+    result = run(
+        Scripted(draft("The limit is 25 mph.", " ".join(text.split())), audit()),
+        lambda k: [hit(text)],
+    )
+    assert result.answer.reason == "unsafe_numeric_evidence"
+
+
+def test_expansion_uses_budget_for_passages_preserving_applicability_and_warnings():
+    from garage_rag.generation import build_context
+
+    passages = []
+    for i in range(8):
+        value = hit(
+            ("Do not open while hot. " if i == 0 else "Background information. ") + "x" * 1200,
+            i + 1,
+        )
+        value.document.metadata.update(
+            title="Synthetic owner manual 2040",
+            language="en",
+            vehicle_models=["Aurora X"],
+            document_type="owner_manual",
+            source_url="https://example.invalid/" + "a" * 220,
+            page_label=str(i + 1),
+        )
+        passages.append(value)
+    passages[-1].document.page_content += " The release lever is below the dashboard."
+    assert len(build_context(passages, max_chars=20000).text) > 12000
+    llm = Scripted(
+        {"supported": False, "claims": []},
+        draft(
+            "The release lever is below the dashboard.",
+            "The release lever is below the dashboard.",
+            source="S8",
+        ),
+        audit(),
+    )
+    result = run(llm, lambda k: passages[:5] if k == 5 else passages)
+    assert result.answer.supported
+    assert len(result.context.text) <= 12000
+    assert len(result.context.sources) == 8
+    for original, entry in zip(passages, json.loads(result.context.text), strict=True):
+        assert entry["text"] == original.document.page_content
+        for field in ("title", "vehicle_models", "language", "document_type"):
+            assert entry["metadata"][field] == original.document.metadata[field]
+    assert "Do not open while hot." in llm.calls[-1][1].content
+
+
+def test_dual_unit_axle_rows_with_prose_header_remain_unsafe():
+    text = (
+        "The maximum speed is shown below.\nfront axle 20 mph (32 km/h)\nrear axle 40 mph (64 km/h)"
+    )
+    result = run(
+        Scripted(draft("The maximum speed is 20 mph.", text), audit()), lambda k: [hit(text)]
+    )
+    assert result.answer.reason == "unsafe_numeric_evidence"
+    assert result.trace.llm_calls == 1

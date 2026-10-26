@@ -111,6 +111,7 @@ def _unreliable_numeric_source(document):
     numeric_rows = sum(
         len(numeric_values(line)) >= 2
         and not re.search(r"\b(is|are|must|should|use|tighten|check|wait)\b", line, re.I)
+        and not _dual_unit_prose_line(line)
         for line in lines
     )
     orphan_cells = sum(
@@ -118,6 +119,28 @@ def _unreliable_numeric_source(document):
         for line in lines
     )
     return numeric_rows >= 1 or orphan_cells >= 2
+
+
+def _dual_unit_prose_line(line):
+    # One quantity written in two units is not a row of independent cells.
+    # Require surrounding prose and account for EVERY number on the line;
+    # model/row identifiers, bare pairs and additional cells remain suspicious.
+    number = r"\d+(?:[.,]\d+)?"
+    unit = r"[°º]?[a-zA-Z]+(?:/[a-zA-Z]+)?"
+    match = re.search(rf"{number}\s*{unit}\s*\({number}\s*{unit}\)", line)
+    if not match or numeric_values(line) != numeric_values(match.group()):
+        return False
+    # A labelled pair (e.g. "front axle 20 mph (32 km/h)") is still a
+    # table row, even if another line supplies a prose introduction.
+    if not re.search(
+        r"\b(?:of|at|than|below|above|under|over|is|are)\s+"
+        r"(?:(?:about|approximately|least|most)\s+)?$",
+        line[: match.start()],
+        re.I,
+    ):
+        return False
+    surrounding = line[: match.start()] + line[match.end() :]
+    return len(re.findall(r"\b[a-z]{2,}\b", surrounding)) >= 2
 
 
 def _number_words(text):
@@ -166,15 +189,18 @@ def numeric_evidence_safe(draft, context):
     The semantic audit must still verify the value/quantity/variant relationship.
     """
     for claim in draft.claims:
+        numbers = {n.replace(",", ".") for n in numeric_values(claim.text)}
+        words = _number_words(claim.text)
+        if not numbers and not words:
+            # Unrelated numeric material cannot invalidate a location/action claim.
+            # Entailment and all conditions still require the semantic audit.
+            continue
         # Also blocks spelled-out values: damaged numeric context is not evidence.
         if any(_unreliable_numeric_source(context.sources[e.source_id]) for e in claim.evidence):
             return False
-        if _number_words(claim.text):
+        if words:
             # No inferred conversion of number words to source digits.
             return False
-        numbers = {n.replace(",", ".") for n in numeric_values(claim.text)}
-        if not numbers:
-            continue
         confirmed = set()
         for evidence in claim.evidence:
             document = context.sources[evidence.source_id]

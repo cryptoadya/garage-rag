@@ -7,53 +7,26 @@ is available in [Git commits](https://github.com/cryptoadya/garage-rag/commits/m
 
 ### Added
 
-- Additive, hash-bound sent-source sufficiency evaluation distinguishing generator
-  abstention, local-filter false refusals and missing-context refusals without
-  changing legacy metrics or frozen baselines; private answer/source review packets.
-- Real BMW E39 held-out E5 Small/BGE-M3 direct/grounded comparison across EN/DE/RU:
-  14 pairs, 33/60 attempts, explicit quality/cost tradeoffs, confirmed filter/context
-  limitations and an independently reviewable semantic-audit follow-up procedure.
-- Optional pinned offline Groq tokenizer accounting for unmodified corpus contexts,
-  with the existing byte guard as default and separate HTTP/RPM/quota timing.
+- Bounded LangGraph answering with claim/completeness auditing, one local
+  top-20 expansion, explicit budgets and conservative numeric/table checks.
+- Optional Groq Free Plan transport, quota accounting and resumable evaluation;
+  OpenRouter remains the default with zero-price caps and no retries/fallbacks.
+- Separate scripted/live paired evaluation, hash-bound claim/source review and
+  private review packets. Compact historical results retain limitations and costs.
 
-- Four harder Groq EN live pairs with source-relative agent review, preserved
-  dataset-level metrics, request/search/token/timing evidence and documented
-  recovery benefit, audit-evidence limits and scoring follow-up proposals.
+### Fixed
 
-- Completed Groq DE/RU cold-pressure pairs and a combined EN/DE/RU summary,
-  with separate hash-bound translation/source review and measured HTTP,
-  provider-reported and rate-limiter timing observations; EN was not rerun.
-
-- Separate Groq English direct/grounded cold-pressure comparison with hash-bound
-  agent source review, complete checkpoints, usage/quota/paced-latency evidence
-  and a bounded, unexecuted DE/RU follow-up proposal.
-
-- Optional Groq Cloud Free Plan chat provider (`openai/gpt-oss-120b`) selected by
-  CLI/environment, preserving OpenRouter, direct/grounded and EN/DE/RU contracts.
-  Includes safe API/quota observations, Retry-After, conservative RPM/TPM/RPD/TPD
-  guards and explicit account-plan attestation; no retries, upgrades or fallbacks.
-- Atomic live-result checkpoints and explicit resume that skips completed modes,
-  retains prior errors and binds results to provider/model, data, code and index.
-
-- Bounded LangGraph answering with a separate semantic claim/completeness audit,
-  one conditional local top-20 expansion, explicit request/search budgets,
-  conservative numeric-table refusals and privacy-safe local observations.
-- Separate EN/DE/RU answer-quality scenarios and a paired direct/grounded
-  evaluator: offline scripted regressions, explicitly budgeted free-only live
-  runs, hash-bound claim review, refusal/false-refusal metrics, latency and calls.
-- Workflow architecture, evaluation methodology and measured limitations in docs.
-- Enforced live-evaluation request pacing (up to 15/minute) and runtime attempt
-  budgets shared by direct drafts, grounded drafts and audits. Sanitized workflow
-  traces retain provider HTTP status/category without response payloads.
-- October 26 quota/probe diagnostics and partial live smoke results, with
-  separate agent review and explicit incomplete-matrix status.
+- Numeric-gate false positives for wrapped dual-unit prose and nonnumeric claims
+  citing sources with unrelated numbers; unsupported values and tables remain blocked.
+- Expanded context losing relevant passages to presentation overhead; retain full
+  prior text and applicability metadata within the existing context budget.
 
 ### Changed
 
-- `ask` defaults to grounded answering; `--workflow direct` retains the original
-  single-completion behavior. Existing JSON fields and local citation/language
-  validation remain; workflow observations are additive.
-- Prepare package version 0.3.0. No Phase 3 release/tag is published before merge.
+- `ask` defaults to grounded answering; `--workflow direct` preserves the original
+  single-completion path. Prepare 0.3.0 without publishing a release.
+- Benchmark reports default to ignored local output. Raw Phase 3 results and
+  intermediate reports move to a verified private archive; Git keeps final summaries.
 
 ## [0.2.0] - 2026-10-25
 

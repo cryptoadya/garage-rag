@@ -69,7 +69,7 @@ class Draft(BaseModel):
     claims: list[Claim] = Field(max_length=6)
 
 
-def build_context(hits, max_chars=12000, max_chunks=8):
+def build_context(hits, max_chars=12000, max_chunks=8, *, compact=False):
     sources = {}
     entries = []
     seen = set()
@@ -100,13 +100,23 @@ def build_context(hits, max_chars=12000, max_chunks=8):
             "metadata": {k: v for k, v in document.metadata.items() if k in allowed},
             "text": document.page_content,
         }
-        candidate = json.dumps(entries + [entry], ensure_ascii=False)
+        if compact:
+            # Display/provenance fields remain in the local source map. Keep
+            # title, language, models and document type for applicability checks.
+            entry["metadata"].pop("source_url", None)
+            if str(entry["metadata"].get("pdf_page")) == str(entry["metadata"].get("page_label")):
+                entry["metadata"].pop("page_label", None)
+        separators = (",", ":") if compact else None
+        candidate = json.dumps(entries + [entry], ensure_ascii=False, separators=separators)
         if len(candidate) > max_chars:
             continue  # Never truncate a passage: IDs map to exactly the text actually sent.
         entries.append(entry)
         sources[source_id] = document
         seen.add(identity)
-    return Context(text=json.dumps(entries, ensure_ascii=False), sources=sources)
+    return Context(
+        text=json.dumps(entries, ensure_ascii=False, separators=(",", ":") if compact else None),
+        sources=sources,
+    )
 
 
 def make_llm(model=None, api_key=None, *, provider=None):

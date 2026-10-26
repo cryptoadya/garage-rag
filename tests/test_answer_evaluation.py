@@ -502,3 +502,14 @@ def test_partial_human_source_review_does_not_promote_agent_rows_to_human():
     assert report["source_sufficiency"]["independent_human_review"] is False
     assert report["rows"][0]["source_review_provenance"]["reviewer"] == "Independent person"
     assert report["rows"][1]["source_review_provenance"]["reviewer"] == "Agent"
+
+
+def test_default_report_stays_in_local_output(tmp_path, monkeypatch):
+    from garage_rag.answer_evaluation import main
+
+    source = Path("benchmarks/aurora-grounded-answering.v1.json").resolve()
+    monkeypatch.chdir(tmp_path)
+    assert main(["--dataset", str(source), "--cases", "cold_pressure", "--languages", "en"]) == 0
+    report = json.loads((tmp_path / "output/benchmarks/answers.json").read_text())
+    assert report["execution"] == "scripted"
+    assert len(report["rows"]) == 2

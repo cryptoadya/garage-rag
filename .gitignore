@@ -5,6 +5,8 @@
 /data/
 /output/
 /outputs/
+# Benchmark runs are local; publish reviewed Markdown summaries, not raw JSON.
+/docs/benchmarks/*.json
 __pycache__/
 *.py[cod]
 .DS_Store

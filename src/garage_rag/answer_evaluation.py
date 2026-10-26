@@ -495,7 +495,12 @@ def _write_atomic(path, value):
 def main(argv=None):
     cli = argparse.ArgumentParser(description=__doc__)
     cli.add_argument("--dataset", type=Path, default=DEFAULT_DATASET)
-    cli.add_argument("--output", type=Path, required=True)
+    cli.add_argument(
+        "--output",
+        type=Path,
+        default=Path("output/benchmarks/answers.json"),
+        help="New local report (default: output/benchmarks/answers.json)",
+    )
     cli.add_argument("--languages", nargs="+", default=["en", "de", "ru"])
     cli.add_argument("--cases", nargs="+")
     cli.add_argument("--trials", type=int, default=1)
