@@ -1,9 +1,10 @@
 """Fixed Groq chat endpoint; one HTTP attempt, conservative Free Plan guards.
 
-No SDK retries, alternate endpoints, tools, model routing or service-tier upgrades.
+No SDK retries, alternate endpoints, remote tools, routing or tier upgrades.
 The API cannot prove billing tier: an explicit local Free Plan attestation is required.
 """
 
+import json
 import math
 import os
 import re
@@ -15,6 +16,7 @@ import httpx
 from langchain_core.messages import AIMessage
 
 from .generation import GenerationError
+from .local_tools import byte_reservation, checked_call, checked_tools, wire_messages
 
 MODEL = "openai/gpt-oss-120b"
 TOKENIZER_REVISION = "b5c939de8f754692c1647ca79fbf85e8c1e70f8a"
@@ -117,7 +119,15 @@ class GroqLLM:
         self._resume_after = 0.0
         self.quota_observer = None
 
-    def reserve_tokens(self, payload):
+    def bind_tools(self, tools, *, tool_choice="auto", parallel_tool_calls=False):
+        if tool_choice != "auto" or parallel_tool_calls is not False:
+            raise GenerationError("Groq agent requires serial auto local tools")
+        return _ToolLLM(self, checked_tools(tools))
+
+    def request_reservation(self, messages, tools=None):
+        return self.reserve_tokens(wire_messages(messages, tools), tools)
+
+    def reserve_tokens(self, payload, tools=None):
         if self.tokenizer is not None:
             # Actual pinned Harmony template plus a margin for provider JSON-mode framing.
             tokens = self.tokenizer.apply_chat_template(
@@ -125,8 +135,11 @@ class GroqLLM:
                 tokenize=True,
                 add_generation_prompt=True,
                 return_dict=False,
+                **({"tools": tools} if tools else {}),
             )
             return len(tokens) + 256 + self.max_tokens
+        if tools or any(m.get("tool_calls") or m["role"] == "tool" for m in payload):
+            return byte_reservation(payload, self.max_tokens, tools)
         return sum(len(m["content"].encode("utf-8")) + 32 for m in payload) + self.max_tokens
 
     def quota_state(self):
@@ -160,15 +173,13 @@ class GroqLLM:
             self.quota_observer()
 
     def invoke(self, messages):
-        payload = []
-        for message in messages:
-            role = {"system": "system", "human": "user", "ai": "assistant"}.get(message.type)
-            if role is None or not isinstance(message.content, str):
-                raise GenerationError("Groq accepts text chat messages only")
-            payload.append({"role": role, "content": message.content})
+        return self._invoke(messages)
+
+    def _invoke(self, messages, tools=None):
+        payload = wire_messages(messages, tools)
         # UTF-8 bytes bound byte-level tokenizer text tokens conservatively. Include
         # chat framing and reserve the full completion budget, including reasoning.
-        reserve = self.reserve_tokens(payload)
+        reserve = self.reserve_tokens(payload, tools)
         now = time.monotonic()
         self._history = [entry for entry in self._history if now - entry[0] < 86400]
         if self._blocked or time.time() < self._resume_after:
@@ -202,8 +213,18 @@ class GroqLLM:
                     "messages": payload,
                     "temperature": self.temperature,
                     "max_completion_tokens": self.max_tokens,
-                    "response_format": {"type": "json_object"},
                     "service_tier": "on_demand",
+                    **(
+                        {
+                            "tools": tools,
+                            "tool_choice": "auto",
+                            "parallel_tool_calls": False,
+                            "reasoning_effort": "low",
+                            "include_reasoning": False,
+                        }
+                        if tools
+                        else {"response_format": {"type": "json_object"}}
+                    ),
                 },
             )
         except httpx.TransportError:
@@ -251,8 +272,32 @@ class GroqLLM:
             if valid_usage:
                 entry[1] = sum(counts)
             self._observe()
+            message = choice["message"]
+            calls = message.get("tool_calls") or []
+            finish = choice["finish_reason"]
+            normalized = []
+            if finish == "tool_calls":
+                if not tools or len(calls) != 1:
+                    raise ValueError
+                call = calls[0]
+                if call["type"] != "function":
+                    raise ValueError
+                normalized = [
+                    {
+                        "id": call["id"],
+                        "name": call["function"]["name"],
+                        "args": json.loads(call["function"]["arguments"]),
+                    }
+                ]
+                checked_call(normalized[0], tools)
+            elif finish not in {"stop", "length"} or calls:
+                raise ValueError
+            content = message.get("content") or ""
+            if not isinstance(content, str) or len(content) > 20000:
+                raise ValueError
             return AIMessage(
-                content=choice["message"]["content"] or "",
+                content=content,
+                tool_calls=normalized,
                 response_metadata={
                     "http_elapsed_ms": http_elapsed_ms,
                     "finish_reason": choice["finish_reason"],
@@ -268,5 +313,19 @@ class GroqLLM:
                 if valid_usage
                 else None,
             )
-        except (ValueError, KeyError, IndexError, TypeError):
+        except (ValueError, KeyError, IndexError, TypeError, GenerationError):
+            self._blocked = True
             raise GenerationError("Groq returned invalid completion data; no retry") from None
+
+
+class _ToolLLM:
+    """A bound view sharing the client's quota history and single-attempt transport."""
+
+    def __init__(self, llm, tools):
+        self.llm, self.tools = llm, tools
+
+    def __getattr__(self, name):
+        return getattr(self.llm, name)
+
+    def invoke(self, messages):
+        return self.llm._invoke(messages, self.tools)

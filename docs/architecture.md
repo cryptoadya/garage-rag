@@ -6,9 +6,9 @@ The implementation lives in [`src/garage_rag`](../src/garage_rag):
 | Modules | Responsibility |
 | --- | --- |
 | `ingestion`, `embeddings`, `config`, `profiles` | Page extraction, token bounds and pinned model settings |
-| `index`, `retrieval` | Persistent dense search; experiment-only BM25, fusion and reranking |
+| `index`, `retrieval` | Persistent dense search; agentic/offline BM25, offline fusion and reranking |
 | `generation`, `language`, `groq` | Context, schemas, language selection and provider transport |
-| `workflow`, `grounding`, `telemetry` | Bounded LangGraph, local numeric gate, audit and safe observations |
+| `workflow`, `agentic`, `local_tools`, `grounding`, `telemetry` | Bounded LangGraph, local numeric gate, audit and safe observations |
 | `evaluation`, `optimization` | Frozen retrieval evaluation and profile comparisons |
 | `answer_evaluation`, `source_evaluation`, `review_packet` | Paired answer evaluation and private hash-bound review |
 | `cli` | `index`, `stats`, `search` and `ask` commands |
@@ -97,6 +97,101 @@ The graph is sequential typed state with conditional edges, a fresh instance per
 command and no planner, query rewriting, tools, conversation memory, checkpointer
 or remote graph service. Evaluation checkpoints are separate from graph state.
 
+## Agentic retrieval (Phase 4A)
+
+`ask --workflow agentic` is a separate LangGraph; `direct`, `grounded`, their
+prompts, limits and frozen evaluation datasets/metrics remain unchanged.
+
+```mermaid
+flowchart TD
+    M[Retrieval planner: no answer schema] --> C{Native search or plain control?}
+    C -- dense_search or lexical_search --> G{Allowlist, schema and budgets}
+    G -- valid --> L[Local active Qdrant or BM25 search]
+    L --> E[Accumulate whole evidence and native call/result pair]
+    E --> B{Another planning turn fits?}
+    B -- yes --> M
+    B -- search/call ceiling --> D[Structured writer: no active tools]
+    C -- FINALIZE --> D
+    C -- REFUSE reason --> F[Refusal]
+    D --> V[Existing citation/language and numeric gates]
+    V --> A[Separate applicability/completeness audit]
+    A -- accept --> O[Locally formatted cited answer]
+    G -- invalid/exhausted --> F
+    E -- overflow --> F
+    V -- invalid --> F
+    A -- reject --> F
+```
+
+Retrieval turns contain no answer/refusal JSON schema. The model chooses native
+search calls, a plain `FINALIZE`, or `REFUSE` followed by a closed reason code.
+The initial empty context is not grounds to declare documentation out of scope.
+Malformed controls and invented function names refuse without repair or retry.
+`FINALIZE` without evidence refuses without spending writer/audit calls.
+
+The model still chooses tools and rewrites queries from returned evidence; no
+translation dictionary or fixed search order is prescribed. A separate writer
+receives fresh answer instructions and **no active tools**, with the last validated
+native assistant/tool pair containing all accumulated evidence. The original
+`tool_call_id` is returned even when the search/call cap routes directly to writing.
+Earlier planning prompts and control replies are omitted from the writer, reducing
+format ambiguity and token overhead. The writer's JSON passes the existing local
+gates and mandatory audit. No additional search follows a failed final audit.
+
+`local_tools` defines the closed function schemas: `dense_search` and
+`lexical_search`, each taking only a 1–500-character nonblank query and integer
+`top_k` 1–5. The CLI's `--top-k` further caps each call. Dense delegates to
+`Index.search`; BM25 reuses `Retriever` over active Qdrant generations. Each tool
+executes exactly one search. With `--min-score`, only dense is exposed so the
+cosine threshold cannot be silently discarded. No model-supplied filters, paths,
+URLs, executable names, function registries or remote tools are accepted.
+
+Tool call IDs and results round-trip through native assistant/tool messages;
+malformed/unknown/batched calls, duplicate IDs and repeated tool/query/top-k tuples
+stop before execution. Search results return all accumulated whole evidence with
+stable `S1…S20` IDs. Deduplication uses document/page/text. The serialized source
+budget remains 12,000 characters; unlike baseline context packing, overflowing
+any accumulated evidence refuses rather than dropping a warning or conflict.
+Earlier tool messages remain in the bounded retrieval history. At most 20 passages can
+be returned by four searches of five hits; tool and transcript overhead consumes
+the separate token budget. There is no checkpoint, persistent agent memory or
+agent-controlled filesystem mutation.
+
+Hard ceilings are six LLM attempts (including the final audit), four attempted
+searches and twelve executed graph nodes; a recursion limit of sixteen is an
+independent safety net. `--max-llm-calls`/`--max-searches` can lower these limits.
+Two calls are reserved for separate writing and auditing, leaving at most four
+retrieval/control turns. With one search allowed (or only two calls remaining),
+retrieval routes straight to writing: one search + writer + audit still takes
+three calls. With the default free search budget, an early `FINALIZE` uses a
+separate control turn: one search + control + writer + audit takes four. Four
+searches + writer + audit take six. Budgets below three calls refuse before any
+LLM attempt. No unaudited supported answer is emitted.
+
+`--max-total-tokens` defaults to 24,000, accepts 1–48,000 and bounds the sum of
+conservative request reservations: full input/history, tool schemas and the full
+per-call completion allowance including reasoning. Reservations are never refunded
+within a question, even for failed calls or missing usage. Observed usage remains
+separately reported. A request that cannot fit is stopped before invocation; no
+implicit smaller output, removed source or substitute provider is used. The default
+token budget can stop earlier than the six-call ceiling. Groq additionally checks
+all four rate windows before every request; normal usage may hit 8,000 TPM well
+before the question's total cap. There is no automatic wait/retry/resume.
+
+Agentic traces add token budget/reservations and step counts to the existing safe
+telemetry, without exposing rewritten queries, tool arguments, source text or
+reasoning. The whole graph and tool/model operations suppress inherited LangSmith
+tracing. The selected LLM still receives the question and retrieved evidence.
+
+Offline acceptance exercises real LangGraph and local Qdrant/BM25 plus controlled
+policy/model/HTTP fixtures. The same evidence-sensitive policy takes different
+routes for an empty hit set, a cross-reference and sufficient evidence. This
+proves that orchestration supports adaptive choices. Separately authorized Groq
+Aurora runs also confirmed real native tool/result delivery, an evidence-driven
+RU dense to EN BM25 change, cited writing and audit. A completed RU pair produced
+correct answers in both modes, without a demonstrated Agentic quality or overall
+resource advantage. These cases do not establish general superiority or improve
+the frozen grounded metrics; see [live acceptance](providers.md#phase-4a-live-acceptance).
+
 ## Budgets and failures
 
 | Setting | Default / bound |
@@ -139,10 +234,14 @@ Chunk overlap or audit acceptance cannot override the gate. Some safe prose is
 rejected; subtle table corruption can still escape detection. `requires_layout`
 benchmark cases remain unsafe to answer from text alone.
 
-The same model drafts and audits; both calls can share errors or follow embedded
-instructions. Sources and questions are untrusted input, and prompt instructions
+The same model drafts and audits; it is not independent ground truth, and both
+calls can share errors or follow embedded instructions. Sources and questions are untrusted input, and prompt instructions
 are not proof of injection immunity. Quote containment does not establish entailment,
-completeness or vehicle applicability. Top-20 retrieval cannot establish document-wide
+completeness or vehicle applicability. In the synthetic RU pair, both modes quoted
+the cooldown sentence while adding stop/engine-off instructions from elsewhere in
+the same full passage. Both audits accepted: a real quote and semantic acceptance
+do not guarantee coverage of every component of a compound claim by its selected
+quotes. Both answers also omitted the explicit hot-system warning. Top-20 retrieval cannot establish document-wide
 absence or discover every conflict. The initial US-market E39 owner's manual is not
 a workshop repair manual or evidence for all E39 variants. Inspect the original PDF
 before acting. [Evaluation](benchmarks/grounded-answering.md) measures these boundaries

@@ -25,6 +25,7 @@ are real; model responses and HTTP transports are controlled fixtures.
 | Ingestion/index | Page provenance, cleanup, token bounds, overlap, revision reuse/recovery and profile isolation |
 | Retrieval evaluation | Hit/MRR arithmetic, labels, frozen/disjoint datasets, corpus guards, active-only BM25, fusion and reranking |
 | Generation/workflow | EN/DE/RU, source/quote/schema validation, numeric/table regressions, all-claim audit coverage, expansion retention, budgets and safe failures |
+| Agentic retrieval | Evidence-dependent dense/BM25 and multilingual paths, real local search, cumulative source comparison, native call/result IDs, refusal reasons, strict budgets and mandatory audit |
 | Provider wire behavior | Zero-price routing, disabled retries/fallbacks, truncation, Groq plan/quota guards, headers, tokenizer accounting and timing |
 | Evaluation/review | Checkpoint/resume identity, exact answer/source hashes, mixed reviewer provenance, capture tampering and unfilled private review packets |
 | Privacy | Sanitized errors/observations and whole-graph tracing suppression |
@@ -59,9 +60,9 @@ Check relative Markdown paths/anchors and external links, CLI examples against
 tracked or present in Git history remain public. New benchmark outputs belong in
 ignored `output/`; publish reviewed aggregate summaries, not raw captures.
 
-Before publishing v0.3.0, verify the intended `main` commit, its green CI, tests,
+Before publishing a release, verify the intended `main` commit, its green CI, tests,
 lint, package builds and existing tags/releases. Move the existing `Unreleased`
-entries into a dated `0.3.0` section, leave an empty `Unreleased`, and update
-comparison links. Match package version, `v0.3.0` tag and GitHub Release; use that
+entries into a dated version section, leave an empty `Unreleased`, and update
+comparison links. Match package version, `v`-prefixed tag and GitHub Release; use that
 CHANGELOG section as release notes. Merge/tag/Release require separate owner
 authorization. Preparation alone does not publish a release.

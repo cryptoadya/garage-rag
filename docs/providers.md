@@ -49,7 +49,7 @@ There is no automatic output repair/retry. Truncated JSON remains a refusal.
 
 The HTTP adapter uses the fixed `https://api.groq.com/openai/v1/chat/completions`
 endpoint, JSON object mode, temperature zero and `service_tier=on_demand`.
-It never uses `auto`, Flex, Batch, tools, model/provider fallback or redirects.
+It never uses `auto`, Flex, Batch, remote/built-in tools, provider fallback or redirects.
 Network-operation timeout is 60 seconds, not a whole-workflow deadline.
 No new LLM SDK is needed; `httpx` is an explicit pinned dependency.
 
@@ -166,3 +166,85 @@ records wall-clock duration of the synchronous HTTP call, excluding local quota
 observers and sleeps. An experiment can proactively wait for token-window
 headroom **before** invoking the provider; that wait must be reported separately
 as `quota_wait_ms`. No automatic retry follows a local/provider error.
+
+## Phase 4A native local tool calling
+
+Agentic defaults to Groq even when `GARAGE_RAG_PROVIDER=openrouter`. An explicit
+`--provider openrouter` remains compatible, with zero-price limits and no fallback;
+Phase 4A makes no OpenRouter live/quality comparison. Other workflows keep their
+provider defaults and existing JSON completion wire format.
+
+For `openai/gpt-oss-120b`, the agent sends only the predefined local function
+schemas with `tool_choice=auto` and `parallel_tool_calls=false`. Groq documents
+[local tools but no parallel tool use](https://console.groq.com/docs/tool-use/overview)
+for this model. Assistant call IDs/JSON arguments and matching `role=tool` results
+are validated and serialized on the next request. `stop` carries a closed plain control response on retrieval turns;
+`length`, malformed calls and API errors stop without repair or retry. The API
+never receives `browser_search`, `code_interpreter` or remote MCP definitions.
+
+Retrieval turns omit `response_format` and the answer JSON instructions. A separate
+writer uses the JSON-object completion path with no active tools, followed by the
+mandatory audit. Its last historical assistant/tool pair still has to pass the
+closed allowlist and ID pairing checks; historical calls never enable new tool
+execution. Byte reservation includes their arguments/IDs and results even when
+no tools are advertised. Final JSON is validated locally. Groq's
+[Structured Outputs](https://console.groq.com/docs/structured-outputs) do not support
+tool use. Tool turns set `reasoning_effort=low` and
+`include_reasoning=false`; GPT-OSS does **not** accept `reasoning_format`, per the
+[reasoning documentation](https://console.groq.com/docs/reasoning). Suppressed
+reasoning still consumes the completion/token allowance; it is never replayed or
+stored in telemetry. There is no streaming or parallel execution.
+
+The same Groq client/history and RPM/TPM/RPD/TPD guards protect tool and audit
+requests. Byte accounting includes tool schemas, serialized native calls, results
+and framing; the pinned offline tokenizer receives both messages and `tools`
+through its Harmony template, plus the existing 256-token framing margin.
+Reservations are conservative estimates, not proof of identical server framing.
+Different `ask` processes do not share quota history, and other clients' usage is
+unknown until headers/errors; run one experiment sequentially and verify available
+organization quota first. API-reported RPD/TPM reductions are enforced. Neither
+mode can enforce a Free Plan if someone externally upgrades the account.
+
+## Phase 4A live acceptance
+
+Separately authorized synthetic Aurora runs on October 26, 2026 confirmed real
+Groq native local tool calling, matching result IDs delivered to the tools-free
+writer, locally verified citations and a mandatory same-model audit. A three-call,
+one-search smoke completed the full cycle. The RU pair then demonstrated an
+actual evidence-driven change from RU dense retrieval to English BM25.
+
+An earlier 512-token pair was incomplete: Grounded found the missing source
+through its normal top-20 expansion, but the expanded draft failed Groq JSON
+validation at the completion cap. The bounded repeat changed the cap to **1024
+including reasoning**, preserving both production workflows, prompts, corpus,
+index, model, original RU question, answer language and initial top-k=1.
+
+| Mode | Observed route | API attempts / searches | Actual tokens | Held reservations |
+| --- | --- | --- | --- | --- |
+| Agentic | RU dense page 2 → EN BM25 page 1 → writer → audit | 4 / 2 | 4,177 | 17,287 |
+| Grounded | Original RU top-1 page 2 → insufficient draft → unchanged query top-20 pages 2/1/4 → draft → audit | 3 / 2 | 3,904 | 12,494 |
+
+Both modes answered the cold-tire and cooled-engine timing questions correctly;
+both audits returned `accept`, `complete=true`. Both explicitly cited pages 1
+and 2; Grounded also received page 4 in its context without citing it. Total:
+**7/8 HTTP attempts, 8,081 actual tokens, 29,781/40,000 held reservations**,
+two searches per mode, all HTTP 200, full usage reported and no retry/fallback.
+HTTP starts were at least 61 seconds apart. The shared experiment guard retained
+reservations independently of usage; the earlier failed request's unknown usage
+remained conservatively represented in persisted quota history. The experiment's
+proactive waits/shared guard are private runner controls, not automatic CLI pacing.
+
+Separate source review found that both answers' coolant quote covers waiting for
+cooldown, while stop/engine-off wording is supported elsewhere in the full cited
+passage. Neither reproduces the explicit hot-system warning. Quote existence and
+semantic acceptance therefore do not guarantee complete selected-quote coverage
+of compound claims or preservation of every warning. The reviewer was a separate
+assistant source check, not independent human acceptance; the same-model auditor
+is not independent ground truth.
+
+Agentic functionality and adaptive retrieval are confirmed for these cases.
+There was **no demonstrated quality or overall resource advantage** over Grounded:
+Agentic used one more API call and 273 more actual tokens in the completed pair.
+One synthetic comparison establishes no general superiority or vehicle safety.
+Raw requests, answers, quota state and detailed review remain private/ignored.
+Phase 4A acceptance is complete; further live experiments are not release checks.
