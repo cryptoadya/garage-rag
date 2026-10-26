@@ -125,10 +125,67 @@ context hash; expansion now sends the relevant page at 11,676 characters,
 retaining every prior passage. These checks do not simulate new audits or prove
 new live answer quality. The replay script and results are archived privately.
 
-Before closing Phase 3: independent review of original answers/source sets and
-applicability; a separately authorized, predeclared live check of the repaired
-workflow; genuine erroneous audit-eligible drafts with independent labels and
-supported controls; wider balanced EN/DE/RU and both-profile sampling. Report
-harmful acceptance, supported-draft rejection and all added costs. A zero count
-of genuine eligible errors means audit prevention remains unmeasured. Do not
-replace historical live answers with replayed or scripted outcomes.
+## October 26 bounded live repair regression
+
+Fresh generations at `644538405478fa0f8faf91c6a512e590d9c046ab`, unchanged real
+BMW E39 held-out corpus/index/chunk digests, first requests and seed `20261026`.
+Five predeclared pairs; Groq Free Plan / `openai/gpt-oss-120b`, temperature zero,
+2,048 completion tokens and the same pinned offline tokenizer accounting.
+Console verified Free / Current Plan and 8,000 TPM / 200,000 TPD / 1,000 RPD.
+Before sending, its rounded 99.4K tokens / 55 requests matched the prior shared
+ledger: conservative remaining TPD 100,557, RPD 945 and idle TPM 8,000. Console
+usage can lag 15 minutes; TPM/RPD response headers are not TPD evidence.
+All windows were guarded before each call. **15/25 new attempts**, zero errors,
+retries, fallbacks or model changes; minimum actual send gap 10.007 seconds
+(6 RPM). Final conservative rolling-day usage: 70 requests / 140,172 tokens.
+
+Before values below are the unchanged historical selection, not a rerun or
+rescore. Answer/source judgments are hash-bound **implementation-agent review,
+not independent human review**; the same-model audit is not evaluation truth.
+`D/G` denotes direct/grounded; tokens are reported input plus output.
+
+| Pair | Direct before → after | Grounded before → after | Calls D/G before → after | Tokens D/G before → after |
+| --- | --- | --- | --- | --- |
+| chains_speed, E5 Small/DE | Supported → supported | Numeric gate refusal → supported | 1/1 → 1/2 | 2,088/2,088 → 2,088/4,448 |
+| chains_speed, BGE-M3/EN | Supported → supported | Numeric gate refusal → supported | 1/1 → 1/2 | 2,903/2,607 → 2,858/5,746 |
+| hood_release, BGE-M3/DE | Supported → supported | Numeric gate refusal → supported | 1/1 → 1/2 | 2,789/2,840 → 2,748/5,730 |
+| hood_release, E5 Small/DE | Missing-context refusal → same | Missing-context refusal → supported after expansion | 1/2 → 1/3 | 3,720/6,085 → 2,440/10,021 |
+| engine_cylinders, BGE-M3/RU | Unsafe table grounding → same | Numeric gate refusal → same | 1/1 → 1/1 | 2,468/2,310 → 2,340/2,310 |
+
+Complete safely supported answers D/G: **3/0 → 3/4**. Final sufficient sent
+contexts: 3/3 → 3/4; false refusals within those contexts: **0/3 → 0/0**
+(denominators 3/3 → 3/4), with zero raw-generator false refusals given sufficient
+context. The direct E5 hood refusal remains justified. All eight returned
+positive answers have valid normalized quotations, source IDs and page mappings;
+the two direct cylinder answers remain unsafe text grounding despite the correct
+value in the rendered PDF. The new grounded table candidate is blocked before
+audit, including its spelled-out Russian number. No table protection was relaxed.
+
+E5 recovery is observed end to end: first raw draft abstains with pages
+55/4/53/147/155; expansion actually sends page 137 as S8, and the new draft
+answers correctly before audit acceptance. Assembly uses 8 sources / 11,676
+characters, retains every previous passage and applicability field, and stays
+within the unchanged caps. Previously page 137 was retrieved but unsent. All
+ten first request hashes match their historical counterparts and paired modes.
+
+Calls D/G: 5/6 → 5/10; local searches: 5/6 → 5/6; total reported tokens:
+13,968/15,930 → 12,474/28,255 (new input 10,745/24,770; output 1,729/3,485).
+New HTTP time D/G is 5.14/12.32 s, RPM wait 8.75/14.48 s and proactive quota
+wait 204.81/238.57 s. These paced, ordered single trials do not measure inference
+speed or establish general model-quality improvement.
+
+Both repairs are confirmed on this live selection; no new blocking implementation
+defect was observed. Existing synthetic regression tests already cover these
+contracts and damaged tables; no algorithms or fixtures were changed for results.
+Fresh offline acceptance passed 265 tests, Ruff, wheel/sdist builds and 252
+scripted workflow runs (zero APIs). Detailed new reports, captures, traces,
+hash-bound agent labels and unfilled independent-review packets remain private
+outside Git at `~/GarageRAG-archives/phase3-live-6445384-20261026/`. SHA-256 checks
+confirm all 75 protected prior result/archive files are unchanged.
+
+Before closing Phase 3: independent answer/source/applicability review; genuine
+erroneous audit-eligible drafts with independent labels and supported controls;
+wider balanced EN/DE/RU and both-profile sampling. Report harmful acceptance,
+supported-draft rejection and all added costs. This selected repair regression
+contains no genuine erroneous audit-eligible draft, so semantic-audit prevention
+remains unmeasured. No independent human or vehicle validation is established.
