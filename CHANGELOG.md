@@ -7,6 +7,13 @@ is available in [Git commits](https://github.com/cryptoadya/garage-rag/commits/m
 
 ### Added
 
+- Optional Groq Cloud Free Plan chat provider (`openai/gpt-oss-120b`) selected by
+  CLI/environment, preserving OpenRouter, direct/grounded and EN/DE/RU contracts.
+  Includes safe API/quota observations, Retry-After, conservative RPM/TPM/RPD/TPD
+  guards and explicit account-plan attestation; no retries, upgrades or fallbacks.
+- Atomic live-result checkpoints and explicit resume that skips completed modes,
+  retains prior errors and binds results to provider/model, data, code and index.
+
 - Bounded LangGraph answering with a separate semantic claim/completeness audit,
   one conditional local top-20 expansion, explicit request/search budgets,
   conservative numeric-table refusals and privacy-safe local observations.

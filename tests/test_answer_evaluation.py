@@ -177,3 +177,139 @@ def test_live_limiter_rejects_unsafe_rates(rate):
 
     with pytest.raises(ValueError, match="1.*15"):
         BudgetedPacedLLM(None, max_api_calls=5, requests_per_minute=rate)
+
+
+def test_checkpoint_resume_skips_completed_modes_and_preserves_error_history():
+    from garage_rag.answer_evaluation import _evaluate, _synthetic_search
+    from garage_rag.generation import GenerationError
+
+    data = dataset()
+    cases = [c for c in data["scenarios"] if c["id"] == "cold_pressure"]
+    checkpoints = []
+
+    class Interrupted:
+        def __init__(self):
+            self.calls = 0
+
+        def invoke(self, messages):
+            self.calls += 1
+            if self.calls == 2:
+                raise GenerationError("Groq quota stop")
+            from types import SimpleNamespace
+
+            return SimpleNamespace(content='{"supported": false, "claims": []}')
+
+    first = Interrupted()
+    report, _ = _evaluate(
+        data,
+        cases,
+        ["en"],
+        1,
+        17,
+        first,
+        _synthetic_search,
+        scripted=False,
+        checkpoint=lambda r, c: checkpoints.append(json.loads(json.dumps(r))),
+    )
+    assert len(checkpoints) >= 2
+    assert len(checkpoints[-1]["rows"]) == 2
+    assert not report["complete"]
+    completed = next(r for r in report["rows"] if not r["error"])
+    second = Interrupted()
+    resumed, _ = _evaluate(
+        data, cases, ["en"], 1, 17, second, _synthetic_search, scripted=False, previous=report
+    )
+    assert resumed["complete"]
+    assert second.calls == 1
+    assert len(resumed["rows"]) == 2
+    assert completed in resumed["rows"]
+    assert len(resumed["previous_errors"]) == 1
+
+
+def test_resume_rejects_model_or_selection_drift_before_api(tmp_path, monkeypatch):
+    from garage_rag.answer_evaluation import main
+
+    output = tmp_path / "result.json"
+    args = ["--output", str(output), "--cases", "cold_pressure", "--languages", "en"]
+    assert main(args) == 0
+
+    def forbidden(**kwargs):
+        pytest.fail("Resume mismatch must be caught before constructing client")
+
+    monkeypatch.setattr("garage_rag.generation.make_llm", forbidden)
+    assert (
+        main(
+            [
+                *args,
+                "--resume",
+                "--live",
+                "--provider",
+                "groq",
+                "--model",
+                "openai/gpt-oss-120b",
+                "--max-api-calls",
+                "5",
+            ]
+        )
+        == 2
+    )
+    assert json.loads(output.read_text())["execution"] == "scripted"
+
+
+def test_live_cli_checkpoints_failure_and_resumes_only_unfinished_mode(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+
+    from garage_rag.answer_evaluation import main
+    from garage_rag.generation import GenerationError
+
+    calls = []
+
+    class Client:
+        def __exit__(self, *args):
+            pass
+
+    class Model:
+        client = Client()
+        max_tokens = 8192
+        temperature = 0
+
+        def invoke(self, messages):
+            calls.append(messages)
+            if len(calls) == 2:
+                raise GenerationError("OpenRouter request failed")
+            return SimpleNamespace(content='{"supported":false,"claims":[]}')
+
+    monkeypatch.setattr("garage_rag.generation.make_llm", lambda **kw: Model())
+    monkeypatch.setattr("garage_rag.answer_evaluation.time.sleep", lambda delay: None)
+    # Disable pacing only in this test; production limiter has a separate fake-clock regression.
+    clock = iter(range(0, 1000, 60))
+    monkeypatch.setattr("garage_rag.answer_evaluation.time.monotonic", lambda: next(clock))
+    output = tmp_path / "live.json"
+    args = [
+        "--output",
+        str(output),
+        "--cases",
+        "cold_pressure",
+        "--languages",
+        "en",
+        "--live",
+        "--model",
+        "test/model:free",
+        "--provider",
+        "openrouter",
+        "--max-api-calls",
+        "5",
+    ]
+    assert main(args) == 2
+    partial = json.loads(output.read_text())
+    assert len(partial["rows"]) == 2
+    assert not partial["complete"]
+    assert partial["provenance"]["model"] == "test/model:free"
+    assert main([*args, "--resume"]) == 0
+    resumed = json.loads(output.read_text())
+    assert len(calls) == 3
+    assert resumed["complete"]
+    assert len(resumed["previous_errors"]) == 1
+    assert resumed["provenance"]["generation"]["previous_attempted_api_calls"] == 2
+    assert main([*args, "--resume"]) == 0
+    assert len(calls) == 3

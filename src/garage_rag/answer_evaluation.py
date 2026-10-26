@@ -54,13 +54,13 @@ class BudgetedPacedLLM:
         if self.calls >= self.max_api_calls:
             raise GenerationError("Live evaluation API budget exhausted")
         if self.last_started is not None:
-            remaining = 60 / self.requests_per_minute + 0.01 - (
-                time.monotonic() - self.last_started
+            remaining = (
+                60 / self.requests_per_minute + 0.01 - (time.monotonic() - self.last_started)
             )
             while remaining > 0:
                 time.sleep(remaining)
-                remaining = 60 / self.requests_per_minute + 0.01 - (
-                    time.monotonic() - self.last_started
+                remaining = (
+                    60 / self.requests_per_minute + 0.01 - (time.monotonic() - self.last_started)
                 )
         self.last_started = time.monotonic()
         self.calls += 1  # Failed provider attempts also consume the session budget.
@@ -280,13 +280,13 @@ def paired_summary(rows):
 def _error_category(message):
     if not message:
         return None
-    if "rate limit" in message:
+    if "rate limit" in message or message.startswith(("Groq local", "Groq reported", "Groq quota")):
         return "rate_limit"
     if "authentication" in message:
         return "authentication"
-    if "free model is unavailable" in message:
+    if "free model is unavailable" in message or "Groq model unavailable" in message:
         return "free_model_unavailable"
-    if "OpenRouter request failed" in message:
+    if "OpenRouter request failed" in message or message.startswith("Groq request failed"):
         return "provider_or_network_error"
     return "local_or_workflow_error"
 
@@ -329,8 +329,28 @@ def apply_reviews(report, reviews):
     return report
 
 
-def _evaluate(data, cases, languages, trials, seed, llm, search_factory, *, scripted):
-    rows, captures = [], []
+def _evaluate(
+    data,
+    cases,
+    languages,
+    trials,
+    seed,
+    llm,
+    search_factory,
+    *,
+    scripted,
+    previous=None,
+    previous_captures=None,
+    checkpoint=None,
+):
+    previous = previous or {}
+    rows = [r for r in previous.get("rows", []) if not r["error"]]
+    captures = list(previous_captures or [])
+    previous_errors = [
+        *previous.get("previous_errors", []),
+        *[r for r in previous.get("rows", []) if r["error"]],
+    ]
+    done = {(r["id"], r["language"], r["mode"], r["trial"]) for r in rows}
     schedule = [
         (c, language, trial)
         for c in cases
@@ -340,10 +360,38 @@ def _evaluate(data, cases, languages, trials, seed, llm, search_factory, *, scri
     rng = random.Random(seed)
     rng.shuffle(schedule)
     stopped = False
+
+    def snapshot():
+        report = {
+            "schema_version": 1,
+            "dataset_id": data["id"],
+            "dataset_sha256": digest(data),
+            "execution": "scripted" if scripted else "live",
+            "complete": len(rows) == len(schedule) * 2 and not any(r["error"] for r in rows),
+            "planned_runs": len(schedule) * 2,
+            "seed": seed,
+            "trials": trials,
+            "languages": languages,
+            "independent_human_review": False,
+            "claim_scoring": (
+                "exhaustive scripted references" if scripted else "unscored until review"
+            ),
+            "summary": summarize(rows),
+            "paired": paired_summary(rows),
+            "rows": list(rows),
+            "previous_errors": previous_errors,
+        }
+        if checkpoint:
+            checkpoint(report, captures)
+        return report
+
+    snapshot()  # Durable empty checkpoint before the first paid/quota-consuming operation.
     for case, language, trial in schedule:
         modes = ["direct", "grounded"]
         rng.shuffle(modes)
         for mode in modes:
+            if (case["id"], language, mode, trial) in done:
+                continue
             model = ScriptedScenarioLLM(case, language) if scripted else llm
             runner = run_direct if mode == "direct" else run_workflow
             result = runner(
@@ -377,36 +425,32 @@ def _evaluate(data, cases, languages, trials, seed, llm, search_factory, *, scri
                     file=sys.stderr,
                     flush=True,
                 )
+            snapshot()  # Persist each completed mode, including the first failure.
             if result.error:
                 stopped = True  # Never hammer a provider after a rate limit/failure.
                 break
         if stopped:
             break
-    return {
-        "schema_version": 1,
-        "dataset_id": data["id"],
-        "dataset_sha256": digest(data),
-        "execution": "scripted" if scripted else "live",
-        "complete": not stopped,
-        "planned_runs": len(schedule) * 2,
-        "seed": seed,
-        "trials": trials,
-        "languages": languages,
-        "independent_human_review": False,
-        "claim_scoring": "exhaustive scripted references" if scripted else "unscored until review",
-        "summary": summarize(rows),
-        "paired": paired_summary(rows),
-        "rows": rows,
-    }, captures
+    return snapshot(), captures
 
 
-def evaluate_synthetic(data, *, languages=None, case_ids=None, trials=1, seed=20261025, llm=None):
+def evaluate_synthetic(
+    data, *, languages=None, case_ids=None, trials=1, seed=20261025, llm=None, **execution
+):
     languages = languages or ["en", "de", "ru"]
     if data.get("suite") != "synthetic_grounded_answering" or data.get("schema_version") != 1:
         raise ValueError("Invalid synthetic answer dataset")
     cases = _selection(data["scenarios"], languages, case_ids, trials)
     return _evaluate(
-        data, cases, languages, trials, seed, llm, _synthetic_search, scripted=llm is None
+        data,
+        cases,
+        languages,
+        trials,
+        seed,
+        llm,
+        _synthetic_search,
+        scripted=llm is None,
+        **execution,
     )
 
 
@@ -415,6 +459,26 @@ def _write_new(path, value):
     with path.open("x") as handle:
         json.dump(value, handle, ensure_ascii=False, indent=2)
         handle.write("\n")
+
+
+def _write_atomic(path, value):
+    import tempfile
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(mode="w", dir=path.parent, delete=False) as handle:
+        temporary = Path(handle.name)
+        try:
+            json.dump(value, handle, ensure_ascii=False, indent=2)
+            handle.write("\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        except BaseException:
+            temporary.unlink(missing_ok=True)
+            raise
+    try:
+        temporary.replace(path)
+    finally:
+        temporary.unlink(missing_ok=True)
 
 
 def main(argv=None):
@@ -428,7 +492,11 @@ def main(argv=None):
     cli.add_argument("--live", action="store_true")
     cli.add_argument("--max-api-calls", type=int, default=0)
     cli.add_argument("--requests-per-minute", type=int, default=15, choices=range(1, 16))
-    cli.add_argument("--model", help="Explicit :free model required for live comparisons")
+    cli.add_argument("--provider", choices=["openrouter", "groq"])
+    cli.add_argument("--model", help="Explicit model; Groq defaults to openai/gpt-oss-120b")
+    cli.add_argument(
+        "--resume", action="store_true", help="Resume identical checkpoint; skip successes"
+    )
     cli.add_argument(
         "--index-dir", type=Path, help="Existing matching corpus index for Phase 2 datasets"
     )
@@ -455,8 +523,12 @@ def main(argv=None):
         os.environ[k] = value
     os.environ.setdefault("HF_HOME", str(Path.cwd() / ".cache/huggingface"))
     try:
-        if args.output.exists() or (args.private_captures and args.private_captures.exists()):
+        if not args.resume and (
+            args.output.exists() or (args.private_captures and args.private_captures.exists())
+        ):
             raise ValueError("Output already exists; choose new result paths")
+        if args.resume and (not args.output.exists() or args.report_input or args.review_file):
+            raise ValueError("Resume requires an existing checkpoint and prohibits rescoring")
         if args.report_input:
             if not args.review_file or args.live:
                 raise ValueError("Rescoring requires reviews and prohibits live calls")
@@ -471,38 +543,159 @@ def main(argv=None):
             Path("output/private").resolve()
         ):
             raise ValueError("Private captures must stay under ignored output/private/")
+        if args.private_captures and args.output.resolve() == args.private_captures.resolve():
+            raise ValueError("Report and captures must use separate paths")
         data = json.loads(args.dataset.read_text())
         synthetic = data.get("suite") == "synthetic_grounded_answering"
         cases = _selection(
             data["scenarios" if synthetic else "cases"], args.languages, args.cases, args.trials
         )
         pairs = len(cases) * len(args.languages) * args.trials
+        from dotenv import load_dotenv
+
+        load_dotenv(Path.cwd() / ".env", override=False)
+        provider = args.provider or os.environ.get("GARAGE_RAG_PROVIDER", "openrouter")
+        selected_model = (
+            args.model or os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b")
+            if provider == "groq"
+            else args.model
+        )
+        identity = {
+            "dataset_sha256": digest(data),
+            "cases": [c["id"] for c in cases],
+            "languages": args.languages,
+            "trials": args.trials,
+            "seed": args.seed,
+            "execution": "live" if args.live else "scripted",
+            "provider": provider if args.live else None,
+            "model": selected_model if args.live else None,
+            "profile": args.profile,
+            "source_sha256": source_hashes,
+            "index_sha256": (
+                digest(json.loads((args.index_dir / "manifest.json").read_text()))
+                if args.index_dir and not synthetic
+                else None
+            ),
+            "max_tokens": (
+                os.environ.get("GROQ_MAX_TOKENS", "2048")
+                if provider == "groq"
+                else os.environ.get("OPENROUTER_MAX_TOKENS", "8192")
+            )
+            if args.live
+            else None,
+            "private_captures": str(args.private_captures.resolve())
+            if args.private_captures
+            else None,
+            "requests_per_minute": args.requests_per_minute if args.live else None,
+        }
+        previous = json.loads(args.output.read_text()) if args.resume else None
+        if previous and previous.get("identity") != identity:
+            raise ValueError(
+                "Resume configuration/model/dataset/code mismatch; choose separate output"
+            )
+        previous_captures = []
+        if previous and args.private_captures:
+            previous_captures = json.loads(args.private_captures.read_text())
+            capture_keys = {
+                tuple(c["key"][k] for k in ("id", "language", "mode", "trial", "answer_sha256"))
+                for c in previous_captures
+            }
+            if any(
+                tuple(r[k] for k in ("id", "language", "mode", "trial", "answer_sha256"))
+                not in capture_keys
+                for r in previous["rows"]
+            ):
+                raise ValueError("Resume captures do not match checkpoint")
+        if previous and previous["complete"]:
+            print("Checkpoint already complete; no API calls")
+            return 0
+        done_pairs = {
+            (r["id"], r["language"], r["trial"])
+            for r in (previous or {}).get("rows", [])
+            if not r["error"]
+        }
+        # Reserve five calls for every still incomplete pair, even if one mode is done.
+        completed_pairs = (
+            sum(
+                sum(
+                    not r["error"] and (r["id"], r["language"], r["trial"]) == key
+                    for r in previous["rows"]
+                )
+                == 2
+                for key in done_pairs
+            )
+            if previous
+            else 0
+        )
         llm = index = None
         if args.live:
-            validate_live_budget(pairs=pairs, max_api_calls=args.max_api_calls)
-            if not args.model or not args.model.endswith(":free"):
+            validate_live_budget(pairs=pairs - completed_pairs, max_api_calls=args.max_api_calls)
+            if provider == "openrouter" and (
+                not selected_model or not selected_model.endswith(":free")
+            ):
                 raise ValueError(
                     "Choose one explicit :free model for a reproducible live comparison"
                 )
-            from dotenv import load_dotenv
-
             from .generation import make_llm
 
-            load_dotenv(Path.cwd() / ".env", override=False)
             llm = BudgetedPacedLLM(
-                make_llm(model=args.model),
+                make_llm(model=selected_model, provider=provider),
                 max_api_calls=args.max_api_calls,
                 requests_per_minute=args.requests_per_minute,
             )
+            if provider == "groq" and previous:
+                llm.restore_quota(previous.get("provenance", {}).get("quota_state", {}))
             print(
-                f"Live evaluation: <= {pairs * 5} completion attempts, zero price caps, "
-                f"<= {args.requests_per_minute} requests/minute, no retries; "
-                "stop on first provider error.",
+                f"Live {provider}/{selected_model}: <= {args.max_api_calls} attempts; "
+                "no retries/fallback; stop on first error.",
                 file=sys.stderr,
                 flush=True,
             )
         elif not synthetic:
             raise ValueError("Corpus answer evaluation requires --live and an explicit API budget")
+        extra = {}
+
+        def checkpoint(report, captures):
+            report.update(extra)
+            report["identity"] = identity
+            report["provenance"] = {
+                "created_at": datetime.now(UTC).isoformat(),
+                "python": platform.python_version(),
+                "platform": platform.platform(),
+                "provider": provider if args.live else None,
+                "model": selected_model if args.live else None,
+                "max_api_calls": args.max_api_calls if args.live else 0,
+                "generation": {
+                    "max_tokens": llm.max_tokens,
+                    "temperature": llm.temperature,
+                    "network_timeout_ms": 60000,
+                    "free_only": True,
+                    "retries": 0,
+                    "free_plan_attested": provider == "groq",
+                    "requests_per_minute": llm.requests_per_minute,
+                    "attempted_api_calls": llm.calls,
+                    "previous_attempted_api_calls": (
+                        (previous or {}).get("provenance", {}).get("generation") or {}
+                    ).get("attempted_api_calls", 0)
+                    + ((previous or {}).get("provenance", {}).get("generation") or {}).get(
+                        "previous_attempted_api_calls", 0
+                    ),
+                }
+                if llm
+                else None,
+                "quota_state": llm.quota_state() if llm and provider == "groq" else None,
+                "libraries": {n: version(n) for n in ("langgraph", "langchain-core", "garage-rag")},
+                "source_sha256": source_hashes,
+            }
+            if args.private_captures:
+                _write_atomic(args.private_captures, captures)
+            _write_atomic(args.output, report)
+            if llm and provider == "groq":
+                llm.llm.quota_observer = lambda: checkpoint(report, captures)
+
+        execution = dict(
+            previous=previous, previous_captures=previous_captures, checkpoint=checkpoint
+        )
         try:
             if synthetic:
                 report, captures = evaluate_synthetic(
@@ -512,6 +705,7 @@ def main(argv=None):
                     trials=args.trials,
                     seed=args.seed,
                     llm=llm,
+                    **execution,
                 )
             else:
                 from .embeddings import E5Embeddings
@@ -539,6 +733,12 @@ def main(argv=None):
 
                     return search
 
+                extra.update(
+                    profile=args.profile,
+                    index_fingerprint=config.fingerprint,
+                    corpus_sha256=data["source"]["sha256"],
+                    chunks_sha256=data["design"]["chunks_sha256"],
+                )
                 report, captures = _evaluate(
                     data,
                     cases,
@@ -548,6 +748,7 @@ def main(argv=None):
                     llm,
                     corpus_search,
                     scripted=False,
+                    **execution,
                 )
                 report["profile"] = args.profile
                 report["index_fingerprint"] = config.fingerprint
@@ -558,29 +759,6 @@ def main(argv=None):
                 index.__exit__(None, None, None)
             if llm is not None:
                 llm.client.__exit__(None, None, None)
-        report["provenance"] = {
-            "created_at": datetime.now(UTC).isoformat(),
-            "python": platform.python_version(),
-            "platform": platform.platform(),
-            "model": args.model if args.live else None,
-            "max_api_calls": args.max_api_calls if args.live else 0,
-            "generation": {
-                "max_tokens": llm.max_tokens,
-                "temperature": llm.temperature,
-                "network_timeout_ms": 60000,
-                "free_only": True,
-                "retries": 0,
-                "requests_per_minute": llm.requests_per_minute,
-                "attempted_api_calls": llm.calls,
-            }
-            if llm is not None
-            else None,
-            "libraries": {n: version(n) for n in ("langgraph", "langchain-core", "garage-rag")},
-            "source_sha256": source_hashes,
-        }
-        _write_new(args.output, report)
-        if args.private_captures:
-            _write_new(args.private_captures, captures)
         print(json.dumps({"complete": report["complete"], "summary": report["summary"]}, indent=2))
         return 0 if report["complete"] else 2
     except ValueError as exc:

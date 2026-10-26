@@ -72,7 +72,12 @@ def parser():
                 default=2,
                 help="Grounded local-search cap (default: 2)",
             )
-            command.add_argument("--model", help="openrouter/free or provider/model:free")
+            command.add_argument(
+                "--provider",
+                choices=["openrouter", "groq"],
+                default=os.environ.get("GARAGE_RAG_PROVIDER", "openrouter"),
+            )
+            command.add_argument("--model", help="Provider model (Groq: openai/gpt-oss-120b)")
             command.add_argument(
                 "--answer-language",
                 choices=["auto", "en", "de", "ru"],
@@ -110,7 +115,7 @@ def main(argv=None):
         if args.command != "index" and not (args.index_dir / "manifest.json").exists():
             raise ValueError("No index found; run garage-rag index first")
         # Check credentials/model before loading E5 or opening storage for ask.
-        llm = make_llm(model=args.model) if args.command == "ask" else None
+        llm = make_llm(model=args.model, provider=args.provider) if args.command == "ask" else None
         try:
             with Index(args.index_dir, config) as index:
                 if args.command == "stats":
@@ -203,8 +208,9 @@ def main(argv=None):
                             )
                     if result.reason == "output_token_limit":
                         print(
-                            "Model reached its output token limit. Increase OPENROUTER_MAX_TOKENS "
-                            "or choose another explicit :free model; no automatic retry was made.",
+                            "Model reached its output token limit. "
+                            f"Check {args.provider.upper()}_MAX_TOKENS; "
+                            "no automatic retry was made.",
                             file=sys.stderr,
                         )
         finally:

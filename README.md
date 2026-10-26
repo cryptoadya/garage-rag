@@ -14,14 +14,15 @@ manual. It does not replace professional diagnosis or repair instructions.
 - Page-aware PDF extraction and overlapping, tokenizer-bounded chunks.
 - Local multilingual semantic search with persistent, resumable indexing.
 - EN/DE/RU answers, automatic language selection and an explicit override.
-- Free-only OpenRouter generation with validated source IDs and evidence quotes.
+- OpenRouter free-only routing and optional Groq Cloud Free Plan generation,
+  with validated source IDs and evidence quotes.
 - Bounded LangGraph answering with semantic claim review, one optional local
   expansion and localized refusals for insufficient or unsafe evidence.
 
 **Stack:** Python 3.12+, LangGraph, LangChain Core / ChatOpenRouter, Sentence Transformers
 (`intfloat/multilingual-e5-small` by default; optional `BAAI/bge-m3`),
 Qdrant Local, pypdf, Pydantic and Lingua.
-No Qdrant server or OpenRouter account is required for indexing and search.
+No Qdrant server or LLM account is required for indexing and search.
 
 ## Quick start
 
@@ -69,12 +70,25 @@ garage-rag ask 'How do I check the engine oil level?' --answer-language de
 
 `--answer-language auto|en|de|ru` defaults to the question's detected language,
 with English as the fallback. Evidence quotes remain in the source's English.
-Only `openrouter/free` or an explicit `provider/model:free` is accepted; price
+For OpenRouter, only `openrouter/free` or an explicit `provider/model:free` is accepted; price
 caps are zero, and there are no automatic retries or paid fallbacks. Free models
 can be unavailable or rate limited. Grounded answering uses up to four completion
 attempts and two local searches; an ordinary accepted answer uses two completions.
 Use `ask --workflow direct` for the original one-call path. `ask` sends your question,
-selected passages and draft claims to OpenRouter/providers; indexing and retrieval stay local.
+selected passages and draft claims to the selected LLM provider; indexing and retrieval stay local.
+
+To use Groq Cloud, verify **Free / Current Plan** in your organization's Billing
+page, set `GROQ_API_KEY` and `GROQ_FREE_PLAN_CONFIRMED=true` in your local `.env`, then:
+
+```bash
+garage-rag ask 'How do I check the engine oil level?' --provider groq
+# Optional persistent selection: GARAGE_RAG_PROVIDER=groq in .env.
+```
+
+Groq defaults to `openai/gpt-oss-120b`, 2,048 output tokens including reasoning,
+and the fixed `on_demand` service tier. Free Plan is an account property; Groq has
+no per-request zero-price cap. There are no upgrades, retries or provider/model
+fallbacks. See [Groq setup, quotas and resumable comparisons](docs/groq.md).
 
 See the [usage guide](docs/usage.md) for configuration, index management,
 troubleshooting and privacy precautions.

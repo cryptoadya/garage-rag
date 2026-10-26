@@ -109,7 +109,14 @@ def build_context(hits, max_chars=12000, max_chunks=8):
     return Context(text=json.dumps(entries, ensure_ascii=False), sources=sources)
 
 
-def make_llm(model=None, api_key=None):
+def make_llm(model=None, api_key=None, *, provider=None):
+    provider = provider or os.environ.get("GARAGE_RAG_PROVIDER", "openrouter")
+    if provider == "groq":
+        from .groq import GroqLLM
+
+        return GroqLLM(model=model, api_key=api_key)
+    if provider != "openrouter":
+        raise GenerationError("Choose LLM provider openrouter or groq")
     from langchain_openrouter import ChatOpenRouter
     from openrouter import OpenRouter
 
@@ -168,7 +175,10 @@ def invoke_model(llm, messages):
         with tracing_context(enabled=False):
             response = llm.invoke(messages)
     except Exception as exc:
+        if isinstance(exc, GenerationError):
+            raise exc from None
         status = getattr(exc, "status_code", None)
+        provider = getattr(llm, "provider", "openrouter")
         if status == 429:
             message = "OpenRouter rate limit reached; wait and retry manually (no paid fallback)"
         elif status in (401, 403):
@@ -177,6 +187,8 @@ def invoke_model(llm, messages):
             message = "The selected free model is unavailable; choose another explicit :free model"
         else:
             message = "OpenRouter request failed or timed out; retry manually (no paid fallback)"
+        if provider == "groq":
+            message = "Groq request failed or timed out; resume manually (no retry or fallback)"
         raise GenerationError(message) from None
     return response
 

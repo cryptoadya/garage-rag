@@ -14,7 +14,7 @@ ruff check .
 For an explicitly offline test run:
 
 ```bash
-HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 OPENROUTER_API_KEY= python -m pytest
+HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 OPENROUTER_API_KEY= GROQ_API_KEY= python -m pytest
 ```
 
 Tests generate PDFs from the original,
@@ -100,3 +100,11 @@ opt-in and an API-call budget; it is not part of CI. See the [methodology and
 results](benchmarks/grounded-answering.md). The pipeline's own audit is never
 used as semantic evaluation ground truth. No independent human or vehicle
 verification is claimed.
+
+Groq mock-HTTP tests exercise all EN/DE/RU direct/grounded paths, real JSON and
+citation validation, one-attempt API failures, numeric/date Retry-After, quota
+header semantics, all four local quota windows and quota restoration. Live CLI
+regressions cover durable partial results, skipping successful modes, preserved
+error history and rejecting configuration/model drift before client creation.
+Live Groq results are kept separate from OpenRouter and scripted fixtures; see
+[setup and bounded comparison procedure](groq.md).

@@ -15,7 +15,12 @@ line or commit it to Git.
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `OPENROUTER_API_KEY` | Empty | Required only for `ask` |
+| `GARAGE_RAG_PROVIDER` | `openrouter` | `openrouter` or `groq`; `ask --provider` overrides it |
+| `OPENROUTER_API_KEY` | Empty | Required for OpenRouter generation |
+| `GROQ_API_KEY` | Empty | Required for Groq generation |
+| `GROQ_FREE_PLAN_CONFIRMED` | `false` | Required local attestation of Groq Free Plan |
+| `GROQ_MODEL` | `openai/gpt-oss-120b` | Initial allowlisted Groq model; `--model` overrides it |
+| `GROQ_MAX_TOKENS` | `2048` | Reasoning + answer budget, 512–4096 |
 | `OPENROUTER_MODEL` | `openrouter/free` | Free router or explicit `provider/model:free`; `ask --model` overrides it |
 | `OPENROUTER_MAX_TOKENS` | `8192` | Combined reasoning and answer budget; integer from 512 to 32768 |
 | `GARAGE_RAG_INDEX` | Profile-specific | Private index directory; `--index-dir` overrides it |
@@ -26,6 +31,9 @@ initial download, `HF_HUB_OFFLINE=1` prevents subsequent Hugging Face downloads.
 Use `--device mps` before the command to try Metal on Apple Silicon; CPU is the
 portable default. Indexing uses batch size 16 by default. MPS has not been
 validated by this project's acceptance checks.
+
+See [Groq Cloud](groq.md) for account-plan verification, quota behavior and
+checkpoint/resume commands. Provider selection does not require re-indexing.
 
 ## Index management
 

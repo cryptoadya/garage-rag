@@ -104,3 +104,14 @@ lockfile. See [usage](usage.md) for operational settings and
 
 - [LangChain ChatOpenRouter integration](https://docs.langchain.com/oss/python/integrations/chat/openrouter)
 - [Qdrant Python client and local mode](https://github.com/qdrant/qdrant-client)
+
+## Additional LLM provider
+
+`make_llm(provider=...)` keeps ChatOpenRouter unchanged and optionally constructs
+an `httpx` Groq chat adapter with the same `invoke(messages)` result contract.
+LangGraph, direct generation, prompts, schemas, local evidence validation and
+retrieval remain shared. Only the Groq transport requests JSON object mode.
+Fixed endpoint/model/tier, no retries/redirects/tools/fallbacks, account-plan
+attestation and conservative quota reservations are described in [Groq](groq.md).
+The evaluator atomically checkpoints every completed mode and Groq reservation;
+resumption is bound to provider/model, dataset, selection, code and index identity.
