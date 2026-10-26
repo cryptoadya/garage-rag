@@ -468,3 +468,144 @@ checkpoints. Do not rerun this completed EN pair or automatically extend to othe
 cases/profiles. Harder EN cases and real-corpus applicability remain subsequent,
 separately authorized work. Phase 3 quality acceptance and independent human
 review remain open. No merge, tag or Release was performed.
+
+## Groq DE/RU completion and combined EN/DE/RU result (October 26, 2026)
+
+The explicitly authorized follow-up ran **DE and RU only**, each once in direct
+and grounded mode. EN was not repeated: its checkpoint hash still matches the
+hash recorded before DE started. The current implementation remained unchanged
+at runtime commit `98fec30`, with the same Groq model, scenario, prompts, source,
+2,048-token output cap, seed 20261025 and evaluation/review methodology.
+
+Free / Current Plan and organization limits were rechecked in Console before
+inference: **30 RPM, 1,000 RPD, 8,000 TPM, 200,000 TPD**. Usage statistics warn of
+up to 15 minutes' delay; exact live RPM/TPD balances are not exposed. Known local
+history before DE was five calls / 3,527 tokens (earlier smoke plus EN). That
+history was restored into DE; DE's resulting history was restored into RU.
+No extra completion was spent probing quotas. The existing adapter retained its
+conservative token/day guards and fresh RPD/TPM header observations.
+
+To keep the two pairs within TPM headroom, each language used its own five-attempt
+ceiling at 6 RPM, for a combined maximum of ten new attempts. The first RU request
+started 69.355 seconds after the last DE request, clearing the local 60-second
+TPM window. Both independent seeded runs selected direct before grounded.
+They completed with **six new attempts, six HTTP 200 responses, four answer rows**,
+no errors, no retries, no fallback and no expansion. Checkpoints and private
+captures were saved after each mode. No next scenario or language/profile matrix
+was started. The current implementation, model routing and account settings were
+not modified.
+
+### Source and translation review
+
+The German claims in both modes say that tire pressure should be checked when
+the tires are cold. The Russian claims in both modes give the same timing
+condition. These are faithful, natural translations of the source's instruction:
+neither drops the cold-tire qualifier, adds a pressure or temperature threshold,
+changes the instruction to warm tires, or infers repair/vehicle applicability.
+Both languages retain the **original English evidence**, verbatim, with source
+`S1` mapped to synthetic manual PDF page 1. Within each language, the direct and
+grounded answer texts are identical. Both modes answer fully; neither refuses.
+
+Separate implementation-agent inspection of the four captures produced explicit
+hash-bound support/completeness labels, applied by the existing offline rescore
+command. The Groq auditor's verdict was not used as evaluation ground truth.
+This remains **agent source/translation review, not independent human review**.
+No automotive document, model/year applicability or real-vehicle result follows
+from this synthetic passage. No general quality advantage is demonstrated.
+
+### Combined observations: three paired languages, one need
+
+| Language / mode | Calls | Input / output tokens | Workflow seconds | HTTP seconds | Limiter wait seconds |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| EN direct (previous run) | 1 | 458 / 188 | 0.873 | not recorded | not recorded |
+| EN grounded (previous run) | 2 | 1,054 / 401 | 19.983 | not recorded | not recorded |
+| DE direct | 1 | 460 / 196 | 0.911 | 0.851 | 0.000 |
+| DE grounded | 2 | 1,063 / 427 | 19.912 | 1.622 | 18.234 |
+| RU direct | 1 | 461 / 288 | 1.085 | 1.062 | 0.000 |
+| RU grounded | 2 | 1,068 / 530 | 19.815 | 1.622 | 18.138 |
+
+Direct totals: **three calls, 1,379 input + 672 output = 2,051 tokens**.
+Grounded totals: **six calls, 3,185 input + 1,358 output = 4,543 tokens**.
+Together: **nine calls / 6,594 tokens** across three pairs. The new DE/RU work
+consumed **six of ten allowed attempts / 4,493 tokens**. All six answer rows are
+supported and complete by explicit agent review, with valid English quotes and
+no observed false refusals, unsupported claims or API errors. These are three
+translations of one positive information need, not three independent quality
+samples or a measurement of abstention accuracy. Grounded doubled calls and
+added 2,492 tokens without improving these already correct answers.
+
+### Provider time and pacing are distinct measurements
+
+No timing instrumentation was available for the earlier EN run; its HTTP and
+limiter components remain unknown rather than reconstructed. For the new runs,
+a local observation wrapper measured the **existing evaluator's actual sleeps**
+and the synchronous `httpx.Client.post` call from start through full response.
+It did not replace pacing logic, prompts, transport, retries, parsing or graph
+routing. Numeric timing sidecars bind measurements to language/mode and answer
+hash; the local wrapper's SHA-256 is recorded. The wrapper remains local task
+instrumentation, not a repository implementation change.
+
+HTTP duration includes network transit, provider queueing and generation; it is
+not pure inference latency. Groq also returned the following allowlisted usage
+timing fields, separately from the local limiter:
+
+| Language / mode | Provider prompt + completion seconds | Provider queue seconds |
+| --- | ---: | ---: |
+| DE direct | 0.427 | 0.297 |
+| DE grounded (two calls, summed) | 0.994 | 0.422 |
+| RU direct | 0.630 | 0.301 |
+| RU grounded (two calls, summed) | 1.182 | 0.258 |
+
+These are raw provider-reported `total_time` and `queue_time`, not independent
+wall-clock measurements; `total_time` equals `prompt_time + completion_time` in
+these responses. Their fields are illustrated in the [Groq API reference](https://console.groq.com/docs/api-reference).
+Workflow elapsed time also includes local validation, graph work and checkpoint/
+instrumentation overhead, so HTTP time plus limiter sleep does not exactly equal
+workflow elapsed time. The 69-second inter-language quota pause is excluded from
+per-answer latency. These isolated observations do not establish a performance
+ranking.
+
+Final RU headers reported RPD/TPM limits 1,000 / 8,000 and remaining balances
+**994 RPD / 7,197 TPM**, retained in its raw/public result. Headers do not expose RPM/TPD balances and
+must not be treated as a daily billing ledger. Including the separate earlier
+smoke, this client has observed **11 successful calls / 8,020 reported tokens**
+on this date. This known local total remains below the recorded daily caps;
+organization-wide usage is controlled by the API, not established by local logs.
+No rate-limit or billing error occurred.
+
+### Inspectable artifacts and checks
+
+- [DE reviewed result](groq-20261026-cold-pressure-de.v1.json) and [DE source/translation review](groq-20261026-cold-pressure-de-review.v1.json).
+- [RU reviewed result](groq-20261026-cold-pressure-ru.v1.json) and [RU source/translation review](groq-20261026-cold-pressure-ru-review.v1.json).
+- [DE/RU timing observations](groq-20261026-cold-pressure-de-ru-timing.v1.json).
+- [Combined EN/DE/RU summary](groq-20261026-cold-pressure-multilingual.v1.json), derived with the existing summary/paired-summary functions and bound to source artifacts by SHA-256.
+
+Original checkpoints/captures and local measurement code remain ignored or
+outside the repository. Public exports remove absolute private-capture paths,
+retain original hashes and are not resume checkpoints. The original EN artifact
+and checkpoint were preserved. No keys, source captures or workflow scratch files
+are published. **38 focused offline evaluator/Groq tests passed**, as did Ruff,
+JSON, answer/source/artifact hash checks and the final diff check. Live
+observations above are not mocked tests.
+
+### Proposed next step: four harder EN pairs — not executed
+
+Use the unchanged existing scenarios, one EN pair at a time, at 6 RPM with at
+most five attempts each (**20 attempts reserved for all four**), quota checks
+between pairs, stop on the first error and retain completed checkpoints:
+
+| Scenario | Question tested | Expected benefit or regression guard |
+| --- | --- | --- |
+| `false_entailment` | A plausible claim with an unrelated but real quote | Audit should reject a claim that source-ID/quote validation alone can accept. In live generation either mode may already refuse. |
+| `conflicting_sources` | Conflicting tightening torques | Grounded should withhold an arbitrary numeric choice and preserve the conflict. Both modes may correctly refuse. |
+| `recovery` | Required fact absent initially, present only after expansion | Grounded should recover with a cited answer after its one allowed expansion; direct has no expansion. Compare correctness against each mode's actually available context, not just final answer rate. |
+| `persistent_false_refusal` | A sufficient initial source but an unjustified refusal | Detect false refusals and whether grounded adds rejection. The graph cannot guarantee recovery from persistent refusal when expansion supplies no new evidence. |
+
+The adversarial `script` labels are used only by offline fixtures; they do not
+force Groq to make these errors in live runs and must not be sent in prompts.
+Do not claim a LangGraph advantage unless explicit source review observes fewer
+unsupported answers or correct evidence recovery, while also accounting for
+extra calls, tokens and false refusals. Same-model audit is not independent
+scoring. Start with these four EN diagnostics before authorizing DE/RU variants;
+no hard-case inference was executed in this follow-up. Phase 3 acceptance and
+independent human review remain open; no merge or Release was performed.

@@ -1,0 +1,164 @@
+{
+  "schema_version": 1,
+  "provider": "groq",
+  "model": "openai/gpt-oss-120b",
+  "measurement": "Local observation around unchanged evaluator sleep and actual HTTP POST; no request/prompt/routing changes",
+  "http_elapsed_definition": "Full synchronous client.post round trip including network, provider queue and generation, excluding limiter waits",
+  "limiter_wait_definition": "Measured time.sleep elapsed in existing BudgetedPacedLLM only",
+  "provider_time_definition": "Raw allowlisted usage fields in seconds; total_time is prompt_time + completion_time; queue_time is separate",
+  "provider_reference": "https://console.groq.com/docs/api-reference",
+  "en_split_timing_available": false,
+  "runs": [
+    {
+      "schema_version": 1,
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "language": "de",
+      "case": "cold_pressure",
+      "max_new_attempts": 5,
+      "requests_per_minute": 6,
+      "measurement_script_sha256": "91b3e7762e7522af6e6850a59bdcdc78ba41d04e2061a0f956ff4a0b265b55f6",
+      "quota_seed_sha256": {
+        "en": "892df63ce9e32106e307135ce6d670b159dfad5dd075c3aedd7ce8b3badfac5d",
+        "smoke": "773e29e71ff018692cf9736472da723f568355744db4343cd39b8a136f3fbd14"
+      },
+      "initial_known_daily_calls": 5,
+      "initial_known_daily_tokens": 3527,
+      "rows": [
+        {
+          "mode": "direct",
+          "language": "de",
+          "trial": 1,
+          "limiter_wait_ms": 0,
+          "http_calls": [
+            {
+              "phase": "draft",
+              "started_at": 1793007094.791973,
+              "http_status": 200,
+              "http_elapsed_ms": 851.1364170117304,
+              "provider_usage_seconds": {
+                "queue_time": 0.29694399,
+                "prompt_time": 0.019752274,
+                "completion_time": 0.407521386,
+                "total_time": 0.42727366
+              }
+            }
+          ],
+          "answer_sha256": "f1fa087f3ffe4e5103ffd1e7a0bd33b019ca7c4878dd5034392e884b3c77a4a7",
+          "workflow_elapsed_ms": 911.2680420512334,
+          "error": false
+        },
+        {
+          "mode": "grounded",
+          "language": "de",
+          "trial": 1,
+          "limiter_wait_ms": 18233.829542878084,
+          "http_calls": [
+            {
+              "phase": "draft",
+              "started_at": 1793007104.819175,
+              "http_status": 200,
+              "http_elapsed_ms": 850.2976250601932,
+              "provider_usage_seconds": {
+                "queue_time": 0.225406875,
+                "prompt_time": 0.067686751,
+                "completion_time": 0.469931465,
+                "total_time": 0.537618216
+              }
+            },
+            {
+              "phase": "audit",
+              "started_at": 1793007114.835915,
+              "http_status": 200,
+              "http_elapsed_ms": 771.3958329986781,
+              "provider_usage_seconds": {
+                "queue_time": 0.196813471,
+                "prompt_time": 0.030486677,
+                "completion_time": 0.425986365,
+                "total_time": 0.456473042
+              }
+            }
+          ],
+          "answer_sha256": "d08b5595294771eb9689fa21b3ccd10a0f7666e0da3569e4a83c432ce8ad651f",
+          "workflow_elapsed_ms": 19911.812332924455,
+          "error": false
+        }
+      ]
+    },
+    {
+      "schema_version": 1,
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "language": "ru",
+      "case": "cold_pressure",
+      "max_new_attempts": 5,
+      "requests_per_minute": 6,
+      "measurement_script_sha256": "91b3e7762e7522af6e6850a59bdcdc78ba41d04e2061a0f956ff4a0b265b55f6",
+      "quota_seed_sha256": {
+        "de": "49f6046f2f655f9bd5dfb411ff689168ad3277954360993fb767f0df6be0681c"
+      },
+      "initial_known_daily_calls": 8,
+      "initial_known_daily_tokens": 5673,
+      "rows": [
+        {
+          "mode": "direct",
+          "language": "ru",
+          "trial": 1,
+          "limiter_wait_ms": 0,
+          "http_calls": [
+            {
+              "phase": "draft",
+              "started_at": 1793007184.191164,
+              "http_status": 200,
+              "http_elapsed_ms": 1062.0119579834864,
+              "provider_usage_seconds": {
+                "queue_time": 0.300663179,
+                "prompt_time": 0.019783898,
+                "completion_time": 0.610268062,
+                "total_time": 0.63005196
+              }
+            }
+          ],
+          "answer_sha256": "902516593d791c07fb14f5cdef7f223898795ce97e366c70a9c3ccf159d31177",
+          "workflow_elapsed_ms": 1085.1213749265298,
+          "error": false
+        },
+        {
+          "mode": "grounded",
+          "language": "ru",
+          "trial": 1,
+          "limiter_wait_ms": 18138.40066595003,
+          "http_calls": [
+            {
+              "phase": "draft",
+              "started_at": 1793007194.2163332,
+              "http_status": 200,
+              "http_elapsed_ms": 776.169833028689,
+              "provider_usage_seconds": {
+                "queue_time": 0.049147022,
+                "prompt_time": 0.01986737,
+                "completion_time": 0.614000258,
+                "total_time": 0.633867628
+              }
+            },
+            {
+              "phase": "audit",
+              "started_at": 1793007204.233418,
+              "http_status": 200,
+              "http_elapsed_ms": 845.6715829670429,
+              "provider_usage_seconds": {
+                "queue_time": 0.209142534,
+                "prompt_time": 0.034733014,
+                "completion_time": 0.51350414,
+                "total_time": 0.548237154
+              }
+            }
+          ],
+          "answer_sha256": "684b38e0308b09b835b7198c7e7ee97f6d92a0a843d8c2aca5a748b02811ac34",
+          "workflow_elapsed_ms": 19814.804875059053,
+          "error": false
+        }
+      ]
+    }
+  ]
+}

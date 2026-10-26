@@ -151,6 +151,20 @@ from Groq's audit, with no independent human-quality claim.
 
 The original ignored checkpoint now contains both completed modes. Repeating
 the exact comparison command with `--resume` was verified to make no API calls.
-Do not start a new EN report merely to repeat this pair. The next proposed stage
-is DE/RU only on the same scenario, maximum ten new attempts at 6 RPM after quota
-verification; it has not been executed.
+Do not start a new EN report merely to repeat this pair. At that point the next
+proposed stage was DE/RU only, maximum ten new attempts at 6 RPM after quota
+verification; its subsequent completion is recorded below.
+
+## Completed DE/RU follow-up and multilingual summary
+
+The authorized DE/RU pairs are now complete, using six of ten new attempts at
+6 RPM, after rechecking Free Plan and limits. EN was not rerun. All six EN/DE/RU
+answer rows preserve the cold-tire condition and exact English evidence, with no
+observed errors or false refusals under explicit agent source/translation review.
+The [combined result and next proposal](benchmarks/grounded-answering.md#groq-deru-completion-and-combined-enderu-result-october-26-2026)
+separates HTTP/provider-reported time from limiter waits for DE/RU; that split was
+not recorded for EN. Current production code is unchanged. The next proposed
+scope is four harder EN cases (unsupported entailment, conflicting sources,
+missing-source recovery and false-refusal control), maximum 20 attempts in
+separate five-attempt pairs; it has not been executed. No general quality gain
+or independent human review is claimed.

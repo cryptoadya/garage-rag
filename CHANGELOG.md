@@ -7,6 +7,10 @@ is available in [Git commits](https://github.com/cryptoadya/garage-rag/commits/m
 
 ### Added
 
+- Completed Groq DE/RU cold-pressure pairs and a combined EN/DE/RU summary,
+  with separate hash-bound translation/source review and measured HTTP,
+  provider-reported and rate-limiter timing observations; EN was not rerun.
+
 - Separate Groq English direct/grounded cold-pressure comparison with hash-bound
   agent source review, complete checkpoints, usage/quota/paced-latency evidence
   and a bounded, unexecuted DE/RU follow-up proposal.

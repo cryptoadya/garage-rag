@@ -1,0 +1,30 @@
+{
+  "report_dataset_sha256": "f943c28ab4bce4f9c0d3293f20e6eaa680826d36b6afbac2afbb194b0dc66182",
+  "reviewer": "Codex implementation agent: explicit source/translation inspection, separate from Groq auditor",
+  "independent_human_review": false,
+  "review_scope": "Russian claims correctly preserve the cold-tire timing condition, exact English quotation and S1/page-1 mapping. No additional numerical, temperature or vehicle applicability claims. Complete for this synthetic question.",
+  "rows": [
+    {
+      "id": "cold_pressure",
+      "language": "ru",
+      "mode": "direct",
+      "trial": 1,
+      "answer_sha256": "902516593d791c07fb14f5cdef7f223898795ce97e366c70a9c3ccf159d31177",
+      "claim_support": [
+        true
+      ],
+      "complete_answer": true
+    },
+    {
+      "id": "cold_pressure",
+      "language": "ru",
+      "mode": "grounded",
+      "trial": 1,
+      "answer_sha256": "684b38e0308b09b835b7198c7e7ee97f6d92a0a843d8c2aca5a748b02811ac34",
+      "claim_support": [
+        true
+      ],
+      "complete_answer": true
+    }
+  ]
+}
