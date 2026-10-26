@@ -17,6 +17,7 @@ auditing remains unproven. It does not replace professional diagnosis.
 - Persistent Qdrant Local indexes with atomic revision activation and batch reuse.
 - Pinned E5 Small, E5 Base and BGE-M3 embedding profiles with isolated indexes.
 - Direct generation or bounded draft/audit answering with one optional local expansion.
+- Opt-in agentic retrieval: model-selected dense/BM25 searches and multilingual query rewrites.
 - OpenRouter free-only routing and an optional Groq transport with Free Plan attestation.
 - Offline synthetic tests, frozen retrieval baselines and hash-bound answer/source review.
 
@@ -80,6 +81,32 @@ organization's Free Plan, set `GROQ_API_KEY` and `GROQ_FREE_PLAN_CONFIRMED=true`
 then use `ask --provider groq`. Groq has no per-request zero-price guarantee.
 See [provider setup and quotas](docs/providers.md).
 
+### Agentic retrieval (Phase 4A, offline accepted)
+
+```bash
+# Verify Groq Free Plan and configure its key/attestation first.
+garage-rag ask 'Как проверить давление в шинах?' --workflow agentic
+# Lower the maximum API exposure explicitly:
+GROQ_MAX_TOKENS=512 garage-rag ask 'How do I check tire pressure?' \
+  --workflow agentic --max-llm-calls 3 --max-searches 1 --max-total-tokens 16000
+```
+
+Agentic defaults to Groq `openai/gpt-oss-120b`, independently of the legacy
+`GARAGE_RAG_PROVIDER` setting. It chooses local dense or BM25 tools, rewrites
+queries using retrieved evidence, compares accumulated passages and decides when
+to stop. Accepted answers still require quote/language/numeric validation and a
+separate semantic audit. Defaults: **6 LLM attempts including audit, 4 local
+searches, 24,000 reserved input+output/reasoning tokens, 12 graph steps**.
+A supported answer normally needs at least three calls; budgets/quotas can stop
+earlier. `--top-k` caps each search at 1–5 (default 5).
+
+Only predefined local read-only tools are exposed. No web/code/file-writing tool,
+API retry, paid fallback or automatic provider switch exists. OpenRouter remains
+an explicitly selected compatibility alternative (`--provider openrouter`),
+with its existing free-only controls. No live Phase 4A API test has been run;
+offline policy fixtures prove control flow, not Groq's autonomous search quality.
+See [agent architecture](docs/architecture.md#agentic-retrieval-phase-4a).
+
 ## Limitations and privacy
 
 - No OCR, table/layout reconstruction or figure understanding. Check numerical
@@ -89,7 +116,7 @@ See [provider setup and quotas](docs/providers.md).
 - Free services can be unavailable or rate limited. There is no hard total
   workflow deadline, independent human quality acceptance or vehicle validation.
 - Qdrant Local allows one process per index. No Web UI, API server, conversation
-  memory, autonomous agent, MCP or Docker integration is implemented.
+  memory, unrestricted agent, MCP or Docker integration is implemented.
 - Keep `.env`, PDFs, indexes, caches and captures private, including custom paths.
   Indexes contain source text; `.gitignore` cannot protect already tracked files.
 

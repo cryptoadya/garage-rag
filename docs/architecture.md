@@ -8,7 +8,7 @@ The implementation lives in [`src/garage_rag`](../src/garage_rag):
 | `ingestion`, `embeddings`, `config`, `profiles` | Page extraction, token bounds and pinned model settings |
 | `index`, `retrieval` | Persistent dense search; experiment-only BM25, fusion and reranking |
 | `generation`, `language`, `groq` | Context, schemas, language selection and provider transport |
-| `workflow`, `grounding`, `telemetry` | Bounded LangGraph, local numeric gate, audit and safe observations |
+| `workflow`, `agentic`, `local_tools`, `grounding`, `telemetry` | Bounded LangGraph, local numeric gate, audit and safe observations |
 | `evaluation`, `optimization` | Frozen retrieval evaluation and profile comparisons |
 | `answer_evaluation`, `source_evaluation`, `review_packet` | Paired answer evaluation and private hash-bound review |
 | `cli` | `index`, `stats`, `search` and `ask` commands |
@@ -96,6 +96,84 @@ without another completion. Initial `--top-k 20` disables expansion.
 The graph is sequential typed state with conditional edges, a fresh instance per
 command and no planner, query rewriting, tools, conversation memory, checkpointer
 or remote graph service. Evaluation checkpoints are separate from graph state.
+
+## Agentic retrieval (Phase 4A)
+
+`ask --workflow agentic` is a separate LangGraph; `direct`, `grounded`, their
+prompts, limits and frozen evaluation datasets/metrics remain unchanged.
+
+```mermaid
+flowchart TD
+    M[Model reads question and tool results] --> C{Native tool call or final JSON?}
+    C -- dense_search or lexical_search --> G{Allowlist, schema, budgets, unique ID/query}
+    G -- valid --> L[Local active Qdrant or BM25 search]
+    L --> E[Accumulate whole passages with stable IDs]
+    E --> M
+    C -- final draft --> V[Existing citation/language and numeric gates]
+    V --> A[Separate all-claim applicability/completeness audit]
+    A -- accept --> O[Locally formatted cited answer]
+    C -- structured refusal --> F[Refusal with reason]
+    G -- invalid or exhausted --> F
+    E -- overflow --> F
+    V -- invalid --> F
+    A -- any other verdict --> F
+```
+
+The model chooses both the retrieval tool and the query; there is no prescribed
+search order, translation dictionary or fixed top-k expansion. Results can prompt
+English reformulation of DE/RU input, clarification, another topic or comparison
+across documents. `stop_reason` can distinguish insufficient evidence, ambiguity,
+conflicting sources and out-of-scope requests. These are model decisions, not
+proof of entailment or document-wide absence. No additional search follows a
+failed final audit; this version reserves one audit and refuses on rejection.
+
+`local_tools` defines the closed function schemas: `dense_search` and
+`lexical_search`, each taking only a 1–500-character nonblank query and integer
+`top_k` 1–5. The CLI's `--top-k` further caps each call. Dense delegates to
+`Index.search`; BM25 reuses `Retriever` over active Qdrant generations. Each tool
+executes exactly one search. With `--min-score`, only dense is exposed so the
+cosine threshold cannot be silently discarded. No model-supplied filters, paths,
+URLs, executable names, function registries or remote tools are accepted.
+
+Tool call IDs and results round-trip through native assistant/tool messages;
+malformed/unknown/batched calls, duplicate IDs and repeated tool/query/top-k tuples
+stop before execution. Search results return all accumulated whole evidence with
+stable `S1…S20` IDs. Deduplication uses document/page/text. The serialized source
+budget remains 12,000 characters; unlike baseline context packing, overflowing
+any accumulated evidence refuses rather than dropping a warning or conflict.
+Earlier tool messages also remain in the bounded history. At most 20 passages can
+be returned by four searches of five hits; tool and transcript overhead consumes
+the separate token budget. There is no checkpoint, persistent agent memory or
+agent-controlled filesystem mutation.
+
+Hard ceilings are six LLM attempts (including the final audit), four attempted
+searches and twelve executed graph nodes; a recursion limit of sixteen is an
+independent safety net. `--max-llm-calls`/`--max-searches` can lower these limits.
+One LLM call is kept for the audit, leaving at most five planning/finalization
+turns. A no-search refusal can take one call; a supported one-search answer takes
+three; four searches plus finalization and audit take six. A lower call cap can
+leave no room to finalize. No unaudited supported answer is emitted.
+
+`--max-total-tokens` defaults to 24,000, accepts 1–48,000 and bounds the sum of
+conservative request reservations: full input/history, tool schemas and the full
+per-call completion allowance including reasoning. Reservations are never refunded
+within a question, even for failed calls or missing usage. Observed usage remains
+separately reported. A request that cannot fit is stopped before invocation; no
+implicit smaller output, removed source or substitute provider is used. The default
+token budget can stop earlier than the six-call ceiling. Groq additionally checks
+all four rate windows before every request; normal usage may hit 8,000 TPM well
+before the question's total cap. There is no automatic wait/retry/resume.
+
+Agentic traces add token budget/reservations and step counts to the existing safe
+telemetry, without exposing rewritten queries, tool arguments, source text or
+reasoning. The whole graph and tool/model operations suppress inherited LangSmith
+tracing. The selected LLM still receives the question and retrieved evidence.
+
+Offline acceptance exercises real LangGraph and local Qdrant/BM25 plus controlled
+policy/model/HTTP fixtures. The same evidence-sensitive policy takes different
+routes for an empty hit set, a cross-reference and sufficient evidence. This
+proves that orchestration supports adaptive choices; it does not show that the
+live Groq model will choose good searches or improve the frozen grounded metrics.
 
 ## Budgets and failures
 

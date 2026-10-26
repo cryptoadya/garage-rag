@@ -153,3 +153,78 @@ def test_unsupported_answer_language_is_a_cli_usage_error():
     with pytest.raises(SystemExit) as exc:
         parser().parse_args(["ask", "tires?", "--answer-language", "fr"])
     assert exc.value.code == 2
+
+
+@pytest.mark.parametrize(
+    "explicit,expected", [([], "groq"), (["--provider", "openrouter"], "openrouter")]
+)
+def test_agentic_provider_default_is_groq_even_with_legacy_environment(
+    tmp_path, monkeypatch, capsys, explicit, expected
+):
+    from garage_rag.generation import GenerationError
+
+    directory = tmp_path / "index"
+    directory.mkdir()
+    (directory / "manifest.json").write_text("{}")
+    monkeypatch.setattr("garage_rag.cli.load_dotenv", lambda *a, **kw: None)
+    monkeypatch.setenv("GARAGE_RAG_PROVIDER", "openrouter")
+    calls = []
+
+    def make(**kw):
+        calls.append(kw)
+        raise GenerationError("intentional preflight stop")
+
+    monkeypatch.setattr("garage_rag.cli.make_llm", make)
+    assert (
+        main(["--index-dir", str(directory), "ask", "tires", "--workflow", "agentic", *explicit])
+        == 2
+    )
+    assert calls[0]["provider"] == expected
+    capsys.readouterr()
+
+
+def test_grounded_expanded_caps_rejected_before_provider(tmp_path, monkeypatch, capsys):
+    directory = tmp_path / "index"
+    directory.mkdir()
+    (directory / "manifest.json").write_text("{}")
+    monkeypatch.setattr("garage_rag.cli.make_llm", lambda **kw: pytest.fail("provider constructed"))
+    assert main(["--index-dir", str(directory), "ask", "tires", "--max-llm-calls", "6"]) == 2
+    assert "max_llm_calls" in capsys.readouterr().err
+
+
+def test_agentic_cli_real_local_index(
+    tmp_path, pdf_path, tokenizer, embeddings, config, monkeypatch, capsys
+):
+    from contextlib import nullcontext
+
+    from test_agentic import Model, reply, tool
+    from test_workflow import audit, draft
+
+    from garage_rag.index import Index
+
+    directory = tmp_path / "index"
+    with Index(directory, config) as index:
+        index.ingest(pdf_path, embeddings, tokenizer)
+    llm = Model(tool("lexical_search"), reply(draft()), reply(audit()))
+    llm.client = nullcontext()
+    monkeypatch.setattr("garage_rag.cli.make_llm", lambda **kw: llm)
+    monkeypatch.setattr("garage_rag.cli.IndexConfig", lambda **kw: config)
+    monkeypatch.setattr("garage_rag.cli.E5Embeddings", lambda *a, **kw: embeddings)
+    assert (
+        main(
+            [
+                "--index-dir",
+                str(directory),
+                "ask",
+                "How to check tire pressure?",
+                "--workflow",
+                "agentic",
+                "--json",
+            ]
+        )
+        == 0
+    )
+    result = json.loads(capsys.readouterr().out)
+    assert result["supported"]
+    assert result["workflow"]["mode"] == "agentic"
+    assert result["workflow"]["llm_calls"] == 3

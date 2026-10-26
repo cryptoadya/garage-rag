@@ -5,6 +5,16 @@ is available in [Git commits](https://github.com/cryptoadya/garage-rag/commits/m
 
 ## [Unreleased]
 
+### Added
+
+- Opt-in Phase 4A agentic LangGraph retrieval on Groq GPT-OSS 120B: model-selected
+  local dense/BM25 tools, evidence-driven multilingual query rewrites, cumulative
+  source comparison and justified completion/refusal with mandatory semantic audit.
+- Native serial Groq tool calls/results, a closed read-only tool allowlist and
+  per-question call/search/token/step budgets on top of existing Free Plan guards.
+- Offline adaptive-path, safety and protocol acceptance tests. Direct/grounded
+  behavior and frozen metrics remain unchanged; live agent quality is unvalidated.
+
 ## [0.3.0] - 2026-10-26
 
 ### Added

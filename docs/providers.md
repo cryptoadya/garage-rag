@@ -49,7 +49,7 @@ There is no automatic output repair/retry. Truncated JSON remains a refusal.
 
 The HTTP adapter uses the fixed `https://api.groq.com/openai/v1/chat/completions`
 endpoint, JSON object mode, temperature zero and `service_tier=on_demand`.
-It never uses `auto`, Flex, Batch, tools, model/provider fallback or redirects.
+It never uses `auto`, Flex, Batch, remote/built-in tools, provider fallback or redirects.
 Network-operation timeout is 60 seconds, not a whole-workflow deadline.
 No new LLM SDK is needed; `httpx` is an explicit pinned dependency.
 
@@ -166,3 +166,48 @@ records wall-clock duration of the synchronous HTTP call, excluding local quota
 observers and sleeps. An experiment can proactively wait for token-window
 headroom **before** invoking the provider; that wait must be reported separately
 as `quota_wait_ms`. No automatic retry follows a local/provider error.
+
+## Phase 4A native local tool calling
+
+Agentic defaults to Groq even when `GARAGE_RAG_PROVIDER=openrouter`. An explicit
+`--provider openrouter` remains compatible, with zero-price limits and no fallback;
+Phase 4A makes no OpenRouter live/quality comparison. Other workflows keep their
+provider defaults and existing JSON completion wire format.
+
+For `openai/gpt-oss-120b`, the agent sends only the predefined local function
+schemas with `tool_choice=auto` and `parallel_tool_calls=false`. Groq documents
+[local tools but no parallel tool use](https://console.groq.com/docs/tool-use/overview)
+for this model. Assistant call IDs/JSON arguments and matching `role=tool` results
+are validated and serialized on the next request. `stop` finalizes JSON locally;
+`length`, malformed calls and API errors stop without repair or retry. The API
+never receives `browser_search`, `code_interpreter` or remote MCP definitions.
+
+Tool turns omit `response_format`: Groq's
+[Structured Outputs](https://console.groq.com/docs/structured-outputs) do not support
+tool use. Final JSON is validated locally, and the mandatory audit uses the original
+JSON-object completion path. Tool turns set `reasoning_effort=low` and
+`include_reasoning=false`; GPT-OSS does **not** accept `reasoning_format`, per the
+[reasoning documentation](https://console.groq.com/docs/reasoning). Suppressed
+reasoning still consumes the completion/token allowance; it is never replayed or
+stored in telemetry. There is no streaming or parallel execution.
+
+The same Groq client/history and RPM/TPM/RPD/TPD guards protect tool and audit
+requests. Byte accounting includes tool schemas, serialized native calls, results
+and framing; the pinned offline tokenizer receives both messages and `tools`
+through its Harmony template, plus the existing 256-token framing margin.
+Reservations are conservative estimates, not proof of identical server framing.
+Different `ask` processes do not share quota history, and other clients' usage is
+unknown until headers/errors; run one experiment sequentially and verify available
+organization quota first. API-reported RPD/TPM reductions are enforced. Neither
+mode can enforce a Free Plan if someone externally upgrades the account.
+
+After offline acceptance, the proposed first live check is **one synthetic Aurora
+question**, Groq only, `GROQ_MAX_TOKENS=512`, `--max-llm-calls 3`,
+`--max-searches 1`, `--max-total-tokens 16000`, `--top-k 1`. It allows at most
+**3 HTTP attempts, 16,000 total reserved input+output tokens and 1,536 completion
+(including reasoning) tokens**. Free Plan expected charge is $0, conditional on
+verified account billing state; Groq has no per-request zero-price cap. Check
+Free Plan, remaining quotas and model availability before separately authorizing
+this run. It may refuse on quota, formatting, reasoning truncation or validation;
+no automatic rerun is authorized. Do not use private BMW text for this smoke.
+This is a proposal, and no live Phase 4A requests have been made.

@@ -9,6 +9,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
+from .agentic import AgenticLimits, LocalSearch, run_agentic
 from .config import IndexConfig
 from .embeddings import E5Embeddings
 from .generation import GenerationError, make_llm
@@ -54,28 +55,38 @@ def parser():
         if name == "ask":
             command.add_argument(
                 "--workflow",
-                choices=["grounded", "direct"],
+                choices=["grounded", "direct", "agentic"],
                 default="grounded",
-                help="Bounded audited workflow (default) or original direct baseline",
+                help=(
+                    "Grounded audit (default), original direct baseline, "
+                    "or agentic local tool search"
+                ),
             )
             command.add_argument(
                 "--max-llm-calls",
                 type=int,
-                choices=range(1, 5),
-                default=4,
-                help="Grounded completion-attempt cap, including audit (default: 4)",
+                choices=range(1, 7),
+                default=None,
+                help="Completion-attempt cap including audit: grounded 1–4, agentic 1–6",
             )
             command.add_argument(
                 "--max-searches",
                 type=int,
-                choices=[1, 2],
-                default=2,
-                help="Grounded local-search cap (default: 2)",
+                choices=range(1, 5),
+                default=None,
+                help="Local-search cap: grounded 1–2 (default 2), agentic 1–4 (default 4)",
             )
             command.add_argument(
                 "--provider",
                 choices=["openrouter", "groq"],
-                default=os.environ.get("GARAGE_RAG_PROVIDER", "openrouter"),
+                default=None,
+                help="Agentic defaults to Groq; other modes use GARAGE_RAG_PROVIDER/OpenRouter",
+            )
+            command.add_argument(
+                "--max-total-tokens",
+                type=int,
+                default=24000,
+                help="Agentic total input+output/reasoning reservation cap (1–48000)",
             )
             command.add_argument("--model", help="Provider model (Groq: openai/gpt-oss-120b)")
             command.add_argument(
@@ -114,6 +125,21 @@ def main(argv=None):
             )
         if args.command != "index" and not (args.index_dir / "manifest.json").exists():
             raise ValueError("No index found; run garage-rag index first")
+        # Validate mode-specific caps before provider construction or local loading.
+        if args.command == "ask":
+            args.provider = args.provider or (
+                "groq"
+                if args.workflow == "agentic"
+                else os.environ.get("GARAGE_RAG_PROVIDER", "openrouter")
+            )
+            if args.workflow == "agentic":
+                limits = AgenticLimits(
+                    args.max_llm_calls or 6, args.max_searches or 4, args.max_total_tokens
+                )
+                if not 1 <= args.top_k <= 5:
+                    raise ValueError("Agentic top_k must be between 1 and 5")
+            elif args.workflow == "grounded":
+                limits = WorkflowLimits(args.max_llm_calls or 4, args.max_searches or 2)
         # Check credentials/model before loading E5 or opening storage for ask.
         llm = make_llm(model=args.model, provider=args.provider) if args.command == "ask" else None
         try:
@@ -170,7 +196,24 @@ def main(argv=None):
                     def search(k):
                         return index.search(args.question, embeddings, k, args.min_score)
 
-                    if args.workflow == "direct":
+                    if args.workflow == "agentic":
+                        print(
+                            f"Agentic retrieval: at most {limits.max_llm_calls} "
+                            "completion attempts, "
+                            f"{limits.max_searches} local searches and "
+                            f"{limits.max_total_tokens} reserved tokens; no retries or fallback.",
+                            file=sys.stderr,
+                        )
+                        run = run_agentic(
+                            args.question,
+                            LocalSearch(index, embeddings, args.min_score),
+                            llm,
+                            top_k=args.top_k,
+                            answer_language=args.answer_language,
+                            limits=limits,
+                            allow_lexical=args.min_score is None,
+                        )
+                    elif args.workflow == "direct":
                         run = run_direct(
                             args.question,
                             search,
@@ -180,8 +223,9 @@ def main(argv=None):
                         )
                     else:
                         print(
-                            f"Grounded answering: at most {args.max_llm_calls} completion attempts "
-                            f"and {args.max_searches} local searches; no automatic API retries.",
+                            f"Grounded answering: at most {limits.max_llm_calls} "
+                            "completion attempts "
+                            f"and {limits.max_searches} local searches; no automatic API retries.",
                             file=sys.stderr,
                         )
                         run = run_workflow(
@@ -190,7 +234,7 @@ def main(argv=None):
                             llm,
                             top_k=args.top_k,
                             answer_language=args.answer_language,
-                            limits=WorkflowLimits(args.max_llm_calls, args.max_searches),
+                            limits=limits,
                         )
                     if run.error:
                         raise GenerationError(

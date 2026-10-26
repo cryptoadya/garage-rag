@@ -286,3 +286,331 @@ def test_groq_http_time_excludes_pacing_and_local_observers(monkeypatch):
     with llm.client:
         reply = llm.invoke([HumanMessage(content="JSON")])
     assert reply.response_metadata["http_elapsed_ms"] == pytest.approx(25)
+
+
+def test_native_tools_roundtrip_serializes_ids_arguments_and_results(monkeypatch):
+    from langchain_core.messages import ToolMessage
+
+    from garage_rag.local_tools import TOOLS
+
+    requests = []
+
+    def transport(request):
+        body = json.loads(request.content)
+        requests.append(body)
+        if len(requests) == 1:
+            return httpx.Response(
+                200,
+                json={
+                    "choices": [
+                        {
+                            "message": {
+                                "content": None,
+                                "reasoning": "private reasoning",
+                                "tool_calls": [
+                                    {
+                                        "id": "call_1",
+                                        "type": "function",
+                                        "function": {
+                                            "name": "dense_search",
+                                            "arguments": '{"query":"Reifendruck","top_k":2}',
+                                        },
+                                    }
+                                ],
+                            },
+                            "finish_reason": "tool_calls",
+                        }
+                    ],
+                    "usage": {"prompt_tokens": 100, "completion_tokens": 50},
+                },
+            )
+        return success()
+
+    llm = model(monkeypatch, transport)
+    bound = llm.bind_tools(TOOLS, tool_choice="auto", parallel_tool_calls=False)
+    messages = [SystemMessage(content="Search or return JSON"), HumanMessage(content="Tires?")]
+    with llm.client:
+        first = bound.invoke(messages)
+        second = bound.invoke(
+            [*messages, first, ToolMessage(content='{"sources":[]}', tool_call_id="call_1")]
+        )
+    assert first.tool_calls[0]["args"] == {"query": "Reifendruck", "top_k": 2}
+    assert second.content == '{"supported":false,"claims":[]}'
+    assert requests[0]["tools"] == TOOLS
+    assert requests[0]["parallel_tool_calls"] is False
+    assert requests[0]["include_reasoning"] is False
+    assert requests[0]["reasoning_effort"] == "low"
+    assert "response_format" not in requests[0]
+    assert "reasoning_format" not in requests[0]
+    sent = requests[1]["messages"]
+    assert sent[2]["tool_calls"][0]["id"] == sent[3]["tool_call_id"] == "call_1"
+    assert sent[3]["role"] == "tool"
+    assert "private reasoning" not in json.dumps(sent)
+
+
+@pytest.mark.parametrize(
+    "call",
+    [
+        {"id": "x", "type": "browser_search"},
+        {"id": "x", "type": "function", "function": {"name": "shell", "arguments": "{}"}},
+        {"id": "x", "type": "function", "function": {"name": "dense_search", "arguments": "{"}},
+    ],
+)
+def test_native_tools_reject_malformed_or_unauthorized_responses(monkeypatch, call):
+    from garage_rag.local_tools import TOOLS
+
+    requests = []
+    llm = model(
+        monkeypatch,
+        lambda r: (
+            requests.append(r)
+            or httpx.Response(
+                200,
+                json={
+                    "choices": [
+                        {
+                            "message": {"content": None, "tool_calls": [call]},
+                            "finish_reason": "tool_calls",
+                        }
+                    ]
+                },
+            )
+        ),
+    )
+    with llm.client, pytest.raises(GenerationError):
+        llm.bind_tools(TOOLS).invoke([HumanMessage(content="hello")])
+    assert len(requests) == 1
+
+
+def test_native_tools_reject_remote_or_modified_definitions_before_http(monkeypatch):
+    requests = []
+    llm = model(monkeypatch, lambda r: requests.append(r) or success())
+    with llm.client, pytest.raises(GenerationError):
+        llm.bind_tools([{"type": "browser_search"}])
+    assert requests == []
+
+
+def test_native_tool_quota_reserves_schema_arguments_and_results(monkeypatch):
+    from langchain_core.messages import AIMessage, ToolMessage
+
+    from garage_rag.local_tools import TOOLS
+
+    requests = []
+    llm = model(monkeypatch, lambda r: requests.append(r) or success())
+    messages = [
+        HumanMessage(content="hello"),
+        AIMessage(
+            content="",
+            tool_calls=[
+                {"id": "c1", "name": "dense_search", "args": {"query": "tire", "top_k": 1}}
+            ],
+        ),
+        ToolMessage(content="x" * 8000, tool_call_id="c1"),
+    ]
+    with llm.client, pytest.raises(GenerationError, match="TPM"):
+        llm.bind_tools(TOOLS).invoke(messages)
+    assert requests == []
+
+
+def test_orphan_tool_result_rejected_without_http(monkeypatch):
+    from langchain_core.messages import ToolMessage
+
+    from garage_rag.local_tools import TOOLS
+
+    requests = []
+    llm = model(monkeypatch, lambda r: requests.append(r) or success())
+    with llm.client, pytest.raises(GenerationError):
+        llm.bind_tools(TOOLS).invoke([ToolMessage(content="secret", tool_call_id="unknown")])
+    assert requests == []
+
+
+@pytest.mark.parametrize("status", [400, 401, 402, 403, 404, 429, 500, 503])
+def test_tool_requests_share_one_attempt_error_stop(monkeypatch, status):
+    from garage_rag.local_tools import TOOLS
+
+    requests = []
+    llm = model(
+        monkeypatch,
+        lambda r: (
+            requests.append(r)
+            or httpx.Response(status, json={"error": {"message": "secret key and tool args"}})
+        ),
+    )
+    with llm.client:
+        for _ in range(2):
+            with pytest.raises(GenerationError) as error:
+                llm.bind_tools(TOOLS).invoke([HumanMessage(content="search")])
+            assert "secret key" not in str(error.value)
+    assert len(requests) == 1
+
+
+@pytest.mark.parametrize(
+    "count,tokens,name", [(30, 1, "RPM"), (1000, 1, "RPD"), (1, 8000, "TPM"), (1, 200000, "TPD")]
+)
+def test_tool_requests_share_all_four_quota_guards(monkeypatch, count, tokens, name):
+    import time
+
+    from garage_rag.local_tools import TOOLS
+
+    requests = []
+    llm = model(monkeypatch, lambda r: requests.append(r) or success())
+    age = 61 if name in {"RPD", "TPD"} else 0
+    llm._history = [[time.monotonic() - age, tokens] for _ in range(count)]
+    with llm.client, pytest.raises(GenerationError, match=name):
+        llm.bind_tools(TOOLS).invoke([HumanMessage(content="search")])
+    assert requests == []
+
+
+def test_missing_usage_retains_whole_tool_reservation(monkeypatch):
+    from garage_rag.local_tools import TOOLS
+
+    response = success()
+    data = response.json()
+    del data["usage"]
+    llm = model(monkeypatch, lambda r: httpx.Response(200, json=data))
+    messages = [HumanMessage(content="search")]
+    reserve = llm.request_reservation(messages, TOOLS)
+    assert reserve > llm.request_reservation(messages)
+    with llm.client:
+        reply = llm.bind_tools(TOOLS).invoke(messages)
+    assert reply.usage_metadata is None
+    assert llm._history[0][1] == reserve
+
+
+def test_tool_tokenizer_receives_schemas_and_native_results(monkeypatch):
+    from types import SimpleNamespace
+
+    import transformers
+    from langchain_core.messages import AIMessage, ToolMessage
+
+    from garage_rag.local_tools import TOOLS
+
+    seen = []
+
+    def template(messages, **kwargs):
+        seen.append((messages, kwargs))
+        return list(range(100))
+
+    monkeypatch.setenv("GROQ_TOKEN_ACCOUNTING", "tokenizer")
+    monkeypatch.setattr(
+        transformers.AutoTokenizer,
+        "from_pretrained",
+        lambda *a, **kw: SimpleNamespace(apply_chat_template=template),
+    )
+    llm = model(monkeypatch, lambda r: success())
+    messages = [
+        HumanMessage(content="search"),
+        AIMessage(
+            content="",
+            tool_calls=[
+                {"id": "c1", "name": "dense_search", "args": {"query": "tire", "top_k": 1}}
+            ],
+        ),
+        ToolMessage(content='{"sources": []}', tool_call_id="c1"),
+    ]
+    with llm.client:
+        assert llm.request_reservation(messages, TOOLS) == 2404
+    assert seen[0][1]["tools"] == TOOLS
+    assert seen[0][0][-1]["tool_call_id"] == "c1"
+    assert seen[0][0][-2]["tool_calls"][0]["function"]["name"] == "dense_search"
+
+
+def test_tool_response_with_multiple_calls_cannot_trigger_parallel_search(monkeypatch):
+    from garage_rag.local_tools import TOOLS
+
+    call = {
+        "id": "c1",
+        "type": "function",
+        "function": {"name": "dense_search", "arguments": '{"query":"tire","top_k":1}'},
+    }
+    llm = model(
+        monkeypatch,
+        lambda r: httpx.Response(
+            200,
+            json={
+                "choices": [
+                    {
+                        "message": {"content": None, "tool_calls": [call, {**call, "id": "c2"}]},
+                        "finish_reason": "tool_calls",
+                    }
+                ]
+            },
+        ),
+    )
+    with llm.client, pytest.raises(GenerationError):
+        llm.bind_tools(TOOLS).invoke([HumanMessage(content="search")])
+
+
+@pytest.mark.parametrize("initial_empty", [False, True])
+def test_agentic_groq_native_loop_changes_strategy_from_tool_evidence(monkeypatch, initial_empty):
+    from test_workflow import audit, draft, hit
+
+    from garage_rag.agentic import AgenticLimits, run_agentic
+
+    requests, searches = [], []
+
+    def transport(request):
+        payload = json.loads(request.content)
+        requests.append(payload)
+        results = [m for m in payload["messages"] if m["role"] == "tool"]
+        if "evidence auditor" in payload["messages"][0]["content"]:
+            return success(json.dumps(audit()))
+        if results and json.loads(results[-1]["content"])["sources"]:
+            return success(json.dumps(draft()))
+        name = "lexical_search" if results else "dense_search"
+        query = "cold tire pressure" if results else "Reifendruck prüfen"
+        return httpx.Response(
+            200,
+            json={
+                "choices": [
+                    {
+                        "finish_reason": "tool_calls",
+                        "message": {
+                            "content": None,
+                            "tool_calls": [
+                                {
+                                    "id": f"c{len(requests)}",
+                                    "type": "function",
+                                    "function": {
+                                        "name": name,
+                                        "arguments": json.dumps({"query": query, "top_k": 1}),
+                                    },
+                                }
+                            ],
+                        },
+                    }
+                ],
+                "usage": {"prompt_tokens": 100, "completion_tokens": 50},
+            },
+        )
+
+    def search(method, query, k):
+        searches.append((method, query))
+        return [] if initial_empty and len(searches) == 1 else [hit()]
+
+    if not initial_empty:
+        monkeypatch.setenv("GROQ_MAX_TOKENS", "512")
+    llm = model(monkeypatch, transport)
+    limits = (
+        AgenticLimits(max_total_tokens=48000)
+        if initial_empty
+        else AgenticLimits(max_llm_calls=3, max_searches=1, max_total_tokens=16000)
+    )
+    with llm.client:
+        result = run_agentic(
+            "Wie prüfe ich die Reifen?",
+            search,
+            llm,
+            answer_language="en",
+            limits=limits,
+            top_k=1,
+        )
+    assert result.answer.supported
+    assert len(requests) == result.trace.llm_calls == (4 if initial_empty else 3)
+    assert result.trace.input_tokens == (240 if initial_empty else 140)
+    assert searches == (
+        [("dense", "Reifendruck prüfen"), ("bm25", "cold tire pressure")]
+        if initial_empty
+        else [("dense", "Reifendruck prüfen")]
+    )
+    assert all("models" not in r and r["model"] == "openai/gpt-oss-120b" for r in requests)

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "garage-rag"
-version = "0.3.0"
+version = "0.4.0"
 description = "Local multilingual retrieval over automotive owner documentation"
 keywords = ["rag", "automotive", "multilingual", "qdrant", "grounded-generation"]
 classifiers = [
