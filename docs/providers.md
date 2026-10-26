@@ -115,6 +115,9 @@ provider and model, generation settings, dataset/code/index hashes and observed
 quota state; they cannot merge OpenRouter and Groq into one resumed report.
 `--max-api-calls` is a per-invocation attempt ceiling; failed attempts consume it.
 The existing five-attempt worst-case reservation per unfinished pair remains.
+With `--modes direct grounded agentic`, the bound is eleven per unfinished
+case/language/trial. Comparative runs additionally require a session token cap
+and private captures; see the [Phase 4B comparison](benchmarks/phase4b-comparison.md).
 Shared pacing is unchanged (1–15 RPM); Groq additionally checks token/day windows.
 
 Results are atomically replaced after each completed **mode**, including errors.

@@ -5,6 +5,18 @@ is available in [Git commits](https://github.com/cryptoadya/garage-rag/commits/m
 
 ## [Unreleased]
 
+### Added
+
+- Phase 4B comparison of direct, grounded and agentic using the existing answer
+  evaluator: a fixed fictional EN/DE/RU suite, matched and pairwise summaries,
+  completeness, claim/citation support, warning omissions and resource accounting.
+- Hash-bound native tool captures and external review packets; same-model audit
+  decisions remain observations, never quality labels. Live quality stays unscored
+  until explicit review; scripted results measure software contracts only.
+- Shared live call/pacing/token guards across tool-bound and ordinary requests.
+  Comparative live runs require explicit caps and private captures; no live calls
+  are part of offline acceptance. Package version prepares the upcoming 0.5.0.
+
 ## [0.4.0] - 2026-10-26
 
 ### Added

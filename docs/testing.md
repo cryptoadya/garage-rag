@@ -28,6 +28,7 @@ are real; model responses and HTTP transports are controlled fixtures.
 | Agentic retrieval | Evidence-dependent dense/BM25 and multilingual paths, real local search, cumulative source comparison, native call/result IDs, refusal reasons, strict budgets and mandatory audit |
 | Provider wire behavior | Zero-price routing, disabled retries/fallbacks, truncation, Groq plan/quota guards, headers, tokenizer accounting and timing |
 | Evaluation/review | Checkpoint/resume identity, exact answer/source hashes, mixed reviewer provenance, capture tampering and unfilled private review packets |
+| Three-mode comparison | EN/DE/RU matched matrices, pairwise completeness, citation/warning labels, audit separation and shared tool-bound session guards |
 | Privacy | Sanitized errors/observations and whole-graph tracing suppression |
 
 These establish software contracts, not embedding quality, remote reasoning

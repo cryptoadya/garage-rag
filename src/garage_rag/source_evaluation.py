@@ -2,8 +2,59 @@
 
 import json
 import time
+from copy import deepcopy
 
 from .config import digest
+
+
+class EvaluationBinding:
+    """Keep native tool-bound requests inside the owning observer/session guard."""
+
+    def __init__(self, owner, target, tools):
+        self.owner, self.target, self.tools = owner, target, tools
+
+    def __getattr__(self, name):
+        return getattr(self.owner, name)
+
+    def invoke(self, messages):
+        return self.owner._invoke(messages, self.target, self.tools)
+
+
+def capture_messages(messages):
+    result = []
+    for message in messages:
+        item = {"role": message.type, "content": message.content}
+        if getattr(message, "tool_calls", []):
+            item["tool_calls"] = deepcopy(message.tool_calls)
+        if message.type == "tool":
+            item["tool_call_id"] = message.tool_call_id
+        result.append(item)
+    return result
+
+
+def request_context(messages):
+    """Recognize the existing draft/audit protocol and native planner/writer turns."""
+    payloads = []
+    for message in messages:
+        if message["role"] in {"human", "tool"}:
+            try:
+                payload = json.loads(message["content"])
+                if isinstance(payload, dict):
+                    payloads.append(payload)
+            except (ValueError, TypeError):
+                pass
+    sources = next((p["sources"] for p in reversed(payloads) if "sources" in p), [])
+    phase = (
+        "audit"
+        if any("draft" in p for p in payloads)
+        else "planner"
+        if len(messages) < 2
+        or messages[0]["content"].startswith("You control local retrieval")
+        or not payloads
+        or "sources" not in payloads[-1]
+        else "draft"
+    )
+    return phase, sources
 
 
 class ObservedEvaluationLLM:
@@ -19,25 +70,38 @@ class ObservedEvaluationLLM:
         return getattr(self.llm, name)
 
     def invoke(self, messages):
-        payload = json.loads(messages[1].content)
-        sources = payload["sources"]
+        return self._invoke(messages, self.llm)
+
+    def bind_tools(self, tools, **kwargs):
+        return EvaluationBinding(self, self.llm.bind_tools(tools, **kwargs), tools)
+
+    def _invoke(self, messages, target, tools=None):
+        captured = capture_messages(messages)
+        phase, sources = request_context(captured)
         context = {"sources_sha256": digest(sources), "source_count": len(sources)}
-        phase = "audit" if "draft" in payload else "draft"
-        if phase == "draft" and context not in self.sent_contexts:
+        if (phase == "draft" or phase == "planner" and sources) and (
+            not self.sent_contexts or context != self.sent_contexts[-1]
+        ):
             self.sent_contexts.append(context)
         public = {
             "phase": phase,
             **context,
-            "request_sha256": digest([{"role": m.type, "content": m.content} for m in messages]),
+            "request_sha256": digest(captured),
         }
-        private = {"messages": [{"role": m.type, "content": m.content} for m in messages]}
+        private = {"messages": captured}
+        if tools:
+            private["tools"] = deepcopy(tools)
+            public["tools_sha256"] = digest(tools)
         self.calls.append(private)
         self.public_calls.append(public)
         started = time.perf_counter()
         try:
-            response = self.llm.invoke(messages)
+            response = target.invoke(messages)
             private["response"] = response.content
             public["response_sha256"] = digest(response.content)
+            if getattr(response, "tool_calls", []):
+                private["response_tool_calls"] = deepcopy(response.tool_calls)
+                public["response_tool_calls_sha256"] = digest(response.tool_calls)
             metadata = getattr(response, "response_metadata", {})
             for key in ("http_elapsed_ms", "limiter_wait_ms", "quota_wait_ms"):
                 value = metadata.get(key)
@@ -48,7 +112,22 @@ class ObservedEvaluationLLM:
                     value = json.loads(response.content).get("supported")
                     if type(value) is bool:
                         public["draft_supported"] = value
-                except (ValueError, AttributeError):
+                except (ValueError, TypeError, AttributeError):
+                    pass
+            if phase == "audit":
+                try:
+                    value = json.loads(response.content).get("decision")
+                    if isinstance(value, str) and value in {
+                        "accept",
+                        "insufficient",
+                        "ambiguous",
+                        "conflicting",
+                        "out_of_scope",
+                        "unsafe_numeric",
+                        "unsupported",
+                    }:
+                        public["audit_decision"] = value
+                except (ValueError, TypeError, AttributeError):
                     pass
             return response
         finally:
@@ -140,11 +219,11 @@ def apply_source_reviews(report, reviews):
     pairs = {}
     for row in report["rows"]:
         pairs.setdefault(tuple(row[k] for k in ("id", "language", "trial")), {})[row["mode"]] = row
+    modes = set(report.get("modes", ["direct", "grounded"]))
     paired = [
         r
         for p in pairs.values()
-        if set(p) == {"direct", "grounded"}
-        and all(not r["error"] and r.get("source_review") for r in p.values())
+        if set(p) == modes and all(not r["error"] and r.get("source_review") for r in p.values())
         for r in p.values()
     ]
     reviewed = [r for r in report["rows"] if not r["error"] and r.get("source_review")]
@@ -156,8 +235,8 @@ def apply_source_reviews(report, reviews):
             r.get("source_review_provenance", {}).get("independent_human_review") is True
             for r in reviewed
         ),
-        "scope": "Last actually sent draft context; generator subset uses raw draft abstention",
+        "scope": "Last sent draft/planner context; generator subset uses raw draft abstention",
         "summary": source_summary(report["rows"]),
-        "paired": {"pairs": len(paired) // 2, "summary": source_summary(paired)},
+        "paired": {"pairs": len(paired) // len(modes), "summary": source_summary(paired)},
     }
     return report

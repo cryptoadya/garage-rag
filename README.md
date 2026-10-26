@@ -144,6 +144,7 @@ python -m build
 | [Testing](docs/testing.md) | Offline checks, packaging and release validation |
 | [Phase 2A](docs/benchmarks/phase2a-retrieval.md) / [Phase 2B](docs/benchmarks/phase2b-retrieval.md) | Frozen retrieval methodology, results and reproduction |
 | [Answer evaluation](docs/benchmarks/grounded-answering.md) | Scripted/live comparisons, costs and unresolved quality limits |
+| [Three-mode comparison](docs/benchmarks/phase4b-comparison.md) | Reproducible offline benchmark, evidence review and bounded live proposal |
 | [Changelog](CHANGELOG.md) | Versioned user-facing changes |
 
 ## License
