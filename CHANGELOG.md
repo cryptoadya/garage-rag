@@ -5,6 +5,8 @@ is available in [Git commits](https://github.com/cryptoadya/garage-rag/commits/m
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-26
+
 ### Added
 
 - Bounded LangGraph answering with claim/completeness auditing, one local
@@ -76,6 +78,7 @@ is available in [Git commits](https://github.com/cryptoadya/garage-rag/commits/m
   and quote validation, and local PDF page references.
 - Synthetic test corpus, automated tests, CI and MIT-licensed project code.
 
-[Unreleased]: https://github.com/cryptoadya/garage-rag/compare/v0.2.0...main
+[Unreleased]: https://github.com/cryptoadya/garage-rag/compare/v0.3.0...main
+[0.3.0]: https://github.com/cryptoadya/garage-rag/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/cryptoadya/garage-rag/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/cryptoadya/garage-rag/tree/v0.1.0
