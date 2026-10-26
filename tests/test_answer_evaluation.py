@@ -504,6 +504,67 @@ def test_partial_human_source_review_does_not_promote_agent_rows_to_human():
     assert report["rows"][1]["source_review_provenance"]["reviewer"] == "Agent"
 
 
+def test_partial_human_claim_review_preserves_agent_and_legacy_provenance():
+    from garage_rag.answer_evaluation import apply_reviews, evaluate_synthetic
+
+    report, _ = evaluate_synthetic(dataset(), languages=["en"], case_ids=["cold_pressure"])
+
+    def review(row):
+        return {
+            **{k: row[k] for k in ("id", "language", "mode", "trial", "answer_sha256")},
+            "claim_support": [True] * row["returned_claims"],
+            "complete_answer": True,
+        }
+
+    base = {"report_dataset_sha256": report["dataset_sha256"]}
+    agent = {
+        **base,
+        "reviewer": "Agent",
+        "independent_human_review": False,
+        "rows": [review(r) for r in report["rows"]],
+    }
+    apply_reviews(report, agent)
+    human = {
+        **base,
+        "reviewer": "Independent person",
+        "independent_human_review": True,
+        "rows": [review(report["rows"][0])],
+    }
+    apply_reviews(report, human)
+    assert report["review"]["independent_human_review"] is False
+    assert report["rows"][0]["claim_review_provenance"]["reviewer"] == "Independent person"
+    assert report["rows"][1]["claim_review_provenance"]["reviewer"] == "Agent"
+    # Older reports have scores but no per-row reviewer identity. Never infer it.
+    del report["rows"][1]["claim_review_provenance"]
+    apply_reviews(report, human)
+    assert report["review"]["independent_human_review"] is False
+    human["rows"] = [review(r) for r in report["rows"]]
+    apply_reviews(report, human)
+    assert report["review"]["independent_human_review"] is True
+    report, _ = evaluate_synthetic(dataset(), languages=["en"], case_ids=["cold_pressure"])
+    human["rows"] = []
+    apply_reviews(report, human)
+    assert report["review"]["independent_human_review"] is False
+
+
+@pytest.mark.parametrize("reviewer", ["", "   "])
+def test_claim_review_requires_named_reviewer_without_mutation(reviewer):
+    from copy import deepcopy
+
+    from garage_rag.answer_evaluation import apply_reviews, evaluate_synthetic
+
+    report, _ = evaluate_synthetic(dataset(), languages=["en"], case_ids=["cold_pressure"])
+    before = deepcopy(report)
+    with pytest.raises(ValueError, match="provenance"):
+        apply_reviews(report, {
+            "report_dataset_sha256": report["dataset_sha256"],
+            "reviewer": reviewer,
+            "independent_human_review": True,
+            "rows": [],
+        })
+    assert report == before
+
+
 def test_default_report_stays_in_local_output(tmp_path, monkeypatch):
     from garage_rag.answer_evaluation import main
 

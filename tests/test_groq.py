@@ -91,6 +91,27 @@ def test_free_plan_requires_explicit_confirmation(monkeypatch):
         make_llm(provider="groq", api_key="private-test-key")
 
 
+def test_observed_groq_timeout_keeps_provider_identity_and_safe_trace(monkeypatch):
+    from garage_rag.source_evaluation import ObservedEvaluationLLM
+
+    requests = []
+
+    def transport(request):
+        requests.append(request)
+        raise httpx.ReadTimeout("private-test-key payload", request=request)
+
+    llm = model(monkeypatch, transport)
+    trace = RunTrace()
+    with llm.client, pytest.raises(GenerationError, match="Groq request failed") as exc:
+        invoke_model(
+            MeteredLLM(ObservedEvaluationLLM(llm), trace),
+            [SystemMessage(content="JSON"), HumanMessage(content='{"sources": []}')],
+        )
+    assert "private-test-key" not in str(exc.value)
+    assert len(requests) == trace.llm_calls == 1
+    assert trace.provider_errors == [{"http_status": None, "category": "timeout"}]
+
+
 @pytest.mark.parametrize(
     ("setting", "value"), [("GROQ_MODEL", "other/model"), ("GROQ_MAX_TOKENS", "bad")]
 )

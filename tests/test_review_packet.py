@@ -62,3 +62,22 @@ def test_packet_includes_failed_calls_without_inventing_response_or_review(tmp_p
     assert report["rows"][0]["error"]
     write_packet(report, captures, tmp_path)
     assert json.loads((tmp_path / "source-review.template.json").read_text())["rows"] == []
+
+
+def test_packet_does_not_expose_existing_quality_judgments(tmp_path):
+    from garage_rag.answer_evaluation import evaluate_synthetic
+    from garage_rag.review_packet import write_packet
+
+    data = json.loads(Path("benchmarks/aurora-grounded-answering.v1.json").read_text())
+    report, captures = evaluate_synthetic(data, languages=["en"], case_ids=["cold_pressure"])
+    for row in report["rows"]:
+        row["claim_review_provenance"] = {"reviewer": "Agent-label-sentinel"}
+        row["source_review"] = [{"sufficiency": "sufficient"}]
+    write_packet(report, captures, tmp_path)
+    page = (tmp_path / "index.html").read_text()
+    for field in (
+        "claim_support", "complete_answer", "exact_reference_match", "expected_answerable",
+        "citation_page_matches", "citation_chunk_matches", "source_review", "Agent-label-sentinel",
+    ):
+        assert field not in page
+    assert report["rows"][0]["claim_review_provenance"]["reviewer"] == "Agent-label-sentinel"

@@ -67,7 +67,8 @@ threshold: raw E5 and BGE scores are not calibrated answer probabilities.
 | Graph recursion limit | 16 | Fixed safety net |
 | Context per request | 8 chunks / 12,000 characters | Fixed maximum, whole passages only |
 | Network-operation timeout | 60 seconds | Same SDK/HTTPX client as direct mode |
-| Completion tokens per request | 8192 | Existing `OPENROUTER_MAX_TOKENS`, 512–32768 |
+| OpenRouter completion tokens per request | 8192 | `OPENROUTER_MAX_TOKENS`, 512–32768 |
+| Groq completion tokens per request | 2048 | `GROQ_MAX_TOKENS`, 512–4096 |
 
 An ordinary accepted answer uses one draft and one audit. Recovery after a
 model refusal uses at most three completions; recovery after an audit uses at
@@ -77,8 +78,9 @@ These are upper bounds, not a promise to spend the full budget. Direct mode
 always has its original one-completion/one-search bound; grounded budget flags
 do not change it.
 
-The default worst case allows 32,768 completion/reasoning tokens over four
+The OpenRouter default worst case allows 32,768 completion/reasoning tokens over four
 separate calls; raising the per-request environment budget raises that bound.
+Groq's default corresponding bound is 8,192 tokens over four calls.
 The 60-second SDK setting is an [HTTPX network-operation/inactivity
 timeout](https://www.python-httpx.org/advanced/timeouts/), not a total completion
 deadline. A live failed request took about 120 seconds; continued data/keepalive
@@ -91,8 +93,11 @@ counters prevent repeated expansion. The recursion limit is an additional
 fail-closed safeguard, not the primary stopping mechanism.
 
 SDK retries, application retries and paid provider fallbacks remain disabled.
-All calls use the same `make_llm` client, `:free`/free-router allowlist and zero
-prompt/completion/request price caps. No paid fallback occurs on rate limits,
+All calls use the same selected `make_llm` client. OpenRouter enforces the
+`:free`/free-router allowlist and zero prompt/completion/request price caps.
+Groq instead requires explicit Free Plan attestation and a fixed model/service
+tier; it has no per-request zero-price guarantee. See [Groq setup](groq.md).
+No paid fallback occurs on rate limits,
 timeouts, truncation, malformed output or invalid citations. Provider errors
 stop immediately and produce a sanitized CLI error (exit 2). Local retrieval
 errors and graph failures also stop without displaying source state or provider

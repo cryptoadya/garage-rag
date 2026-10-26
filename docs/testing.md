@@ -113,6 +113,9 @@ Additive source-evaluation tests distinguish missing-context recovery from
 persistent generator abstention despite sufficient evidence, preserve legacy
 summaries, require exact source/answer binding and reject ambiguous labels.
 Private review-packet tests reject capture tampering and leave human judgments
-unfilled. Groq tests cover opt-in pinned offline tokenizer loading, explicit
+unfilled without exposing existing quality labels. Mixed claim/source reviews
+retain per-row reviewer identities; a partial human review cannot promote agent
+or legacy labels to independent human judgments. Groq tests cover observed
+timeout provider identity, opt-in pinned offline tokenizer loading, explicit
 flat token IDs (rather than the length of a token mapping), unchanged output
 budget and HTTP timing separate from limiter/checkpoint overhead.

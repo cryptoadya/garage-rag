@@ -80,7 +80,11 @@ python -m garage_rag.review_packet --report output/<checkpoint>.json \
   --captures output/private/<captures>.json --output-dir output/private/<review>
 ```
 
-Packets verify request/source/reply hashes and escape HTML. Never publish them.
+Packets verify request/source/reply hashes, escape HTML and omit existing quality
+judgments. Claim and source reviews retain per-row provenance; legacy labels
+without row provenance never become independent through a partial new review.
+Never publish packets. See the [engineering release audit](../phase3-release-audit.md)
+for the release boundary and prepared external-review scope.
 
 ## Preserved historical results
 

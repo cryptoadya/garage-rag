@@ -142,7 +142,8 @@ there is no automatic repair request.
 
 ## Privacy
 
-`ask` transmits the question and selected passages to OpenRouter/providers.
+`ask` transmits the question, selected passages and audit draft to the selected
+LLM provider (OpenRouter/upstream providers or Groq).
 Review their retention policies before using sensitive documents. `search`
 prints private text to the terminal; exported JSON and generated answers can
 also contain copyrighted source text. Do not commit these captures.

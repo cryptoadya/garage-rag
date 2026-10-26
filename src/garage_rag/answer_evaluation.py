@@ -304,6 +304,8 @@ def apply_reviews(report, reviews):
         reviews.get("report_dataset_sha256") != report["dataset_sha256"]
         or type(reviews.get("independent_human_review")) is not bool
         or not isinstance(reviews.get("reviewer"), str)
+        or not reviews["reviewer"].strip()
+        or not isinstance(reviews.get("rows"), list)
     ):
         raise ValueError("Invalid review provenance")
     lookup = {(r["id"], r["language"], r["mode"], r["trial"]): r for r in report["rows"]}
@@ -328,8 +330,16 @@ def apply_reviews(report, reviews):
     for row, review in updates:
         row["claim_support"] = review["claim_support"]
         row["complete_answer"] = review["complete_answer"]
+        row["claim_review_provenance"] = {
+            k: reviews[k] for k in ("reviewer", "independent_human_review")
+        }
     report["claim_scoring"] = "Hash-bound external review; unreviewed claims remain unscored"
     report["review"] = {k: reviews[k] for k in ("reviewer", "independent_human_review")}
+    scored = [r for r in report["rows"] if not r["error"] and r["claim_support"] is not None]
+    report["review"]["independent_human_review"] = bool(scored) and all(
+        r.get("claim_review_provenance", {}).get("independent_human_review") is True
+        for r in scored
+    )
     report["review"]["rows_reviewed"] = len(seen)
     report["summary"] = summarize(report["rows"])
     report["paired"] = paired_summary(report["rows"])

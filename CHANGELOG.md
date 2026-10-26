@@ -20,6 +20,9 @@ is available in [Git commits](https://github.com/cryptoadya/garage-rag/commits/m
   citing sources with unrelated numbers; unsupported values and tables remain blocked.
 - Expanded context losing relevant passages to presentation overhead; retain full
   prior text and applicability metadata within the existing context budget.
+- Mixed claim reviews incorrectly inheriting the latest review's independence;
+  retain per-row provenance and require a named reviewer. Private review packets
+  omit existing quality judgments, and observed Groq timeouts retain their provider.
 
 ### Changed
 

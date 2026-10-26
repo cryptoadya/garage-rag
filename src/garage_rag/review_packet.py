@@ -52,7 +52,14 @@ def write_packet(report, captures, directory):
             + "<details><summary>Every actual model input and raw reply</summary>"
             + pre(calls)
             + "</details><h3>Public observations and hashes</h3>"
-            + pre(row)
+            + pre({
+                k: row[k]
+                for k in (
+                    *keys, "supported", "reason", "error", "error_category", "returned_claims",
+                    "trace", "sent_contexts", "model_calls",
+                )
+                if k in row
+            })
             + "</section>"
         )
         if not row["error"]:

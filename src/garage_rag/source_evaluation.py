@@ -15,6 +15,9 @@ class ObservedEvaluationLLM:
         self.public_calls = []
         self.sent_contexts = []
 
+    def __getattr__(self, name):
+        return getattr(self.llm, name)
+
     def invoke(self, messages):
         payload = json.loads(messages[1].content)
         sources = payload["sources"]

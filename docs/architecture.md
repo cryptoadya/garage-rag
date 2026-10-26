@@ -56,7 +56,8 @@ multi-user production service. CPU and MPS results can differ numerically.
 2. Context construction assigns source IDs to at most eight retrieved chunks
    within a 12,000-character JSON budget. Passages are never truncated to fit;
    each ID maps to exactly the text actually sent.
-3. Only the question and selected context cross the OpenRouter boundary. Source
+3. The question, selected context and audit draft cross the selected LLM provider
+   boundary (OpenRouter/upstream providers or Groq). Source
    text and the question are untrusted data: the system instruction forbids
    following embedded instructions or changing the requested answer language.
    Model, market, year, equipment and body-style qualifications must be respected.
