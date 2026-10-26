@@ -408,6 +408,37 @@ def test_real_sdk_success_wire_has_two_zero_price_requests_without_hidden_calls(
         assert "models" not in body
 
 
+def test_provider_failure_keeps_safe_status_in_trace_without_payload(monkeypatch):
+    import httpx
+    import openrouter
+
+    from garage_rag.generation import make_llm
+
+    requests = []
+
+    def transport(request):
+        requests.append(request)
+        return httpx.Response(
+            502, json={"error": {"code": 502, "message": "private provider payload"}}
+        )
+
+    constructor = openrouter.OpenRouter
+    http = httpx.Client(transport=httpx.MockTransport(transport))
+    monkeypatch.setattr(
+        openrouter, "OpenRouter", lambda **kwargs: constructor(client=http, **kwargs)
+    )
+    llm = make_llm(api_key="test-not-a-real-key")
+    with llm.client:
+        result = run(llm)
+    assert result.error
+    assert len(requests) == result.trace.llm_calls == 1
+    assert result.trace.public_dict()["provider_errors"] == [
+        {"http_status": 502, "category": "http_error"}
+    ]
+    assert not result.trace.public_dict()["token_usage_complete"]
+    assert "private provider payload" not in json.dumps(result.public_dict())
+
+
 @pytest.mark.parametrize(
     "claim",
     [

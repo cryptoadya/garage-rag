@@ -125,6 +125,15 @@ never place credentials on the command line. Source snapshots, dependency
 versions, model, seed, generation settings and dataset digest are recorded.
 Private captures must stay private; they are not part of a package or PR.
 
+Live evaluations now enforce `--requests-per-minute` (1–15, default 15) across
+both modes, including every draft and audit. Attempts are paced sequentially,
+failed requests consume the enforced `--max-api-calls` budget, and there are no
+automatic retries. Set `--requests-per-minute 12` for additional headroom. Pacing
+waits are included in workflow latency; a latency comparison must therefore
+identify its rate setting. Each CLI invocation has its own budget: when chaining
+runs, subtract actual attempts from an explicitly declared session ceiling before
+starting the next run. The preflight reservation is not an extra account quota.
+
 Review-file structure (replace hashes with the exact report values):
 
 ```json
@@ -241,7 +250,101 @@ paid path was enabled. An ordinary accepted answer requires two completions;
 worst-case recovery is four and can be substantially slower. There is no new
 local encoder or local generative model to load.
 
-### Compatibility and checks
+### October 26, 2026: quota recovery and bounded recheck
+
+The [dated numeric artifact](phase3-20261026-results.v1.json) preserves the new
+probe, unreviewed live rows, hash-bound agent review, partial token usage, source
+snapshots and fresh scripted summary separately from the October 25 results.
+
+Before inference, `GET /api/v1/key` returned HTTP 200 and a free-model allowance
+of **0 used / 50 limit / 50 remaining**. The current official
+[limits documentation](https://openrouter.ai/docs/api_reference/limits) and
+[pricing FAQ](https://openrouter.ai/pricing) describe 20 requests/minute and
+50/day for accounts below the purchased-credit threshold, with a higher ceiling
+for qualifying accounts. Failed requests can consume the allowance. No credits,
+account settings or financial settings were changed.
+
+The session ceiling was **45 attempted completions**, with no retries or paid
+fallback. One minimal `Reply with OK.` request to the previously selected
+`nvidia/nemotron-3.5-super-vl:free` returned **HTTP 200**, cost 0, and 20 input /
+32 output tokens. All 32 output tokens were reasoning; `finish_reason=length`
+and there was no visible answer. This established endpoint access, not usable
+generation or provider stability. It was not repeated with a larger cap.
+
+The subsequent functional smoke selected **cold_pressure, numeric_prose,
+recovery**, English, both modes, seed 20261025, one trial, the normal 8192-token
+cap, a 15-attempt reservation and **12 requests/minute**. Mode/case shuffling
+was unchanged. It stopped at its first provider/network error (exit 2):
+
+| Smoke outcome | Direct | Grounded |
+| --- | ---: | ---: |
+| Completed cold_pressure answers | 1 | 1 |
+| Calls for that completed pair | 1 | 2 |
+| Workflow latency for that pair, seconds | 5.313 | 31.453 |
+| Input / output tokens for that pair | 387 / 271 | 917 / 404 |
+| Additional recovery attempts before error | 0 | 3 |
+
+Both returned claims say to check pressure when tires are cold, with an exact
+quote carrying that condition. **Agent review** judged both supported and
+complete; both passed local citation checks. There was no independent human
+review. The sole non-error pair has no false refusal; that single observation
+does not estimate refusal rates or demonstrate a quality advantage. Its timings
+include pacing waits and first-use initialization, not just remote inference.
+
+Recovery first returned insufficient evidence, expanded locally while retaining
+the first passage, then produced a valid draft from the newly added source.
+Its mandatory audit failed on the third workflow call. The graph correctly
+withheld the unaudited draft. The failed row is an **error, not a false refusal**.
+Its duration was 12.975 seconds. The exact HTTP status and original exception
+were not retained by the earlier telemetry, so the cause cannot honestly be
+identified as 429, 502 or timeout. The existing safe error category is
+`provider_or_network_error`; no diagnostic inference request was made afterward.
+
+The smoke completed **1/3 planned pairs**, with three rows (two answers and one
+error) and **6 attempted completions**. Including the minimal probe, the session
+used **7/45 attempts**. The post-stop read-only quota snapshot reported 6 used /
+44 remaining; the difference from client attempts is retained, not used to
+reclaim budget. Smoke usage reports 2,127 input / 967 output tokens across five
+successful calls; failed-call usage is missing. These are partial resource
+totals, not complete all-attempt usage or a billing audit.
+
+No DE/RU or corpus/profile matrix was started after the error. All three cached
+index manifests exist (E5 Small, E5 Base, BGE-M3), but their live quality was not
+newly measured. A full held-out matrix of 12 needs × three languages × three
+profiles has 108 pairs and requires a worst-case reservation of 540 calls under
+the existing per-pair bounds. It must be segmented across explicit budgets and
+quota windows; a 50/day allowance cannot reserve it in one day.
+
+Two confirmed measurement defects were fixed: live runs now enforce request
+pacing and runtime budgets, and workflow telemetry retains safe HTTP
+status/category diagnostics before sanitizing provider exceptions. The latter
+fix postdates this smoke and was checked with real SDK mock transport, including
+HTTP 502; it cannot recover this run's missing status. No confirmed graph-routing
+or claim-validation defect was demonstrated by this smoke. Retrieval, prompts,
+frozen labels and baselines were not adjusted to improve metrics.
+
+Fresh offline evaluation completed 252 scripted rows (three trials), with the
+same controlled answer/refusal outcomes as before. All five previously recorded
+Phase 2 file hashes match. Acceptance passed **216 offline tests**, Ruff, and
+wheel/sdist builds. Remote CI is recorded on PR #3 for the pushed commit.
+**Phase 3 acceptance remains open**: stable complete live EN/DE/RU/profile results
+and independent human quality review are still missing.
+
+To reproduce the attempted smoke, use a new output filename:
+
+```bash
+python -m garage_rag.answer_evaluation --live \
+  --model nvidia/nemotron-3.5-super-vl:free --max-api-calls 15 \
+  --requests-per-minute 12 --languages en --seed 20261025 --trials 1 \
+  --cases cold_pressure numeric_prose recovery \
+  --output output/answer-recheck-smoke.json \
+  --private-captures output/private/answer-recheck-smoke.json
+```
+
+Provider behavior is nondeterministic: reproduction fixes inputs, scheduling,
+budgets and code provenance; it does not promise the same answer or failure.
+
+### Compatibility and checks (October 25)
 
 Beyond mocked CLI tests, both **actual cached** E5 Small and BGE-M3 snapshots ran
 the real graph on all nine selected case/language combinations per profile:

@@ -140,3 +140,40 @@ def test_offline_command_does_not_construct_generation_client(tmp_path, monkeypa
     assert report["execution"] == "scripted"
     assert report["paired"]["pairs"] == 1
     assert report["provenance"]["generation"] is None
+
+
+def test_live_limiter_paces_all_calls_and_stops_at_budget(monkeypatch):
+    import garage_rag.answer_evaluation as evaluation
+    from garage_rag.generation import GenerationError
+
+    clock = [0.0]
+    starts = []
+    monkeypatch.setattr(evaluation.time, "monotonic", lambda: clock[0])
+    monkeypatch.setattr(
+        evaluation.time, "sleep", lambda delay: clock.__setitem__(0, clock[0] + delay)
+    )
+
+    class Model:
+        def invoke(self, messages):
+            starts.append(clock[0])
+            if len(starts) == 2:
+                raise RuntimeError("provider failed")
+            return "response"
+
+    model = evaluation.BudgetedPacedLLM(Model(), max_api_calls=3, requests_per_minute=15)
+    assert model.invoke([]) == "response"
+    with pytest.raises(RuntimeError, match="provider failed"):
+        model.invoke([])
+    assert model.invoke([]) == "response"
+    with pytest.raises(GenerationError, match="budget exhausted"):
+        model.invoke([])
+    assert len(starts) == model.calls == 3
+    assert all(b - a >= 4 for a, b in zip(starts, starts[1:], strict=False))
+
+
+@pytest.mark.parametrize("rate", [0, 16, True])
+def test_live_limiter_rejects_unsafe_rates(rate):
+    from garage_rag.answer_evaluation import BudgetedPacedLLM
+
+    with pytest.raises(ValueError, match="1.*15"):
+        BudgetedPacedLLM(None, max_api_calls=5, requests_per_minute=rate)

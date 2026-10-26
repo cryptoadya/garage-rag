@@ -23,6 +23,7 @@ class RunTrace:
     usage_records: int = 0
     elapsed_ms: float = 0
     events: list[NodeEvent] = field(default_factory=list)
+    provider_errors: list[dict] = field(default_factory=list)
 
     def public_dict(self):
         return {**asdict(self), "token_usage_complete": self.usage_records == self.llm_calls}
@@ -35,7 +36,25 @@ class MeteredLLM:
 
     def invoke(self, messages):
         self.trace.llm_calls += 1  # Include failed attempts, not only successful responses.
-        response = self.llm.invoke(messages)
+        try:
+            response = self.llm.invoke(messages)
+        except Exception as exc:
+            import httpx
+
+            status = getattr(exc, "status_code", None)
+            status = status if type(status) is int and 100 <= status <= 599 else None
+            self.trace.provider_errors.append(
+                {
+                    "http_status": status,
+                    "category": (
+                        "http_error" if status is not None
+                        else "timeout" if isinstance(exc, httpx.TimeoutException)
+                        else "transport_error" if isinstance(exc, httpx.TransportError)
+                        else "unknown_error"
+                    ),
+                }
+            )
+            raise
         usage = getattr(response, "usage_metadata", None)
         if isinstance(usage, dict) and all(
             type(usage.get(k)) is int and usage[k] >= 0 for k in ("input_tokens", "output_tokens")

@@ -153,6 +153,10 @@ wall-clock duration, allowlisted node/outcome/timing/source-count events, and
 provider-reported input/output tokens. `token_usage_complete=false` means some
 usage was unavailable; zero partial totals must not be described as zero cost.
 Reported provider tokens are not an independent billing or reasoning-token audit.
+`provider_errors` records only a validated HTTP status (or null) and a fixed
+HTTP/timeout/transport/unknown category. Missing status is not inferred from the
+generic user-facing error. Earlier captures lack this field and cannot be
+retrospectively diagnosed as a specific HTTP failure.
 
 Observations contain no question, filenames, source text, claims, quotes, API
 keys or raw errors. Private context and drafts remain process-local. LangSmith

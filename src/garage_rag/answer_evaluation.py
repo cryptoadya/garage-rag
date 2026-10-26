@@ -14,6 +14,7 @@ import platform
 import random
 import re
 import sys
+import time
 from dataclasses import asdict
 from datetime import UTC, datetime
 from importlib.metadata import version
@@ -28,6 +29,42 @@ from .index import SearchHit
 from .workflow import run_direct, run_workflow
 
 DEFAULT_DATASET = Path("benchmarks/aurora-grounded-answering.v1.json")
+
+
+class BudgetedPacedLLM:
+    """Sequential live evaluator guard, shared by drafts and audits in both modes."""
+
+    def __init__(self, llm, *, max_api_calls, requests_per_minute=15):
+        if type(requests_per_minute) is not int or not 1 <= requests_per_minute <= 15:
+            raise ValueError("requests_per_minute must be between 1 and 15")
+        if type(max_api_calls) is not int or max_api_calls < 1:
+            raise ValueError("max_api_calls must be a positive integer")
+        self.llm = llm
+        self.max_api_calls = max_api_calls
+        self.requests_per_minute = requests_per_minute
+        self.calls = 0
+        self.last_started = None
+
+    def __getattr__(self, name):
+        return getattr(self.llm, name)
+
+    def invoke(self, messages):
+        from .generation import GenerationError
+
+        if self.calls >= self.max_api_calls:
+            raise GenerationError("Live evaluation API budget exhausted")
+        if self.last_started is not None:
+            remaining = 60 / self.requests_per_minute + 0.01 - (
+                time.monotonic() - self.last_started
+            )
+            while remaining > 0:
+                time.sleep(remaining)
+                remaining = 60 / self.requests_per_minute + 0.01 - (
+                    time.monotonic() - self.last_started
+                )
+        self.last_started = time.monotonic()
+        self.calls += 1  # Failed provider attempts also consume the session budget.
+        return self.llm.invoke(messages)
 
 
 def validate_live_budget(*, pairs, max_api_calls):
@@ -390,6 +427,7 @@ def main(argv=None):
     cli.add_argument("--seed", type=int, default=20261025)
     cli.add_argument("--live", action="store_true")
     cli.add_argument("--max-api-calls", type=int, default=0)
+    cli.add_argument("--requests-per-minute", type=int, default=15, choices=range(1, 16))
     cli.add_argument("--model", help="Explicit :free model required for live comparisons")
     cli.add_argument(
         "--index-dir", type=Path, help="Existing matching corpus index for Phase 2 datasets"
@@ -451,10 +489,15 @@ def main(argv=None):
             from .generation import make_llm
 
             load_dotenv(Path.cwd() / ".env", override=False)
-            llm = make_llm(model=args.model)
+            llm = BudgetedPacedLLM(
+                make_llm(model=args.model),
+                max_api_calls=args.max_api_calls,
+                requests_per_minute=args.requests_per_minute,
+            )
             print(
                 f"Live evaluation: <= {pairs * 5} completion attempts, zero price caps, "
-                "no retries; stop on first provider error.",
+                f"<= {args.requests_per_minute} requests/minute, no retries; "
+                "stop on first provider error.",
                 file=sys.stderr,
                 flush=True,
             )
@@ -527,6 +570,8 @@ def main(argv=None):
                 "network_timeout_ms": 60000,
                 "free_only": True,
                 "retries": 0,
+                "requests_per_minute": llm.requests_per_minute,
+                "attempted_api_calls": llm.calls,
             }
             if llm is not None
             else None,

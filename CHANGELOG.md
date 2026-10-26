@@ -14,6 +14,11 @@ is available in [Git commits](https://github.com/cryptoadya/garage-rag/commits/m
   evaluator: offline scripted regressions, explicitly budgeted free-only live
   runs, hash-bound claim review, refusal/false-refusal metrics, latency and calls.
 - Workflow architecture, evaluation methodology and measured limitations in docs.
+- Enforced live-evaluation request pacing (up to 15/minute) and runtime attempt
+  budgets shared by direct drafts, grounded drafts and audits. Sanitized workflow
+  traces retain provider HTTP status/category without response payloads.
+- October 26 quota/probe diagnostics and partial live smoke results, with
+  separate agent review and explicit incomplete-matrix status.
 
 ### Changed
 
