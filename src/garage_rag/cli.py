@@ -5,16 +5,16 @@ import json
 import logging
 import os
 import sys
-from dataclasses import asdict
 from pathlib import Path
 
 from dotenv import load_dotenv
 
 from .config import IndexConfig
 from .embeddings import E5Embeddings
-from .generation import GenerationError, answer, make_llm
+from .generation import GenerationError, make_llm
 from .index import Index
 from .profiles import profile_config
+from .workflow import WorkflowLimits, run_direct, run_workflow
 
 
 def parser():
@@ -52,7 +52,32 @@ def parser():
         command.add_argument("--min-score", type=float)
         command.add_argument("--json", action="store_true")
         if name == "ask":
-            command.add_argument("--model", help="openrouter/free or provider/model:free")
+            command.add_argument(
+                "--workflow",
+                choices=["grounded", "direct"],
+                default="grounded",
+                help="Bounded audited workflow (default) or original direct baseline",
+            )
+            command.add_argument(
+                "--max-llm-calls",
+                type=int,
+                choices=range(1, 5),
+                default=4,
+                help="Grounded completion-attempt cap, including audit (default: 4)",
+            )
+            command.add_argument(
+                "--max-searches",
+                type=int,
+                choices=[1, 2],
+                default=2,
+                help="Grounded local-search cap (default: 2)",
+            )
+            command.add_argument(
+                "--provider",
+                choices=["openrouter", "groq"],
+                default=os.environ.get("GARAGE_RAG_PROVIDER", "openrouter"),
+            )
+            command.add_argument("--model", help="Provider model (Groq: openai/gpt-oss-120b)")
             command.add_argument(
                 "--answer-language",
                 choices=["auto", "en", "de", "ru"],
@@ -90,7 +115,7 @@ def main(argv=None):
         if args.command != "index" and not (args.index_dir / "manifest.json").exists():
             raise ValueError("No index found; run garage-rag index first")
         # Check credentials/model before loading E5 or opening storage for ask.
-        llm = make_llm(model=args.model) if args.command == "ask" else None
+        llm = make_llm(model=args.model, provider=args.provider) if args.command == "ask" else None
         try:
             with Index(args.index_dir, config) as index:
                 if args.command == "stats":
@@ -117,8 +142,8 @@ def main(argv=None):
                         )
                     )
                     return 0
-                hits = index.search(args.question, embeddings, args.top_k, args.min_score)
                 if args.command == "search":
+                    hits = index.search(args.question, embeddings, args.top_k, args.min_score)
                     if args.json:
                         _json(
                             [
@@ -141,9 +166,40 @@ def main(argv=None):
                         if not hits:
                             print("No matching passages in the active index.")
                 else:
-                    result = answer(args.question, hits, llm, answer_language=args.answer_language)
+
+                    def search(k):
+                        return index.search(args.question, embeddings, k, args.min_score)
+
+                    if args.workflow == "direct":
+                        run = run_direct(
+                            args.question,
+                            search,
+                            llm,
+                            top_k=args.top_k,
+                            answer_language=args.answer_language,
+                        )
+                    else:
+                        print(
+                            f"Grounded answering: at most {args.max_llm_calls} completion attempts "
+                            f"and {args.max_searches} local searches; no automatic API retries.",
+                            file=sys.stderr,
+                        )
+                        run = run_workflow(
+                            args.question,
+                            search,
+                            llm,
+                            top_k=args.top_k,
+                            answer_language=args.answer_language,
+                            limits=WorkflowLimits(args.max_llm_calls, args.max_searches),
+                        )
+                    if run.error:
+                        raise GenerationError(
+                            f"{run.error} (completion attempts: {run.trace.llm_calls}; "
+                            f"local searches: {run.trace.search_calls})"
+                        )
+                    result = run.answer
                     if args.json:
-                        _json(asdict(result))
+                        _json(run.public_dict())
                     else:
                         print(result.text)
                         if result.reason == "invalid_model_output":
@@ -152,8 +208,9 @@ def main(argv=None):
                             )
                     if result.reason == "output_token_limit":
                         print(
-                            "Model reached its output token limit. Increase OPENROUTER_MAX_TOKENS "
-                            "or choose another explicit :free model; no automatic retry was made.",
+                            "Model reached its output token limit. "
+                            f"Check {args.provider.upper()}_MAX_TOKENS; "
+                            "no automatic retry was made.",
                             file=sys.stderr,
                         )
         finally:

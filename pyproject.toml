@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "garage-rag"
-version = "0.2.0"
+version = "0.3.0"
 description = "Local multilingual retrieval over automotive owner documentation"
 keywords = ["rag", "automotive", "multilingual", "qdrant", "grounded-generation"]
 classifiers = [
@@ -17,7 +17,9 @@ readme = "README.md"
 requires-python = ">=3.12"
 license = "MIT"
 dependencies = [
+  "httpx==0.28.1",
   "langchain-core==1.7.0",
+  "langgraph==1.2.17",
   "langchain-openrouter==0.2.9",
   "sentence-transformers==6.2.0",
   "qdrant-client==1.20.0",
@@ -29,7 +31,13 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest==9.1.1", "reportlab==5.1.0", "ruff==0.17.2"]
+dev = ["build==1.6.1", "pytest==9.1.1", "reportlab==5.1.0", "ruff==0.17.2"]
+
+[project.urls]
+Repository = "https://github.com/cryptoadya/garage-rag"
+Documentation = "https://github.com/cryptoadya/garage-rag#readme"
+Issues = "https://github.com/cryptoadya/garage-rag/issues"
+Changelog = "https://github.com/cryptoadya/garage-rag/blob/main/CHANGELOG.md"
 
 [project.scripts]
 garage-rag = "garage_rag.cli:main"

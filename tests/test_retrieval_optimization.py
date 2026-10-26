@@ -194,7 +194,23 @@ def test_selected_profile_ask_preserves_language_and_verified_citations(
     }
     llm = SimpleNamespace(
         invoke=lambda messages: SimpleNamespace(
-            content=json.dumps(response), response_metadata={"finish_reason": "stop"}
+            content=json.dumps(
+                response
+                if "evidence auditor" not in messages[0].content
+                else {
+                    "decision": "accept",
+                    "complete": True,
+                    "checks": [
+                        {
+                            "claim_index": 0,
+                            "entailed": True,
+                            "applicable": True,
+                            "numbers_safe": True,
+                        }
+                    ],
+                }
+            ),
+            response_metadata={"finish_reason": "stop"},
         ),
         client=SimpleNamespace(__exit__=lambda *a: None),
     )
@@ -203,8 +219,7 @@ def test_selected_profile_ask_preserves_language_and_verified_citations(
     monkeypatch.setattr("garage_rag.cli.E5Embeddings", lambda *a, **kw: embeddings)
     monkeypatch.setattr("garage_rag.cli.make_llm", lambda **kw: llm)
     assert (
-        main(["--profile", "bge-m3", "--index-dir", str(directory), "ask", question, "--json"])
-        == 0
+        main(["--profile", "bge-m3", "--index-dir", str(directory), "ask", question, "--json"]) == 0
     )
     result = json.loads(capsys.readouterr().out)
     assert result["supported"]
@@ -253,14 +268,17 @@ def test_bge_encoder_inputs_never_get_e5_prefixes(tokenizer, monkeypatch):
 
     from garage_rag.embeddings import E5Embeddings
     from garage_rag.profiles import profile_config
+
     inputs = []
+
     class Encoder:
         def encode(self, texts, **kwargs):
             inputs.extend(texts)
             return np.ones((len(texts), 1024))
-    encoder = E5Embeddings(profile_config('bge-m3'))
-    monkeypatch.setattr(encoder, '_model', Encoder())
-    monkeypatch.setattr(encoder, '_tokenizer', tokenizer)
-    encoder.embed_documents(['cold tires'])
-    encoder.embed_query('давление')
-    assert inputs == ['cold tires', 'давление']
+
+    encoder = E5Embeddings(profile_config("bge-m3"))
+    monkeypatch.setattr(encoder, "_model", Encoder())
+    monkeypatch.setattr(encoder, "_tokenizer", tokenizer)
+    encoder.embed_documents(["cold tires"])
+    encoder.embed_query("давление")
+    assert inputs == ["cold tires", "давление"]

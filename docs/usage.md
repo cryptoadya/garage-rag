@@ -15,7 +15,13 @@ line or commit it to Git.
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `OPENROUTER_API_KEY` | Empty | Required only for `ask` |
+| `GARAGE_RAG_PROVIDER` | `openrouter` | `openrouter` or `groq`; `ask --provider` overrides it |
+| `OPENROUTER_API_KEY` | Empty | Required for OpenRouter generation |
+| `GROQ_API_KEY` | Empty | Required for Groq generation |
+| `GROQ_FREE_PLAN_CONFIRMED` | `false` | Required local attestation of Groq Free Plan |
+| `GROQ_MODEL` | `openai/gpt-oss-120b` | Initial allowlisted Groq model; `--model` overrides it |
+| `GROQ_MAX_TOKENS` | `2048` | Reasoning + answer budget, 512–4096 |
+| `GROQ_TOKEN_ACCOUNTING` | `bytes` | Conservative reservation; optional pinned offline `tokenizer` mode |
 | `OPENROUTER_MODEL` | `openrouter/free` | Free router or explicit `provider/model:free`; `ask --model` overrides it |
 | `OPENROUTER_MAX_TOKENS` | `8192` | Combined reasoning and answer budget; integer from 512 to 32768 |
 | `GARAGE_RAG_INDEX` | Profile-specific | Private index directory; `--index-dir` overrides it |
@@ -23,9 +29,12 @@ line or commit it to Git.
 
 The first embedding operation downloads the pinned E5 snapshot. After the
 initial download, `HF_HUB_OFFLINE=1` prevents subsequent Hugging Face downloads.
-Use `--device mps` before the command to try Metal on Apple Silicon; CPU is the
+Use `--device mps` before the subcommand to try Metal on Apple Silicon; CPU is the
 portable default. Indexing uses batch size 16 by default. MPS has not been
 validated by this project's acceptance checks.
+
+See [Groq Cloud](providers.md) for account-plan verification, quota behavior and
+checkpoint/resume commands. Provider selection does not require re-indexing.
 
 ## Index management
 
@@ -84,7 +93,8 @@ score is not an answer probability, and absence from top-k does not establish
 absence from the document. Questions must contain 1–4000 characters and fit
 E5's 512-token input limit, including its query prefix and special tokens.
 
-`ask --json` includes `supported`, `text`, `reason` and the resolved `language`.
+`ask --json` retains `supported`, `text`, `reason` and the resolved `language`,
+and adds privacy-safe `workflow` counts, limits, timings, token usage and node events.
 `index --language en` describes the source document; `ask --answer-language`
 controls the answer. CLI diagnostics and the `PDF page N` citation label stay
 English. Quotes stay in their original English even in German or Russian answers.
@@ -101,8 +111,13 @@ No translation or language-detection LLM call is made.
 
 ## Generation failures
 
-Each `ask` command makes at most one completion request, with a 60-second
-timeout. SDK retries and provider fallback are disabled; prompt, completion and
+Default `ask` uses bounded grounded answering: up to four completion attempts
+(including semantic audits) and two local searches. A normal accepted answer
+uses two completions. `--max-llm-calls 2 --max-searches 1` disables recovery;
+`--workflow direct` selects the original one-completion path. Each completion
+has a 60-second network-operation timeout, not a total deadline. See
+[architecture](architecture.md) for routes, budgets and evidence boundaries.
+For OpenRouter, SDK retries and provider fallback are disabled; prompt, completion and
 request [price caps](https://openrouter.ai/docs/guides/routing/provider-selection#max-price)
 are zero. An explicit free model can be selected with
 `--model provider/model:free`; availability still depends on the provider.
@@ -114,6 +129,10 @@ are zero. An explicit free model can be selected with
 | Free model unavailable | Select another `:free` model; no paid route is attempted |
 | `output_token_limit` | Increase `OPENROUTER_MAX_TOKENS` within its bounds or select another free model |
 | `invalid_model_output` | Output failed format, language or evidence checks; inspect local retrieval before retrying |
+| `invalid_audit_output` / `unsupported_claims` | Inspect evidence and applicability; the audit cannot certify truth |
+| `ambiguous_question` / `conflicting_sources` | Clarify the vehicle/conditions or resolve conflicting documents |
+| `unsafe_numeric_evidence` | Inspect the original PDF layout; do not infer table cells from extracted text |
+| `llm_budget_exhausted` / `no_new_context` | No unaudited answer is returned; inspect retrieval before changing budgets |
 | `no_context` / `insufficient_evidence` | Rephrase the question, inspect search results or supply relevant documentation |
 
 [Reasoning tokens share the completion budget](https://openrouter.ai/docs/guides/best-practices/reasoning-tokens#reasoning-tokens-and-max_tokens)
@@ -125,13 +144,14 @@ there is no automatic repair request.
 
 ## Privacy
 
-`ask` transmits the question and selected passages to OpenRouter/providers.
+`ask` transmits the question, selected passages and audit draft to the selected
+LLM provider (OpenRouter/upstream providers or Groq).
 Review their retention policies before using sensitive documents. `search`
 prints private text to the terminal; exported JSON and generated answers can
 also contain copyrighted source text. Do not commit these captures.
 
-The application disables inherited LangSmith tracing and does not configure
-content logs, index exports or telemetry. Hugging Face model downloads still
+The application disables inherited LangSmith tracing. Workflow observations
+are local and omit private content; no remote tracing backend is configured. Hugging Face model downloads still
 use the network. Keep PDFs, caches, extracted text and indexes private, including
 custom paths outside the ignored directories. See the
-[licensing notice](../README.md#limits-and-licensing) before adding documents.
+[licensing notice](../README.md#license) before adding documents.

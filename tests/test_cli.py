@@ -47,6 +47,7 @@ def test_missing_key_never_echoes_environment(tmp_path, monkeypatch, capsys, con
     assert "do-not-print-this-value" not in stderr
 
 
+@pytest.mark.parametrize("workflow", ["grounded", "direct"])
 @pytest.mark.parametrize("truncated", [False, True])
 @pytest.mark.parametrize(
     ("question", "language", "option", "claim"),
@@ -75,6 +76,7 @@ def test_ask_language_through_cli(
     option,
     claim,
     truncated,
+    workflow,
 ):
     from garage_rag.index import Index
 
@@ -94,7 +96,22 @@ def test_ask_language_through_cli(
     }
     llm = SimpleNamespace(
         invoke=lambda messages: SimpleNamespace(
-            content=json.dumps(response),
+            content=json.dumps(
+                response
+                if "evidence auditor" not in messages[0].content
+                else {
+                    "decision": "accept",
+                    "complete": True,
+                    "checks": [
+                        {
+                            "claim_index": 0,
+                            "entailed": True,
+                            "applicable": True,
+                            "numbers_safe": True,
+                        }
+                    ],
+                }
+            ),
             response_metadata={"finish_reason": "length" if truncated else "stop"},
         ),
         client=SimpleNamespace(__exit__=lambda *a: None),
@@ -103,7 +120,21 @@ def test_ask_language_through_cli(
     monkeypatch.setattr("garage_rag.cli.make_llm", lambda **kw: llm)
     monkeypatch.setattr("garage_rag.cli.IndexConfig", lambda **kw: config)
     monkeypatch.setattr("garage_rag.cli.E5Embeddings", lambda *a, **kw: embeddings)
-    assert main(["--index-dir", str(directory), "ask", question, "--json", *option]) == 0
+    assert (
+        main(
+            [
+                "--index-dir",
+                str(directory),
+                "ask",
+                question,
+                "--json",
+                "--workflow",
+                workflow,
+                *option,
+            ]
+        )
+        == 0
+    )
     captured = capsys.readouterr()
     result = json.loads(captured.out)
     if truncated:
