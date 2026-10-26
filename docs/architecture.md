@@ -104,28 +104,38 @@ prompts, limits and frozen evaluation datasets/metrics remain unchanged.
 
 ```mermaid
 flowchart TD
-    M[Model reads question and tool results] --> C{Native tool call or final JSON?}
-    C -- dense_search or lexical_search --> G{Allowlist, schema, budgets, unique ID/query}
+    M[Retrieval planner: no answer schema] --> C{Native search or plain control?}
+    C -- dense_search or lexical_search --> G{Allowlist, schema and budgets}
     G -- valid --> L[Local active Qdrant or BM25 search]
-    L --> E[Accumulate whole passages with stable IDs]
-    E --> M
-    C -- final draft --> V[Existing citation/language and numeric gates]
-    V --> A[Separate all-claim applicability/completeness audit]
+    L --> E[Accumulate whole evidence and native call/result pair]
+    E --> B{Another planning turn fits?}
+    B -- yes --> M
+    B -- search/call ceiling --> D[Structured writer: no active tools]
+    C -- FINALIZE --> D
+    C -- REFUSE reason --> F[Refusal]
+    D --> V[Existing citation/language and numeric gates]
+    V --> A[Separate applicability/completeness audit]
     A -- accept --> O[Locally formatted cited answer]
-    C -- structured refusal --> F[Refusal with reason]
-    G -- invalid or exhausted --> F
+    G -- invalid/exhausted --> F
     E -- overflow --> F
     V -- invalid --> F
-    A -- any other verdict --> F
+    A -- reject --> F
 ```
 
-The model chooses both the retrieval tool and the query; there is no prescribed
-search order, translation dictionary or fixed top-k expansion. Results can prompt
-English reformulation of DE/RU input, clarification, another topic or comparison
-across documents. `stop_reason` can distinguish insufficient evidence, ambiguity,
-conflicting sources and out-of-scope requests. These are model decisions, not
-proof of entailment or document-wide absence. No additional search follows a
-failed final audit; this version reserves one audit and refuses on rejection.
+Retrieval turns contain no answer/refusal JSON schema. The model chooses native
+search calls, a plain `FINALIZE`, or `REFUSE` followed by a closed reason code.
+The initial empty context is not grounds to declare documentation out of scope.
+Malformed controls and invented function names refuse without repair or retry.
+`FINALIZE` without evidence refuses without spending writer/audit calls.
+
+The model still chooses tools and rewrites queries from returned evidence; no
+translation dictionary or fixed search order is prescribed. A separate writer
+receives fresh answer instructions and **no active tools**, with the last validated
+native assistant/tool pair containing all accumulated evidence. The original
+`tool_call_id` is returned even when the search/call cap routes directly to writing.
+Earlier planning prompts and control replies are omitted from the writer, reducing
+format ambiguity and token overhead. The writer's JSON passes the existing local
+gates and mandatory audit. No additional search follows a failed final audit.
 
 `local_tools` defines the closed function schemas: `dense_search` and
 `lexical_search`, each taking only a 1–500-character nonblank query and integer
@@ -141,7 +151,7 @@ stop before execution. Search results return all accumulated whole evidence with
 stable `S1…S20` IDs. Deduplication uses document/page/text. The serialized source
 budget remains 12,000 characters; unlike baseline context packing, overflowing
 any accumulated evidence refuses rather than dropping a warning or conflict.
-Earlier tool messages also remain in the bounded history. At most 20 passages can
+Earlier tool messages remain in the bounded retrieval history. At most 20 passages can
 be returned by four searches of five hits; tool and transcript overhead consumes
 the separate token budget. There is no checkpoint, persistent agent memory or
 agent-controlled filesystem mutation.
@@ -149,10 +159,13 @@ agent-controlled filesystem mutation.
 Hard ceilings are six LLM attempts (including the final audit), four attempted
 searches and twelve executed graph nodes; a recursion limit of sixteen is an
 independent safety net. `--max-llm-calls`/`--max-searches` can lower these limits.
-One LLM call is kept for the audit, leaving at most five planning/finalization
-turns. A no-search refusal can take one call; a supported one-search answer takes
-three; four searches plus finalization and audit take six. A lower call cap can
-leave no room to finalize. No unaudited supported answer is emitted.
+Two calls are reserved for separate writing and auditing, leaving at most four
+retrieval/control turns. With one search allowed (or only two calls remaining),
+retrieval routes straight to writing: one search + writer + audit still takes
+three calls. With the default free search budget, an early `FINALIZE` uses a
+separate control turn: one search + control + writer + audit takes four. Four
+searches + writer + audit take six. Budgets below three calls refuse before any
+LLM attempt. No unaudited supported answer is emitted.
 
 `--max-total-tokens` defaults to 24,000, accepts 1–48,000 and bounds the sum of
 conservative request reservations: full input/history, tool schemas and the full

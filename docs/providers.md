@@ -178,14 +178,18 @@ For `openai/gpt-oss-120b`, the agent sends only the predefined local function
 schemas with `tool_choice=auto` and `parallel_tool_calls=false`. Groq documents
 [local tools but no parallel tool use](https://console.groq.com/docs/tool-use/overview)
 for this model. Assistant call IDs/JSON arguments and matching `role=tool` results
-are validated and serialized on the next request. `stop` finalizes JSON locally;
+are validated and serialized on the next request. `stop` carries a closed plain control response on retrieval turns;
 `length`, malformed calls and API errors stop without repair or retry. The API
 never receives `browser_search`, `code_interpreter` or remote MCP definitions.
 
-Tool turns omit `response_format`: Groq's
+Retrieval turns omit `response_format` and the answer JSON instructions. A separate
+writer uses the JSON-object completion path with no active tools, followed by the
+mandatory audit. Its last historical assistant/tool pair still has to pass the
+closed allowlist and ID pairing checks; historical calls never enable new tool
+execution. Byte reservation includes their arguments/IDs and results even when
+no tools are advertised. Final JSON is validated locally. Groq's
 [Structured Outputs](https://console.groq.com/docs/structured-outputs) do not support
-tool use. Final JSON is validated locally, and the mandatory audit uses the original
-JSON-object completion path. Tool turns set `reasoning_effort=low` and
+tool use. Tool turns set `reasoning_effort=low` and
 `include_reasoning=false`; GPT-OSS does **not** accept `reasoning_format`, per the
 [reasoning documentation](https://console.groq.com/docs/reasoning). Suppressed
 reasoning still consumes the completion/token allowance; it is never replayed or
@@ -201,13 +205,20 @@ unknown until headers/errors; run one experiment sequentially and verify availab
 organization quota first. API-reported RPD/TPM reductions are enforced. Neither
 mode can enforce a Free Plan if someone externally upgrades the account.
 
-After offline acceptance, the proposed first live check is **one synthetic Aurora
-question**, Groq only, `GROQ_MAX_TOKENS=512`, `--max-llm-calls 3`,
-`--max-searches 1`, `--max-total-tokens 16000`, `--top-k 1`. It allows at most
-**3 HTTP attempts, 16,000 total reserved input+output tokens and 1,536 completion
-(including reasoning) tokens**. Free Plan expected charge is $0, conditional on
-verified account billing state; Groq has no per-request zero-price cap. Check
-Free Plan, remaining quotas and model availability before separately authorizing
-this run. It may refuse on quota, formatting, reasoning truncation or validation;
-no automatic rerun is authorized. Do not use private BMW text for this smoke.
-This is a proposal, and no live Phase 4A requests have been made.
+The first authorized live smoke stopped on its first HTTP request: Groq rejected
+an invented `json` function carrying a refusal. The request advertised only the
+two search tools, but its system prompt mixed native retrieval with answer JSON
+instructions. This establishes the protocol mixing; a single failed generation
+does not prove causality or a transport defect. The split protocol is offline
+verified and still needs separately authorized live confirmation.
+
+The next minimal live check is **one synthetic Aurora question**, Groq only,
+`GROQ_MAX_TOKENS=512`, `--max-llm-calls 3`, `--max-searches 1`,
+`--max-total-tokens 16000`, `--top-k 1`. This directly tests native tool selection,
+paired result delivery to the tools-free writer, a cited answer and its audit.
+The maximum is **3 HTTP attempts, 16,000 reserved input+output/reasoning tokens
+and 1,536 completion tokens**. A question cap does not bypass 8,000 TPM; proactive
+61-second spacing can preserve minute headroom without retries. Billing/quota
+preconditions must hold at the time of any separately authorized run. No new
+live request was made while fixing the first smoke. Truncation or another invalid
+call remains a recorded failure, never a reason for an automatic second run.

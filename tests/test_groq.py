@@ -556,7 +556,7 @@ def test_agentic_groq_native_loop_changes_strategy_from_tool_evidence(monkeypatc
         if "evidence auditor" in payload["messages"][0]["content"]:
             return success(json.dumps(audit()))
         if results and json.loads(results[-1]["content"])["sources"]:
-            return success(json.dumps(draft()))
+            return success("FINALIZE" if "tools" in payload else json.dumps(draft()))
         name = "lexical_search" if results else "dense_search"
         query = "cold tire pressure" if results else "Reifendruck prüfen"
         return httpx.Response(
@@ -606,8 +606,8 @@ def test_agentic_groq_native_loop_changes_strategy_from_tool_evidence(monkeypatc
             top_k=1,
         )
     assert result.answer.supported
-    assert len(requests) == result.trace.llm_calls == (4 if initial_empty else 3)
-    assert result.trace.input_tokens == (240 if initial_empty else 140)
+    assert len(requests) == result.trace.llm_calls == (5 if initial_empty else 3)
+    assert result.trace.input_tokens == (260 if initial_empty else 140)
     assert searches == (
         [("dense", "Reifendruck prüfen"), ("bm25", "cold tire pressure")]
         if initial_empty

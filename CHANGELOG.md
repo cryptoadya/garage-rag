@@ -15,6 +15,13 @@ is available in [Git commits](https://github.com/cryptoadya/garage-rag/commits/m
 - Offline adaptive-path, safety and protocol acceptance tests. Direct/grounded
   behavior and frozen metrics remain unchanged; live agent quality is unvalidated.
 
+### Fixed
+
+- Separate agentic retrieval/control from structured answer writing after a Groq
+  smoke exposed answer JSON instructions alongside native tools. Preserve native
+  result IDs and full evidence without advertising tools to the writer; retain
+  the three-call one-search path and strict caps. Live confirmation remains pending.
+
 ## [0.3.0] - 2026-10-26
 
 ### Added

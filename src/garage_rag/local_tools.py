@@ -83,10 +83,12 @@ def wire_messages(messages, tools=None):
             if getattr(message, "invalid_tool_calls", []):
                 raise GenerationError("Invalid local tool call")
             if calls:
-                if role != "assistant" or not tools or len(calls) != 1:
+                if role != "assistant" or len(calls) != 1:
                     raise GenerationError("Only serial local tool calls are allowed")
                 call = calls[0]
-                checked_call(call, tools)
+                # No active tools is valid for a writer receiving a historical
+                # native pair. The same closed allowlist still validates it.
+                checked_call(call, TOOLS if tools is None else tools)
                 pending = call["id"]
                 if pending in used:
                     raise GenerationError("Duplicate local tool call ID")

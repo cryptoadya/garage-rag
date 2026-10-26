@@ -6,6 +6,7 @@ import pytest
 from langchain_core.messages import AIMessage
 from test_workflow import TEXT, audit, draft, hit
 
+from garage_rag.agentic import AgenticLimits
 from garage_rag.generation import GenerationError
 
 
@@ -19,6 +20,10 @@ def tool(name="dense_search", query="cold tire pressure", top_k=3, call_id="c1")
 
 def reply(value):
     return AIMessage(content=json.dumps(value), response_metadata={"finish_reason": "stop"})
+
+
+def control(text="FINALIZE"):
+    return AIMessage(content=text, response_metadata={"finish_reason": "stop"})
 
 
 class Model:
@@ -43,6 +48,7 @@ class Model:
 def run(model, search=None, **kwargs):
     from garage_rag.agentic import run_agentic
 
+    kwargs.setdefault("limits", AgenticLimits(max_llm_calls=3, max_searches=1))
     return run_agentic(
         "How should I check tire pressure?",
         search or (lambda method, query, k: [hit()]),
@@ -79,6 +85,8 @@ def test_evidence_changes_next_query_and_tool_in_same_policy():
                 return tool("lexical_search", "cold tire pressure", call_id="c2")
             if "See the cold-pressure instructions" in sources[0]["text"] and len(sources) == 1:
                 return tool("dense_search", "cold pressure instructions", call_id="c2")
+            if messages[0].content.startswith("You control local retrieval"):
+                return control()
             return reply(draft(source=f"S{len(sources)}"))
 
     paths = []
@@ -94,7 +102,7 @@ def test_evidence_changes_next_query_and_tool_in_same_policy():
             return initial if len(calls) == 1 else [hit()]
 
         model = EvidencePolicy()
-        result = run(model, search)
+        result = run(model, search, limits=AgenticLimits())
         assert result.answer.supported
         paths.append(calls)
     assert paths == [
@@ -142,21 +150,20 @@ def test_invalid_limits(field, value):
 
 
 def test_search_and_llm_budget_exhaustion_never_execute_extra_tools():
-    from garage_rag.agentic import AgenticLimits
-
-    for limits, expected in [
-        (AgenticLimits(max_searches=1), "search_budget_exhausted"),
-        (AgenticLimits(max_llm_calls=2), "llm_budget_exhausted"),
-    ]:
+    for limits in (AgenticLimits(max_searches=1), AgenticLimits(max_llm_calls=3)):
         calls = []
         result = run(
             Model(tool(), tool(query="new search", call_id="c2")),
             lambda *a, calls=calls: calls.append(a) or [hit()],
             limits=limits,
         )
-        assert not result.answer.supported
-        assert result.answer.reason == expected
-        assert len(calls) == 1
+        # Once only writer/audit budget remains, another native call is invalid.
+        assert result.answer.reason == "invalid_tool_call"
+        assert len(calls) == result.trace.search_calls == 1
+        assert result.trace.llm_calls == 2
+    result = run(Model(tool()), limits=AgenticLimits(max_llm_calls=2))
+    assert result.answer.reason == "llm_budget_exhausted"
+    assert result.trace.llm_calls == result.trace.search_calls == 0
 
 
 def test_token_budget_accounts_for_schemas_and_full_history_before_any_request():
@@ -210,7 +217,7 @@ def test_untrusted_tool_calls_are_rejected_before_execution(bad):
 
 def test_duplicate_tool_ids_and_repeated_queries_stop_without_more_searches():
     for second in [tool(query="different", call_id="c1"), tool(call_id="c2")]:
-        result = run(Model(tool(), second))
+        result = run(Model(tool(), second), limits=AgenticLimits())
         assert not result.answer.supported
         assert result.trace.search_calls == 1
 
@@ -253,6 +260,7 @@ def test_mandatory_audit_can_refuse(decision, reason):
     model = Model(
         tool(),
         tool(query="related constraints", call_id="c2"),
+        control(),
         reply(draft()),
         reply(audit(decision)),
     )
@@ -263,6 +271,7 @@ def test_mandatory_audit_can_refuse(decision, reason):
             if "cold" in query
             else [hit("Do not check the pressure when the tires are cold.", 2)]
         ),
+        limits=AgenticLimits(),
     )
     assert result.answer.reason == reason
     sources = json.loads(model.messages[-1][-1].content)["sources"]
@@ -274,6 +283,7 @@ def test_context_overflow_refuses_instead_of_forgetting_evidence():
     result = run(
         Model(tool(), tool(query="warnings", call_id="c2")),
         lambda method, query, k: [hit()] if "cold" in query else [hit("W" * 13000, 2)],
+        limits=AgenticLimits(),
     )
     assert result.answer.reason == "context_budget_exhausted"
     assert result.trace.llm_calls == 2
@@ -306,8 +316,8 @@ def test_real_qdrant_and_bm25_tools(tmp_path, pdf_path, embeddings, tokenizer, c
 
 
 @pytest.mark.parametrize("reason", ["ambiguous_question", "conflicting_sources", "out_of_scope"])
-def test_model_can_finish_with_structured_reason_without_search(reason):
-    result = run(Model(reply({"supported": False, "claims": [], "stop_reason": reason})))
+def test_model_can_refuse_with_closed_control_reason_without_search(reason):
+    result = run(Model(control(f"REFUSE {reason}")))
     assert result.answer.reason == reason
     assert result.trace.llm_calls == 1
     assert result.trace.search_calls == 0
@@ -329,10 +339,15 @@ def test_agent_can_compare_two_documents_with_distinct_citations():
     model = Model(
         tool(),
         tool("lexical_search", "spare key blue box", call_id="c2"),
+        control(),
         reply(value),
         reply(review),
     )
-    result = run(model, lambda method, query, k: [hit()] if method == "dense" else [second])
+    result = run(
+        model,
+        lambda method, query, k: [hit()] if method == "dense" else [second],
+        limits=AgenticLimits(),
+    )
     assert result.answer.supported
     assert "aurora.pdf, PDF page 1" in result.answer.text
     assert "supplement.pdf, PDF page 8" in result.answer.text
@@ -354,6 +369,7 @@ def test_agentic_language_override_and_original_quotes(language, claim):
         lambda *a: [hit()],
         Model(tool(), reply(draft(claim)), reply(audit())),
         answer_language=language,
+        limits=AgenticLimits(max_llm_calls=3, max_searches=1),
     )
     assert result.answer.supported
     assert result.answer.language == language
@@ -384,7 +400,8 @@ def test_budget_includes_final_audit_and_does_not_refund_missing_usage():
     assert not baseline.trace.public_dict()["token_usage_complete"]
     cap = baseline.trace.reserved_tokens - 1
     result = run(
-        Model(tool(), reply(draft()), reply(audit())), limits=AgenticLimits(max_total_tokens=cap)
+        Model(tool(), reply(draft()), reply(audit())),
+        limits=AgenticLimits(max_llm_calls=3, max_searches=1, max_total_tokens=cap),
     )
     assert result.answer.reason == "token_budget_exhausted"
     assert result.trace.llm_calls == 2
@@ -412,7 +429,7 @@ def test_evidence_injection_cannot_dispatch_unlisted_file_or_web_tool():
             ],
         ),
     )
-    result = run(model, lambda *a: [hit(hostile)])
+    result = run(model, lambda *a: [hit(hostile)], limits=AgenticLimits())
     assert result.answer.reason == "invalid_tool_call"
     assert result.trace.search_calls == 1
     assert hostile not in json.dumps(result.public_dict())
@@ -495,7 +512,9 @@ def test_explicit_openrouter_alternative_real_sdk_tool_wire(monkeypatch):
     monkeypatch.setenv("OPENROUTER_MAX_TOKENS", "512")
     llm = make_llm(provider="openrouter", api_key="test-only")
     with llm.client:
-        result = run(llm, limits=AgenticLimits(max_total_tokens=48000))
+        result = run(
+            llm, limits=AgenticLimits(max_llm_calls=3, max_searches=1, max_total_tokens=48000)
+        )
     assert result.answer.supported
     assert len(requests) == 3
     assert requests[0]["parallel_tool_calls"] is False

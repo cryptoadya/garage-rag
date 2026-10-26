@@ -97,14 +97,16 @@ queries using retrieved evidence, compares accumulated passages and decides when
 to stop. Accepted answers still require quote/language/numeric validation and a
 separate semantic audit. Defaults: **6 LLM attempts including audit, 4 local
 searches, 24,000 reserved input+output/reasoning tokens, 12 graph steps**.
-A supported answer normally needs at least three calls; budgets/quotas can stop
-earlier. `--top-k` caps each search at 1–5 (default 5).
+A one-search cap needs three calls (search decision, tools-free JSON writer,
+audit); an early stop with the default search budget needs four including its
+control turn. Budgets/quotas can stop earlier. `--top-k` caps each search at 1–5 (default 5).
 
 Only predefined local read-only tools are exposed. No web/code/file-writing tool,
 API retry, paid fallback or automatic provider switch exists. OpenRouter remains
 an explicitly selected compatibility alternative (`--provider openrouter`),
-with its existing free-only controls. No live Phase 4A API test has been run;
-offline policy fixtures prove control flow, not Groq's autonomous search quality.
+with its existing free-only controls. The first live smoke failed server tool
+validation. The revised split protocol is offline verified; its live behavior and
+Groq's autonomous search quality remain unvalidated.
 See [agent architecture](docs/architecture.md#agentic-retrieval-phase-4a).
 
 ## Limitations and privacy

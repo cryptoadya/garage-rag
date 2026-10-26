@@ -197,7 +197,7 @@ def test_agentic_cli_real_local_index(
 ):
     from contextlib import nullcontext
 
-    from test_agentic import Model, reply, tool
+    from test_agentic import Model, control, reply, tool
     from test_workflow import audit, draft
 
     from garage_rag.index import Index
@@ -205,7 +205,7 @@ def test_agentic_cli_real_local_index(
     directory = tmp_path / "index"
     with Index(directory, config) as index:
         index.ingest(pdf_path, embeddings, tokenizer)
-    llm = Model(tool("lexical_search"), reply(draft()), reply(audit()))
+    llm = Model(tool("lexical_search"), control(), reply(draft()), reply(audit()))
     llm.client = nullcontext()
     monkeypatch.setattr("garage_rag.cli.make_llm", lambda **kw: llm)
     monkeypatch.setattr("garage_rag.cli.IndexConfig", lambda **kw: config)
@@ -227,4 +227,4 @@ def test_agentic_cli_real_local_index(
     result = json.loads(capsys.readouterr().out)
     assert result["supported"]
     assert result["workflow"]["mode"] == "agentic"
-    assert result["workflow"]["llm_calls"] == 3
+    assert result["workflow"]["llm_calls"] == 4

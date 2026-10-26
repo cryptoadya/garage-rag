@@ -138,7 +138,7 @@ class GroqLLM:
                 **({"tools": tools} if tools else {}),
             )
             return len(tokens) + 256 + self.max_tokens
-        if tools:
+        if tools or any(m.get("tool_calls") or m["role"] == "tool" for m in payload):
             return byte_reservation(payload, self.max_tokens, tools)
         return sum(len(m["content"].encode("utf-8")) + 32 for m in payload) + self.max_tokens
 
