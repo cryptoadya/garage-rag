@@ -108,3 +108,11 @@ regressions cover durable partial results, skipping successful modes, preserved
 error history and rejecting configuration/model drift before client creation.
 Live Groq results are kept separate from OpenRouter and scripted fixtures; see
 [setup and bounded comparison procedure](groq.md).
+
+Additive source-evaluation tests distinguish missing-context recovery from
+persistent generator abstention despite sufficient evidence, preserve legacy
+summaries, require exact source/answer binding and reject ambiguous labels.
+Private review-packet tests reject capture tampering and leave human judgments
+unfilled. Groq tests cover opt-in pinned offline tokenizer loading, explicit
+flat token IDs (rather than the length of a token mapping), unchanged output
+budget and HTTP timing separate from limiter/checkpoint overhead.

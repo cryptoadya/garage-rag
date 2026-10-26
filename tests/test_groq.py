@@ -216,3 +216,52 @@ def test_groq_wire_preserves_workflow_languages_and_citations(monkeypatch, mode,
     assert "manual.pdf, PDF page 7" in result.answer.text
     assert quote in result.answer.text
     assert len(calls) == (1 if mode == "direct" else 2)
+
+
+def test_pinned_tokenizer_reservation_is_opt_in_offline_and_keeps_output_budget(monkeypatch):
+    from types import SimpleNamespace
+
+    import transformers
+
+    seen = []
+    monkeypatch.setenv("GROQ_TOKEN_ACCOUNTING", "tokenizer")
+
+    def load(name, **kwargs):
+        seen.append((name, kwargs))
+        return SimpleNamespace(
+            apply_chat_template=lambda payload, **kw: (
+                list(range(100))
+                if kw.get("return_dict") is False
+                else {"input_ids": list(range(100))}
+            )
+        )
+
+    monkeypatch.setattr(transformers.AutoTokenizer, "from_pretrained", load)
+    requests = []
+    llm = model(monkeypatch, lambda request: requests.append(request) or success())
+    payload = [{"role": "user", "content": "long context " * 1000}]
+    assert llm.reserve_tokens(payload) == 100 + 256 + 2048
+    assert seen[0][0] == "openai/gpt-oss-120b"
+    assert seen[0][1]["revision"] == "b5c939de8f754692c1647ca79fbf85e8c1e70f8a"
+    assert seen[0][1]["local_files_only"] is True
+    assert seen[0][1]["trust_remote_code"] is False
+    with llm.client:
+        llm.invoke([HumanMessage(content=payload[0]["content"])])
+    assert json.loads(requests[0].content)["max_completion_tokens"] == 2048
+
+
+def test_groq_http_time_excludes_pacing_and_local_observers(monkeypatch):
+    import garage_rag.groq as groq
+
+    clock = [0.0]
+    monkeypatch.setattr(groq.time, "perf_counter", lambda: clock[0])
+
+    def handler(request):
+        clock[0] += 0.025
+        return success()
+
+    llm = model(monkeypatch, handler)
+    llm.quota_observer = lambda: clock.__setitem__(0, clock[0] + 1)
+    with llm.client:
+        reply = llm.invoke([HumanMessage(content="JSON")])
+    assert reply.response_metadata["http_elapsed_ms"] == pytest.approx(25)

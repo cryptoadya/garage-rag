@@ -1,5 +1,7 @@
 # Phase 3: answer quality and workflow comparison
 
+Latest real-corpus evidence: [BMW E39 held-out comparison](groq-e39-20261026.md).
+
 ## What is being measured
 
 This evaluation is separate from retrieval Hit@k/MRR. A relevant page, a genuine
@@ -621,3 +623,66 @@ source-relative correctness. The live negative cases already refused before
 audit, and the persistent-refusal fault did not occur. General audit benefit
 and independent human evaluation remain unproven. Both legacy dataset-level
 metrics and the separate available-source interpretation are preserved.
+
+## Additive sent-source sufficiency review
+
+New evaluation rows retain the ordered, distinct source sets actually passed to
+**draft generation**, hashed over exact source IDs, allowed metadata and complete
+text. `model_calls` records draft/audit phases, request/response hashes, raw draft
+abstention flags and separate measured HTTP, RPM-limiter and proactive quota wait
+when available. Full messages and raw replies stay in ignored private captures.
+The first top-5 retrieval result and an expanded context are separate review
+objects; retrieved-but-unsent chunks do not enter this metric.
+
+`--source-review-file` applies schema-version-1 external labels with
+`--report-input`, optionally alongside the existing `--review-file`. Each row
+must match case/language/mode/trial, answer hash and **every** ordered sent draft
+source-set hash. A reviewer labels each set `sufficient` or `insufficient` for a
+complete, unambiguous answer with all required conditions. Missing or ambiguous
+judgments stay unreviewed by omitting that row; they are not inferred from a
+relevant page, answerability label, model response or audit decision. Invalid,
+duplicate, erroneous or mismatched rows reject the whole submission atomically.
+Old reports without exact sent-source observations cannot be scored this way.
+
+The additive `source_sufficiency` block uses the last actually sent draft
+context, excludes error rows, and reports explicit denominators:
+
+- `sufficient_context_runs` / `insufficient_context_runs` / `unreviewed_runs`;
+- `false_refusals_with_sufficient_context`, with rate over sufficient contexts;
+- `generator_false_refusals`: sufficient-context final refusals whose last raw
+  generator response explicitly abstained; remaining sufficient-context refusals
+  belong to validation/audit/policy outcomes and are counted separately;
+- `justified_context_refusals`: refusals with insufficient actual sources;
+- `answers_with_insufficient_context`: a diagnostic requiring claim review;
+  insufficiency for a complete answer alone does not make every partial claim
+  unsupported.
+
+A paired source summary requires both modes to have completed, matching source
+reviews. All legacy fields, `summary`, `paired` and frozen datasets/baselines
+retain their earlier meaning and values. In particular, legacy `false_refusals`
+measures end-to-end coverage for globally answerable needs and can include
+retrieval misses. A sufficient context does not require every plausible extra
+fact: sufficiency and completeness are relative to the question, not page length.
+
+Create a private self-contained HTML packet and unfilled, hash-bound review
+JSON templates without API calls:
+
+```bash
+python -m garage_rag.review_packet \
+  --report output/groq/<checkpoint>.json \
+  --captures output/private/groq/<captures>.json \
+  --output-dir output/private/groq/<review-directory>
+```
+
+The packet contains final answers, candidates, each actual request/source set,
+raw model replies, hashes and a review rubric. It validates capture/source/reply
+hashes and escapes text for HTML. Its CLI restricts output to ignored
+`output/private/`. Obtain the original PDF privately and verify its corpus hash;
+never commit the packet, PDF or extracted passages. Templates leave judgments
+null and independent-human provenance false until a real reviewer completes
+them. Agent scoring and the model's own audit do not constitute independent
+human review.
+
+Source-review provenance is retained per row. Applying a later partial human
+review cannot promote earlier agent-reviewed rows to independent human review;
+the aggregate flag is true only when every scored source-review row is human.

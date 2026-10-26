@@ -313,3 +313,192 @@ def test_live_cli_checkpoints_failure_and_resumes_only_unfinished_mode(tmp_path,
     assert resumed["provenance"]["generation"]["previous_attempted_api_calls"] == 2
     assert main([*args, "--resume"]) == 0
     assert len(calls) == 3
+
+
+def test_source_sufficiency_is_additive_and_requires_exact_sent_context():
+    from copy import deepcopy
+
+    from garage_rag.answer_evaluation import (
+        apply_source_reviews,
+        evaluate_synthetic,
+    )
+
+    report, captures = evaluate_synthetic(
+        dataset(), languages=["en"], case_ids=["recovery", "persistent_false_refusal"]
+    )
+    legacy = deepcopy((report["summary"], report["paired"]))
+    assert all("model_calls" in c for c in captures)
+    assert all("sent_contexts" in r for r in report["rows"])
+    reviews = {
+        "schema_version": 1,
+        "report_dataset_sha256": report["dataset_sha256"],
+        "reviewer": "Implementation agent",
+        "independent_human_review": False,
+        "rows": [],
+    }
+    for row in report["rows"]:
+        review = {k: row[k] for k in ("id", "language", "mode", "trial", "answer_sha256")}
+        review["contexts"] = [
+            {
+                "sources_sha256": c["sources_sha256"],
+                "sufficiency": "insufficient"
+                if row["id"] == "recovery" and i == 0
+                else "sufficient",
+            }
+            for i, c in enumerate(row["sent_contexts"])
+        ]
+        reviews["rows"].append(review)
+    apply_source_reviews(report, reviews)
+    assert (report["summary"], report["paired"]) == legacy
+    direct = report["source_sufficiency"]["summary"]["direct"]
+    assert direct["justified_context_refusals"] == 1
+    assert direct["false_refusals_with_sufficient_context"] == 1
+    assert direct["refusals_reviewed"] == 2
+    assert report["source_sufficiency"]["paired"]["pairs"] == 2
+    bad = deepcopy(reviews)
+    bad["rows"][-1]["contexts"][0]["sources_sha256"] = "0" * 64
+    before = deepcopy(report)
+    with pytest.raises(ValueError, match="source review"):
+        apply_source_reviews(report, bad)
+    assert report == before  # No partial annotation after a later bad row.
+    assert "blue box" not in json.dumps(report)
+
+
+@pytest.mark.parametrize("invalid", [None, True, "unknown", "ambiguous"])
+def test_source_review_rejects_missing_or_ambiguous_judgments(invalid):
+    from garage_rag.answer_evaluation import apply_source_reviews, evaluate_synthetic
+
+    report, _ = evaluate_synthetic(dataset(), languages=["en"], case_ids=["recovery"])
+    row = report["rows"][0]
+    review = {k: row[k] for k in ("id", "language", "mode", "trial", "answer_sha256")}
+    review["contexts"] = [
+        {"sources_sha256": c["sources_sha256"], "sufficiency": invalid}
+        for c in row["sent_contexts"]
+    ]
+    with pytest.raises(ValueError, match="source review"):
+        apply_source_reviews(
+            report,
+            {
+                "schema_version": 1,
+                "report_dataset_sha256": report["dataset_sha256"],
+                "reviewer": "Agent",
+                "independent_human_review": False,
+                "rows": [review],
+            },
+        )
+
+
+def test_source_reviews_leave_unreviewed_errors_and_empty_contexts_unscored():
+    from garage_rag.answer_evaluation import apply_source_reviews, evaluate_synthetic
+
+    report, _ = evaluate_synthetic(dataset(), languages=["en"], case_ids=["recovery"])
+    apply_source_reviews(
+        report,
+        {
+            "schema_version": 1,
+            "report_dataset_sha256": report["dataset_sha256"],
+            "reviewer": "Agent",
+            "independent_human_review": False,
+            "rows": [],
+        },
+    )
+    assert report["source_sufficiency"]["summary"]["direct"]["reviewed_runs"] == 0
+    assert report["source_sufficiency"]["summary"]["direct"]["unreviewed_runs"] == 1
+
+
+def test_observed_model_keeps_each_real_draft_audit_and_response_private():
+    from types import SimpleNamespace
+
+    from langchain_core.messages import HumanMessage, SystemMessage
+
+    from garage_rag.answer_evaluation import ObservedEvaluationLLM
+    from garage_rag.config import digest
+
+    sources = [{"source_id": "S1", "text": "PRIVATE passage", "metadata": {}}]
+    model = ObservedEvaluationLLM(
+        SimpleNamespace(
+            invoke=lambda _: SimpleNamespace(
+                content='{"supported":false,"claims":[]}',
+                response_metadata={"http_elapsed_ms": 15, "limiter_wait_ms": 30},
+            )
+        )
+    )
+    messages = [
+        SystemMessage(content="generator"),
+        HumanMessage(
+            content=json.dumps(
+                {
+                    "sources": sources,
+                    "question": "private question",
+                    "answer_language": "en",
+                }
+            )
+        ),
+    ]
+    model.invoke(messages)
+    assert model.sent_contexts == [{"sources_sha256": digest(sources), "source_count": 1}]
+    assert model.public_calls[0]["http_elapsed_ms"] == 15
+    assert model.public_calls[0]["limiter_wait_ms"] == 30
+    assert "PRIVATE" not in json.dumps(model.public_calls)
+    assert "PRIVATE" in json.dumps(model.calls)
+
+
+def test_paced_evaluator_separates_limiter_wait_from_http_metadata(monkeypatch):
+    from types import SimpleNamespace
+
+    import garage_rag.answer_evaluation as evaluation
+
+    clock = [0.0]
+    monkeypatch.setattr(evaluation.time, "monotonic", lambda: clock[0])
+    monkeypatch.setattr(
+        evaluation.time, "sleep", lambda seconds: clock.__setitem__(0, clock[0] + seconds)
+    )
+
+    class Model:
+        def invoke(self, messages):
+            clock[0] += 0.25
+            return SimpleNamespace(content="{}", response_metadata={"http_elapsed_ms": 250})
+
+    llm = evaluation.BudgetedPacedLLM(Model(), max_api_calls=2, requests_per_minute=6)
+    assert llm.invoke([]).response_metadata["limiter_wait_ms"] == 0
+    second = llm.invoke([]).response_metadata
+    assert second["limiter_wait_ms"] == pytest.approx(9760)
+    assert second["http_elapsed_ms"] == 250
+
+
+def test_partial_human_source_review_does_not_promote_agent_rows_to_human():
+    from garage_rag.answer_evaluation import apply_source_reviews, evaluate_synthetic
+
+    report, _ = evaluate_synthetic(dataset(), languages=["en"], case_ids=["cold_pressure"])
+
+    def review(row):
+        return {
+            **{k: row[k] for k in ("id", "language", "mode", "trial", "answer_sha256")},
+            "contexts": [
+                {"sources_sha256": c["sources_sha256"], "sufficiency": "sufficient"}
+                for c in row["sent_contexts"]
+            ],
+        }
+
+    base = {"schema_version": 1, "report_dataset_sha256": report["dataset_sha256"]}
+    apply_source_reviews(
+        report,
+        {
+            **base,
+            "reviewer": "Agent",
+            "independent_human_review": False,
+            "rows": [review(r) for r in report["rows"]],
+        },
+    )
+    apply_source_reviews(
+        report,
+        {
+            **base,
+            "reviewer": "Independent person",
+            "independent_human_review": True,
+            "rows": [review(report["rows"][0])],
+        },
+    )
+    assert report["source_sufficiency"]["independent_human_review"] is False
+    assert report["rows"][0]["source_review_provenance"]["reviewer"] == "Independent person"
+    assert report["rows"][1]["source_review_provenance"]["reviewer"] == "Agent"

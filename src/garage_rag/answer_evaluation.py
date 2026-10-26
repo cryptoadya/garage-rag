@@ -26,6 +26,7 @@ from langchain_core.documents import Document
 from .config import digest
 from .evaluation import distribution
 from .index import SearchHit
+from .source_evaluation import ObservedEvaluationLLM, apply_source_reviews
 from .workflow import run_direct, run_workflow
 
 DEFAULT_DATASET = Path("benchmarks/aurora-grounded-answering.v1.json")
@@ -53,6 +54,7 @@ class BudgetedPacedLLM:
 
         if self.calls >= self.max_api_calls:
             raise GenerationError("Live evaluation API budget exhausted")
+        wait_started = time.monotonic()
         if self.last_started is not None:
             remaining = (
                 60 / self.requests_per_minute + 0.01 - (time.monotonic() - self.last_started)
@@ -64,7 +66,12 @@ class BudgetedPacedLLM:
                 )
         self.last_started = time.monotonic()
         self.calls += 1  # Failed provider attempts also consume the session budget.
-        return self.llm.invoke(messages)
+        waited = (self.last_started - wait_started) * 1000
+        response = self.llm.invoke(messages)
+        metadata = getattr(response, "response_metadata", None)
+        if isinstance(metadata, dict):
+            metadata["limiter_wait_ms"] = waited
+        return response
 
 
 def validate_live_budget(*, pairs, max_api_calls):
@@ -394,19 +401,23 @@ def _evaluate(
                 continue
             model = ScriptedScenarioLLM(case, language) if scripted else llm
             runner = run_direct if mode == "direct" else run_workflow
+            observed = ObservedEvaluationLLM(model)
             result = runner(
                 case["questions"][language],
                 search_factory(case, language),
-                model,
+                observed,
                 answer_language=language,
             )
             row = _row(result, case, language, mode, trial, scripted=scripted)
+            row["sent_contexts"] = observed.sent_contexts
+            row["model_calls"] = observed.public_calls
             rows.append(row)
             captures.append(
                 {
                     "key": {
                         k: row[k] for k in ("id", "language", "mode", "trial", "answer_sha256")
                     },
+                    "model_calls": observed.calls,
                     "answer": asdict(result.answer),
                     "error": result.error,
                     "context": json.loads(result.context.text) if result.context else None,
@@ -506,6 +517,7 @@ def main(argv=None):
         "--report-input", type=Path, help="Rescore an existing report without API calls"
     )
     cli.add_argument("--review-file", type=Path, help="Hash-bound claim reviews for --report-input")
+    cli.add_argument("--source-review-file", type=Path, help="Additive sent-source reviews")
     args = cli.parse_args(argv)
     source_hashes = {
         p.name: hashlib.sha256(p.read_bytes()).hexdigest()
@@ -527,17 +539,24 @@ def main(argv=None):
             args.output.exists() or (args.private_captures and args.private_captures.exists())
         ):
             raise ValueError("Output already exists; choose new result paths")
-        if args.resume and (not args.output.exists() or args.report_input or args.review_file):
+        if args.resume and (
+            not args.output.exists()
+            or args.report_input
+            or args.review_file
+            or args.source_review_file
+        ):
             raise ValueError("Resume requires an existing checkpoint and prohibits rescoring")
         if args.report_input:
-            if not args.review_file or args.live:
+            if not (args.review_file or args.source_review_file) or args.live:
                 raise ValueError("Rescoring requires reviews and prohibits live calls")
-            report = apply_reviews(
-                json.loads(args.report_input.read_text()), json.loads(args.review_file.read_text())
-            )
+            report = json.loads(args.report_input.read_text())
+            if args.review_file:
+                apply_reviews(report, json.loads(args.review_file.read_text()))
+            if args.source_review_file:
+                apply_source_reviews(report, json.loads(args.source_review_file.read_text()))
             _write_new(args.output, report)
             return 0
-        if args.review_file:
+        if args.review_file or args.source_review_file:
             raise ValueError("Reviews require --report-input")
         if args.private_captures and not args.private_captures.resolve().is_relative_to(
             Path("output/private").resolve()
@@ -576,6 +595,9 @@ def main(argv=None):
                 if args.index_dir and not synthetic
                 else None
             ),
+            "groq_token_accounting": os.environ.get("GROQ_TOKEN_ACCOUNTING", "bytes")
+            if args.live and provider == "groq"
+            else None,
             "max_tokens": (
                 os.environ.get("GROQ_MAX_TOKENS", "2048")
                 if provider == "groq"

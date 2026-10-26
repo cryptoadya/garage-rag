@@ -181,3 +181,30 @@ extra false refusal was observed given the actual sources. The report preserves
 the legacy recovery false-refusal metric alongside an explicit context-relative
 agent review; independent human review and general quality improvement remain
 outstanding. No further live stage is scheduled or executed by this report.
+
+## Optional offline tokenizer accounting for real corpus contexts
+
+`GROQ_TOKEN_ACCOUNTING=tokenizer` opts into the pinned
+[`openai/gpt-oss-120b` tokenizer](https://huggingface.co/openai/gpt-oss-120b/tree/b5c939de8f754692c1647ca79fbf85e8c1e70f8a).
+Download only `tokenizer.json`, `tokenizer_config.json`,
+`special_tokens_map.json`, `config.json` and `chat_template.jinja` to the existing
+Hugging Face cache before the run. No model weights are needed. The runtime
+loads revision `b5c939de8f754692c1647ca79fbf85e8c1e70f8a` with
+`local_files_only=True` and `trust_remote_code=False`; unavailable files fail
+closed. Existing `transformers` dependencies suffice.
+
+The reservation counts the pinned Harmony chat template, adds 256 input tokens
+for provider/JSON-mode framing differences, and retains the full configured
+completion/reasoning budget. This is a conservative estimate, not a guarantee
+of identical provider framing; compare against returned input usage in live
+reports. The default `bytes` mode, all four quota caps, fixed endpoint, output
+budget, sources, prompts and retrieval are unchanged. This option addresses a
+measured transport-accounting limitation: ordinary real BMW top-5 contexts can
+exceed the byte reservation's 8,000-TPM guard while fitting under the tokenizer
+reservation. It does not trim context to improve evaluation results.
+
+The evaluator now records RPM-limiter wait independently. Groq response metadata
+records wall-clock duration of the synchronous HTTP call, excluding local quota
+observers and sleeps. An experiment can proactively wait for token-window
+headroom **before** invoking the provider; that wait must be reported separately
+as `quota_wait_ms`. No automatic retry follows a local/provider error.

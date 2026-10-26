@@ -17,6 +17,7 @@ from langchain_core.messages import AIMessage
 from .generation import GenerationError
 
 MODEL = "openai/gpt-oss-120b"
+TOKENIZER_REVISION = "b5c939de8f754692c1647ca79fbf85e8c1e70f8a"
 
 
 def _seconds(value):
@@ -87,6 +88,22 @@ class GroqLLM:
         key = (api_key or os.environ.get("GROQ_API_KEY", "")).strip()
         if not key:
             raise GenerationError("Set GROQ_API_KEY in .env; local search needs no API key")
+        self.token_accounting = os.environ.get("GROQ_TOKEN_ACCOUNTING", "bytes")
+        self.tokenizer = None
+        if self.token_accounting not in {"bytes", "tokenizer"}:
+            raise GenerationError("GROQ_TOKEN_ACCOUNTING must be bytes or tokenizer")
+        if self.token_accounting == "tokenizer":
+            from transformers import AutoTokenizer
+
+            try:
+                self.tokenizer = AutoTokenizer.from_pretrained(
+                    MODEL,
+                    revision=TOKENIZER_REVISION,
+                    local_files_only=True,
+                    trust_remote_code=False,
+                )
+            except Exception:
+                raise GenerationError("Pinned Groq tokenizer unavailable in local cache") from None
         self.client = httpx.Client(
             base_url="https://api.groq.com/openai/v1/",
             headers={"Authorization": f"Bearer {key}"},
@@ -99,6 +116,18 @@ class GroqLLM:
         self._headers_at = 0.0
         self._resume_after = 0.0
         self.quota_observer = None
+
+    def reserve_tokens(self, payload):
+        if self.tokenizer is not None:
+            # Actual pinned Harmony template plus a margin for provider JSON-mode framing.
+            tokens = self.tokenizer.apply_chat_template(
+                payload,
+                tokenize=True,
+                add_generation_prompt=True,
+                return_dict=False,
+            )
+            return len(tokens) + 256 + self.max_tokens
+        return sum(len(m["content"].encode("utf-8")) + 32 for m in payload) + self.max_tokens
 
     def quota_state(self):
         now = time.monotonic()
@@ -139,7 +168,7 @@ class GroqLLM:
             payload.append({"role": role, "content": message.content})
         # UTF-8 bytes bound byte-level tokenizer text tokens conservatively. Include
         # chat framing and reserve the full completion budget, including reasoning.
-        reserve = sum(len(m["content"].encode("utf-8")) + 32 for m in payload) + self.max_tokens
+        reserve = self.reserve_tokens(payload)
         now = time.monotonic()
         self._history = [entry for entry in self._history if now - entry[0] < 86400]
         if self._blocked or time.time() < self._resume_after:
@@ -165,6 +194,7 @@ class GroqLLM:
         self._history.append(entry)  # Failed requests keep their conservative reservation.
         self._observe()  # Save reservation before sending, even if the process is interrupted.
         try:
+            http_started = time.perf_counter()
             response = self.client.post(
                 "chat/completions",
                 json={
@@ -181,6 +211,7 @@ class GroqLLM:
             self._resume_after = time.time() + 60
             self._observe()
             raise
+        http_elapsed_ms = (time.perf_counter() - http_started) * 1000
         self.rate_limits = quota_headers(response.headers)
         self._headers_at = time.monotonic()
         if response.status_code != 200:
@@ -223,6 +254,7 @@ class GroqLLM:
             return AIMessage(
                 content=choice["message"]["content"] or "",
                 response_metadata={
+                    "http_elapsed_ms": http_elapsed_ms,
                     "finish_reason": choice["finish_reason"],
                     "provider": "groq",
                     "model": self.model,

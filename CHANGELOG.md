@@ -7,6 +7,15 @@ is available in [Git commits](https://github.com/cryptoadya/garage-rag/commits/m
 
 ### Added
 
+- Additive, hash-bound sent-source sufficiency evaluation distinguishing generator
+  abstention, local-filter false refusals and missing-context refusals without
+  changing legacy metrics or frozen baselines; private answer/source review packets.
+- Real BMW E39 held-out E5 Small/BGE-M3 direct/grounded comparison across EN/DE/RU:
+  14 pairs, 33/60 attempts, explicit quality/cost tradeoffs, confirmed filter/context
+  limitations and an independently reviewable semantic-audit follow-up procedure.
+- Optional pinned offline Groq tokenizer accounting for unmodified corpus contexts,
+  with the existing byte guard as default and separate HTTP/RPM/quota timing.
+
 - Four harder Groq EN live pairs with source-relative agent review, preserved
   dataset-level metrics, request/search/token/timing evidence and documented
   recovery benefit, audit-evidence limits and scoring follow-up proposals.
