@@ -1,4 +1,26 @@
-# Groq Cloud Free Plan
+# Generation providers
+
+`ask --provider openrouter|groq` overrides `GARAGE_RAG_PROVIDER`. Indexing and
+search need neither provider. Both transports share the generation prompt,
+JSON schemas, local validator, language handling and bounded LangGraph workflow.
+
+## OpenRouter
+
+Set `OPENROUTER_API_KEY` in the local `.env`. The default is `openrouter/free`;
+`OPENROUTER_MODEL` or `ask --model` can select an explicit `provider/model:free`.
+The client rejects paid model IDs, requires provider parameter support and sets
+prompt/completion/request price caps to zero. SDK retries and provider fallbacks
+are disabled. Free routing still depends on availability and quotas; it does
+not pin an upstream model when using the free router.
+
+`OPENROUTER_MAX_TOKENS` defaults to 8192 (512–32768), shared by reasoning and
+visible output. Truncated responses refuse even if their JSON looks complete.
+The fixed endpoint is `https://openrouter.ai/api/v1`; each completion has a
+60-second network-operation timeout, not a total deadline. See OpenRouter's
+[routing controls](https://openrouter.ai/docs/guides/routing/provider-selection)
+and [reasoning budget](https://openrouter.ai/docs/guides/best-practices/reasoning-tokens).
+
+## Groq Cloud Free Plan
 
 Groq is an additional transport for the existing direct and bounded LangGraph
 workflows. It does not change retrieval baselines, prompts, JSON answer/draft/audit
@@ -42,8 +64,9 @@ billing settings are changed by GarageRAG.
 
 On October 26, 2026, this organization's Console showed Free Plan and these
 `openai/gpt-oss-120b` limits: **30 RPM, 1,000 RPD, 8,000 TPM, 200,000 TPD**.
-They match the current [published Free Plan table](https://console.groq.com/docs/rate-limits).
-Limits apply to the organization and can change; check the Console before runs.
+These are the adapter's local caps, not a promise of current account allowance.
+Check your Console and the [rate-limit documentation](https://console.groq.com/docs/rate-limits)
+before live runs; organization limits can change.
 
 The adapter guards all four windows conservatively: rolling 60 seconds and
 24 hours, reserving UTF-8 input bytes plus chat framing and the entire output
@@ -75,8 +98,8 @@ supported grounded question (normally two calls: draft and audit), inspect its
 JSON/citations and the live headers, then explicitly agree on a comparison scope.
 A smoke is operational evidence, not a quality improvement claim.
 
-Bounded one-pair EN command, at most five attempts; execute only within an
-explicitly agreed scope. Its completed result is recorded below:
+Example one-pair EN comparison, at most five attempts; run only within an
+explicitly agreed live scope:
 
 ```bash
 GROQ_FREE_PLAN_CONFIRMED=true python -m garage_rag.answer_evaluation \
@@ -117,12 +140,6 @@ hashes/counts/decisions, never source passages or generated claim text. As befor
 semantic quality requires explicit external hash-bound review. The same-model
 LangGraph auditor is not independent evaluation ground truth.
 
-## Evaluation results
-
-Use the [single evaluation summary](benchmarks/grounded-answering.md) for recorded
-metrics, methodology and remaining acceptance. Raw historical exports, timing and
-reviews are in the [private archive](benchmarks/phase3-archive.md).
-
 ## Optional offline tokenizer accounting for real corpus contexts
 
 `GROQ_TOKEN_ACCOUNTING=tokenizer` opts into the pinned
@@ -144,7 +161,7 @@ measured transport-accounting limitation: ordinary real BMW top-5 contexts can
 exceed the byte reservation's 8,000-TPM guard while fitting under the tokenizer
 reservation. It does not trim context to improve evaluation results.
 
-The evaluator now records RPM-limiter wait independently. Groq response metadata
+The evaluator records RPM-limiter wait independently. Groq response metadata
 records wall-clock duration of the synchronous HTTP call, excluding local quota
 observers and sleeps. An experiment can proactively wait for token-window
 headroom **before** invoking the provider; that wait must be reported separately

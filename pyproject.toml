@@ -31,7 +31,13 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest==9.1.1", "reportlab==5.1.0", "ruff==0.17.2"]
+dev = ["build==1.6.1", "pytest==9.1.1", "reportlab==5.1.0", "ruff==0.17.2"]
+
+[project.urls]
+Repository = "https://github.com/cryptoadya/garage-rag"
+Documentation = "https://github.com/cryptoadya/garage-rag#readme"
+Issues = "https://github.com/cryptoadya/garage-rag/issues"
+Changelog = "https://github.com/cryptoadya/garage-rag/blob/main/CHANGELOG.md"
 
 [project.scripts]
 garage-rag = "garage_rag.cli:main"

@@ -1,118 +1,169 @@
 # Architecture and safety boundaries
 
-GarageRAG uses explicit Python stages and a bounded LangGraph answering workflow.
-LangChain supplies `Document`, `Embeddings` and message interfaces plus the
-ChatOpenRouter integration. Retrieval does not require an LLM or agent runtime. The source is under
-[`src/garage_rag`](../src/garage_rag).
+GarageRAG separates local ingestion/retrieval from remote answer generation.
+The implementation lives in [`src/garage_rag`](../src/garage_rag):
 
-## Extraction and chunking
+| Modules | Responsibility |
+| --- | --- |
+| `ingestion`, `embeddings`, `config`, `profiles` | Page extraction, token bounds and pinned model settings |
+| `index`, `retrieval` | Persistent dense search; experiment-only BM25, fusion and reranking |
+| `generation`, `language`, `groq` | Context, schemas, language selection and provider transport |
+| `workflow`, `grounding`, `telemetry` | Bounded LangGraph, local numeric gate, audit and safe observations |
+| `evaluation`, `optimization` | Frozen retrieval evaluation and profile comparisons |
+| `answer_evaluation`, `source_evaluation`, `review_packet` | Paired answer evaluation and private hash-bound review |
+| `cli` | `index`, `stats`, `search` and `ask` commands |
 
-`pypdf` extracts one document per PDF page, retaining blank pages. Metadata keeps
-filename, document/content hashes, one-based PDF page position, PDF page label,
-title, language, vehicle models, document type and optional source URL. Page
-labels are separate from positions: citations always refer to **PDF page N**.
-Extraction errors fail the document rather than silently dropping pages.
+## Extraction and indexing
 
-Cleaning normalizes Unicode and whitespace, removes control characters and
-conservative alphabetic line-break hyphenation, and removes repeated long
-margin lines. Short headings and numbers are preserved. PDF geometry, images
-and tables are not reconstructed; image-only content needs human review or OCR
-outside the current application.
+`pypdf` extracts every PDF page, including blank pages. Metadata retains filename,
+content/document hashes, one-based PDF position, page label, title, source language,
+vehicle models, document type and optional source URL. Citations always use physical
+**PDF page N**, not a printed label. Extraction errors fail the document.
 
-E5's fast tokenizer provides character offsets. Chunks stay within a page,
-prefer nearby sentence/paragraph boundaries, overlap by up to 48 tokens and fit
-384 tokens including `passage:` and special tokens by default. Each chunk keeps
-its page, offsets, ordinal and token count. Empty pages produce no chunks;
-a document with no text chunks fails indexing. Inputs beyond the 512-token model
-limit are rejected rather than silently truncated. Boundaries can still split
-tables, procedures and cross-page explanations.
+Cleanup normalizes Unicode/whitespace, removes control characters, conservative
+alphabetic line-break hyphenation and repeated long margin lines. Chunking stays
+within each page, prefers sentence/paragraph boundaries and uses tokenizer offsets.
+Defaults are 384 tokens with up to 48 overlapping tokens, including prefix/special-token
+allowance. Empty pages create no chunks; a wholly textless document fails indexing.
+No OCR, geometry, figure or table reconstruction occurs. Chunk boundaries can split
+procedures and qualifications.
 
-## Embeddings, persistence and retrieval
+Sentence Transformers loads revision-pinned models with remote code disabled.
+E5 Small uses normalized 384-dimensional vectors and `query: ` / `passage: `
+prefixes for every language. E5 Base uses 768 dimensions; BGE-M3 uses 1024-dimensional
+dense vectors without E5 prefixes. All profiles retain the application's 512-token
+input bound and separate indexes. See [profile configuration](usage.md#embedding-profiles).
 
-Sentence Transformers loads a pinned
-[`intfloat/multilingual-e5-small`](https://huggingface.co/intfloat/multilingual-e5-small)
-snapshot locally with remote code disabled. English prefixes are required for
-all input languages: `passage: ` for documents and `query: ` for questions.
-Normalized 384-dimensional vectors are stored in Qdrant Local with cosine
-similarity. Model revision, tokenizer, prefixes, chunking and relevant library
-versions form the index configuration fingerprint.
+Qdrant Local stores cosine vectors. Model/revision, prefixes, chunking and relevant
+library versions form a configuration fingerprint. Document bytes and supplied
+metadata determine revision identity; filenames must be unique within an index.
+Deterministic point IDs reuse completed batches after interruption. An atomic
+manifest replacement activates a revision only when every batch is written.
+Search sees active revisions only; failed updates leave the last complete revision
+available. Superseded/partial points remain private on disk; no compaction exists.
 
-SHA-256 fingerprints cover document bytes and supplied metadata. Deterministic
-point IDs allow interrupted indexing to reuse persisted batches. An atomic
-manifest replacement activates a revision only after every batch is written.
-Partial revisions stay invisible to retrieval; a failed update leaves the
-previous complete revision active. Old and partial points remain private on
-disk until manually managed; there is no automatic compaction.
+`Index.search` performs dense `query_points` retrieval. Scores are similarities,
+not relevance probabilities. Qdrant Local permits one process per directory.
+The offline comparison adapters add active-only BM25, deterministic reciprocal-rank
+fusion and optional top-20 cross-encoder reranking without changing CLI search.
 
-Retrieval uses `query_points` to search only active revisions. Scores measure
-similarity, not relevance probabilities; there is no universal refusal threshold.
-Qdrant Local's single-process storage suits a small personal corpus, not a
-multi-user production service. CPU and MPS results can differ numerically.
+## Direct and grounded answers
 
-## Generation and trust boundaries
+Both modes use the original query, initial dense ranking, context builder,
+generation prompt and local validator. Local Lingua detection selects EN/DE/RU;
+explicit `--answer-language` overrides it. Evidence stays in the source language.
 
-1. Local language detection or an explicit override selects EN, DE or RU. The
-   original question is passed unchanged to retrieval and generation.
-2. Context construction assigns source IDs to at most eight retrieved chunks
-   within a 12,000-character JSON budget. Passages are never truncated to fit;
-   each ID maps to exactly the text actually sent.
-3. The question, selected context and audit draft cross the selected LLM provider
-   boundary (OpenRouter/upstream providers or Groq). Source
-   text and the question are untrusted data: the system instruction forbids
-   following embedded instructions or changing the requested answer language.
-   Model, market, year, equipment and body-style qualifications must be respected.
-4. The model returns JSON claims with English evidence quotes and source IDs.
-   Pydantic enforces a strict schema, at most six claims and evidence for each
-   claim. A truncated response is rejected before validation.
-5. Every claim must pass local language checks. Every source ID must exist in
-   the sent context, and its quote must occur in that passage after whitespace
-   normalization. Translated, altered or fabricated evidence is rejected.
-6. PDF references are rendered from local metadata, not model-supplied page
-   fields. Direct mode finishes here. Grounded mode applies a conservative numeric
-   gate and a separate semantic audit of entailment, applicability, conflicts and
-   whole-question completeness. Only insufficient context may trigger one local
-   top-20 expansion and another draft/audit, within four completion attempts.
-   There is no LLM repair request. See the [workflow design](grounded-answering.md).
+```mermaid
+flowchart TD
+    R[Local retrieval] --> D[Draft claims]
+    D --> V{Schema, language, source IDs and quotes valid?}
+    V -- No --> F[Refusal]
+    V -- Yes, direct --> O[Answer with local PDF citations]
+    V -- Yes, grounded --> N{Numeric evidence safe?}
+    N -- No --> F
+    N -- Yes --> A[Same-model semantic audit]
+    A -- All claims supported and answer complete --> O
+    D -- Insufficient evidence --> E{Grounded expansion available?}
+    A -- Insufficient context --> E
+    A -- Unsupported, ambiguous, conflicting or invalid --> F
+    E -- No --> F
+    E -- Yes, once --> X[Original query at top-20; retain prior passages]
+    X -- New passage fits --> D
+    X -- No new usable context --> F
+```
 
-Exact source and quote checks prevent fabricated evidence references; they do
-**not** prove that a claim follows logically from its quote, that all conditions
-were included, or that retrieval found the best passage. Language checks can
-also reject valid short or jargon-heavy claims. Prompt-injection instructions
-are treated as untrusted, but this is not a proof of immunity to model errors.
-Always inspect the evidence before using an answer for a real vehicle.
+Context contains at most eight whole passages within a 12,000-character JSON
+budget. Every source ID maps to exactly the text sent. Pydantic requires strict
+JSON, at most six claims and evidence per claim. Local checks reject unknown IDs,
+quotes absent after whitespace normalization, translated evidence, wrong-language
+claims, bracketed references and truncated output. PDF citations come from local
+metadata. Direct mode finishes after these checks, without semantic auditing.
 
-## Scope
+Grounded mode applies a numeric gate and a separate completion auditing every
+claim's entailment, applicability, essential conditions, numerical relationships,
+conflicts and whole-question completeness. Unique, complete claim coverage and
+all checks true are required. Malformed or inconsistent audits refuse; no repair
+completion occurs. An auditor cannot override a failed local check.
 
-The initial BMW corpus is an owner's manual for the 2002 E39 525i, 530i and
-540i, not a workshop repair manual or evidence of applicability to every E39.
-Repair parameters must not be inferred from unrelated owner guidance.
+Only a draft's `insufficient_evidence` or an audit's `insufficient` verdict can
+trigger one expansion. It uses the unchanged question and score filter at top-20,
+retains every previously sent passage and fills remaining space with novel passages.
+Compact JSON omits display URLs and redundant page labels, while retaining full
+passage text and applicability metadata. Local citation metadata is unchanged.
+IDs are rebuilt for the new context. If nothing new fits, return `no_new_context`
+without another completion. Initial `--top-k 20` disables expansion.
 
-Pinned alternative embedding profiles change the model, dimension and required
-prefixes in the fingerprint, while retaining the same Index.search contract.
-Baseline remains the default; profiles use separate directories. Phase 2B's
-offline experiment adapter also implements active-only in-memory BM25,
-deterministic rank fusion and optional top-20 reranking. It delegates scheduling
-and page metrics to the unmodified Phase 2A evaluator. These adapters do not
-change the production dense retrieval or generation path.
+The graph is sequential typed state with conditional edges, a fresh instance per
+command and no planner, query rewriting, tools, conversation memory, checkpointer
+or remote graph service. Evaluation checkpoints are separate from graph state.
 
-There is no OCR, conversation memory, autonomous agent/MCP integration,
-Web UI, Docker integration or production concurrency.
+## Budgets and failures
+
+| Setting | Default / bound |
+| --- | --- |
+| Direct | One search, at most one completion |
+| Grounded `--max-llm-calls` | 4, configurable 1–4 attempted completions including audits |
+| Grounded `--max-searches` | 2, configurable 1–2 local searches |
+| Graph recursion limit | 16, fixed safety net; normal longest path is seven nodes |
+| Context | 8 chunks / 12,000 serialized characters, whole passages |
+| Network-operation timeout | 60 seconds per request; no total call/workflow deadline |
+| OpenRouter completion/reasoning tokens | 8192 per call, configurable 512–32768 |
+| Groq completion/reasoning tokens | 2048 per call, configurable 512–4096 |
+
+A draft reserves budget for its mandatory audit. A one-call grounded budget
+therefore refuses without a completion. Normal acceptance uses two calls;
+recovery after draft refusal uses at most three, after audit insufficiency at
+most four. Direct mode ignores grounded budget flags. The default worst-case
+completion allowance is 32,768 OpenRouter or 8,192 Groq tokens across four calls.
+
+Timeouts are HTTPX network-operation/inactivity limits, not whole-call deadlines;
+keepalive traffic or local loading/search can extend wall time. Provider/local
+errors stop safely (CLI exit 2); refusals are normal answers (exit 0). No retries,
+automatic output repair, paid fallback or model switch occurs. See
+[providers](providers.md) for transport controls and [usage](usage.md#generation-failures)
+for terminal reasons.
+
+## Numerical and semantic limits
+
+Numeric claims require literal values in cited intact linguistic prose. Decimal
+comma normalization is allowed; conversion, rounding and interpolation are not
+inferred. Unit-adjacent literals such as `100Nm` count as numbers. Recognized
+spelled-out EN/DE/RU cardinals are conservatively refused rather than converted.
+This lexical detector is not an exhaustive grammar.
+
+For numeric claims, sources with replacement characters, layout-required metadata,
+suspicious numeric rows or orphaned cells are rejected. Wrapped dual-unit prose
+can pass, but every number still needs a linguistic relationship. Nonnumeric claims
+may proceed to auditing despite unrelated numbers elsewhere in the passage.
+Chunk overlap or audit acceptance cannot override the gate. Some safe prose is
+rejected; subtle table corruption can still escape detection. `requires_layout`
+benchmark cases remain unsafe to answer from text alone.
+
+The same model drafts and audits; both calls can share errors or follow embedded
+instructions. Sources and questions are untrusted input, and prompt instructions
+are not proof of injection immunity. Quote containment does not establish entailment,
+completeness or vehicle applicability. Top-20 retrieval cannot establish document-wide
+absence or discover every conflict. The initial US-market E39 owner's manual is not
+a workshop repair manual or evidence for all E39 variants. Inspect the original PDF
+before acting. [Evaluation](benchmarks/grounded-answering.md) measures these boundaries
+separately from software contracts.
+
+## Observability and privacy
+
+`ask --json` returns `supported`, `text`, `reason`, `language` and a `workflow` object
+with counts/limits, durations, allowlisted node events and provider-reported token
+usage. Incomplete usage is marked `token_usage_complete=false`; partial zero totals
+are not zero-cost evidence. Provider errors retain only a validated HTTP status and
+fixed category, never raw payloads. Traces omit questions, filenames, source text,
+claims, quotes and keys; the answer itself can contain private quotations.
+
+The selected provider receives the question, selected passages/metadata and audit
+draft. Indexing/search stay local. LangSmith tracing is disabled around the whole
+graph. Optional evaluation captures and review packets contain exact private
+requests/replies and must stay outside Git. External retention/billing policies
+remain provider-controlled.
+
 Direct dependencies are pinned; there is no complete cross-platform transitive
-lockfile. See [usage](usage.md) for operational settings and
-[testing](testing.md) for validation scope.
-
-## Implementation references
-
-- [LangChain ChatOpenRouter integration](https://docs.langchain.com/oss/python/integrations/chat/openrouter)
-- [Qdrant Python client and local mode](https://github.com/qdrant/qdrant-client)
-
-## Additional LLM provider
-
-`make_llm(provider=...)` keeps ChatOpenRouter unchanged and optionally constructs
-an `httpx` Groq chat adapter with the same `invoke(messages)` result contract.
-LangGraph, direct generation, prompts, schemas, local evidence validation and
-retrieval remain shared. Only the Groq transport requests JSON object mode.
-Fixed endpoint/model/tier, no retries/redirects/tools/fallbacks, account-plan
-attestation and conservative quota reservations are described in [Groq](groq.md).
-The evaluator atomically checkpoints every completed mode and Groq reservation;
-resumption is bound to provider/model, dataset, selection, code and index identity.
+lockfile, production concurrency or validated MPS runtime. Model revisions and
+source/index hashes constrain reproducibility without promising identical future
+live model behavior. See [testing](testing.md).

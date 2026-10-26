@@ -58,15 +58,6 @@ not an exhaustive hyperparameter sweep or a pre-registered statistical study.
   are not added. Inputs retain the application's 512-token bound despite the
   model's longer context capacity. Its tokenizer yields identical corpus chunks.
 
-MiniLM paraphrase embeddings were screened out before execution: their native
-[128-token configuration](https://huggingface.co/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2)
-would add a chunking/aggregation intervention. Larger generative query rewriting
-would add latency, another model and less predictable behavior. Neither is a
-measured losing candidate. RRF combines ranks rather than incomparable raw
-scores ([Qdrant explanation](https://qdrant.tech/documentation/search/text-search/hybrid-search/)).
-The small corpus makes an in-memory BM25 implementation sufficient for this
-experiment; this is not a large-corpus scalability benchmark.
-
 ## Development comparison and frozen decision
 
 Measured on Apple M1, 16 GiB RAM, macOS arm64 CPU. Each cell in the
@@ -90,13 +81,6 @@ roughly 730 ms reranker. One encoder and a single dense index preserve the
 existing ingestion/search/generation architecture. No fusion weights,
 thresholds, language dictionaries or per-topic boosts are tuned. The default
 remains E5 Small for compatibility; BGE-M3 is the explicitly selected opt-in.
-
-E5 Base does not improve DE/RU Hit@5 and is rejected for this use. BM25 alone
-fails to bridge languages; hybrid only improves one German need while reducing
-RU MRR. Reranking improves ordering but cannot recover missing candidates and
-has higher latency. This decision is based on development only; it must not be
-revised after seeing held-out scores. Six candidates were compared, so model
-selection itself is a source of optimistic development estimates.
 
 ## Final held-out and legacy comparison
 
@@ -175,81 +159,33 @@ substantial model-download/disk/startup cost. No new paid service or dependency
 is required. Warm RSS and model-file size differ because of paging and runtime
 overhead; neither alone is a full system-memory budget or battery measurement.
 
-### Remaining errors and abstention
+## Repeatability and limitations
 
-- Held-out EN still misses `toolkit_access` at ten; DE finds it at seven and
-  RU at nine. The correct page 150 has the location sentence, mixed wiper
-  instructions and the tool-kit heading at the end of extracted text. Both
-  ranking and representation deserve investigation; this does not establish
-  that extraction caused the miss. No chunks or labels were changed afterward.
-- DE mirror defrost is rank nine, wagon backrest rank six; RU mirror defrost
-  is rank nine and the wagon-backrest and hood-release pages are absent at ten.
-  Related mirror/climate, seat and lock pages outrank the qualified evidence.
-  Multilingual specificity and body-style distinctions remain weak points.
-- Legacy DE still misses the cruise minimum-speed page and glovebox-fuse access
-  at ten; its flashlight passage drops from rank two to six. RU still misses
-  glovebox fuses. BGE-M3 improves many old failures but does not eliminate them.
-- The engine table and tire-pressure table require original layout review even
-  when their pages rank first. Better retrieval cannot verify column alignment,
-  load symbols, model applicability or generated numerical interpretation.
-- Both final dense profiles return nonempty results for every legacy negative
-  query. BGE's scores use a different distribution and still overlap positives;
-  there is no calibrated threshold, measured false-answer rate or improved
-  abstention claim. Free-provider answer quality was not benchmarked in Phase 2B.
+All ten experiment rankings were stable over three passes. Fresh-process repeats
+of four final comparisons matched all 648 ordered top-ten trial lists and scores;
+the original Phase 2A baseline repeat matched all 216 published trials. Two within-run
+queries differed only in scores by at most 1.11e-16; order stayed stable. Latency
+varied. This is local CPU repeatability, not cross-platform bitwise identity.
 
-No held-out-specific reranking, prompt changes, dictionary, label correction
-or threshold was introduced. The measured English regressions and remaining
-misses are retained in the report instead of tuning against this final set.
+BGE-M3 still misses held-out toolkit access in EN top ten, puts DE mirror defrost
+at nine and wagon backrest at six, and misses RU wagon-backrest/hood-release pages.
+Legacy cruise/fuse retrieval remains imperfect. Page hits do not guarantee chunk
+sufficiency; engine/tire tables still require original-layout review. Both profiles
+return results for every negative query, with overlapping score distributions and
+no calibrated abstention threshold.
 
-### Repeatability and compatibility
-
-All ten experiment rankings were stable across their three passes. The four
-final comparisons were repeated in fresh processes: all 648 ordered top-ten
-trial lists and every score matched exactly, with identical shuffled query
-orders. Within repeats, two queries (development BGE belt-accident EN and
-held-out baseline manual-reverse EN) have score-only differences of at most
-1.11e-16; their ordering is stable. The artifact preserves those differences.
-Latency varied, as expected. The original Phase 2A evaluator was used
-for the legacy baseline repeat; all 216 trials also matched the published
-Phase 2A artifact exactly. This is local CPU repeatability, not a promise of
-bitwise identity across other hardware or library versions.
-
-The original evaluator, Index, E5 adapter, chunking, baseline configuration,
-generation and language modules remain unchanged. Synthetic tests exercise
-selected-profile EN/DE/RU `ask`, verified citations and the existing free-only
-routing contracts. No live generation request or browser UI test is needed
-for this retrieval-only CLI change; no claim of improved answer reasoning is
-made. Benchmark models, PDFs, extracts and indexes remain private.
-
-## Evidence quality and limitations
-
-Page Hit@1/5/10 and MRR@10 use the unchanged Phase 2A arithmetic and scheduler.
-The new datasets additionally label chunks whose text is sufficient for the
-specific need. Evidence Hit/MRR uses those chunk identities, separately from
-page relevance. These labels are tied to the frozen chunk digest, contain no
-source passages and were not inferred from a successful search.
-
-The held-out engine-cylinder question requires the table's column mapping.
-It is included in page metrics and explicitly excluded from text-sufficiency
-metrics. A retrieved table page does not certify a numerical answer. The old
-tire-pressure table has the same outstanding layout limitation. No OCR, table
-reconstruction or generation-quality certification is claimed.
-
-There are only 12 new needs per split and 18 legacy needs, all from one English
-US-market manual. The same agent authored questions, translations and labels;
-there is no independent human ground truth or native-speaker review. Languages
-are correlated versions of the same need, and repeats do not increase the
-accuracy sample size. Configuration selection may inflate development results;
-the held-out set reduces direct tuning leakage but is neither a blind external
-study nor proof of generalization. No significance claim is made. Similarity
-scores are not calibrated confidence or an abstention rule. Real users,
-additional manuals, MPS and end-to-end free-provider answer quality remain
-unmeasured. Free-only generation and citation/language validation are unchanged.
+There are only 12 development, 12 held-out and 18 legacy needs from one manual.
+Questions/translations/labels are agent-authored, without independent human gold
+or native-speaker review. Translations/repeats are correlated. Development selection
+can be optimistic; held-out scoring was performed once after selection, without
+retuning, label edits or corpus-specific boosts. No significance, answer-quality,
+MPS, concurrency or generalization claim follows. Full provenance and first-trial
+rankings remain in the frozen numeric artifact.
 
 ## Reproduction
 
 Use the same local PDF, metadata and pinned dependencies as
-[Phase 2A](retrieval-evaluation.md). Do not replace `data/qdrant` or modify the
+[Phase 2A](phase2a-retrieval.md). Do not replace `data/qdrant` or modify the
 v1 benchmark. Index construction may download a model; comparison is offline
 and does not read `.env` or initialize OpenRouter. Set `HF_HOME` consistently.
 The default CLI profile remains `baseline` for compatibility. For an alternative,
@@ -294,15 +230,10 @@ Repeat those final comparisons in new processes, preserving parameters; compare
 ordered chunk IDs and scores, allowing latency to vary. The original
 `python -m garage_rag.evaluation ...` command remains available unchanged.
 
-The experiment runner checks corpus completeness, original PDF hash/page count,
-configuration, chunk digest, manifest immutability and finite scores, and uses
-the Phase 2A evaluator directly. Output includes all repeats, query order,
-source/dataset/code hashes, pinned model/ranking parameters, library versions,
-startup timings, whole-process peak RSS and logical index/weight bytes. Peak RSS
-includes Python/import/model overhead and reflects OS paging; it is not the
-model's tensor size, available RAM or guaranteed maximum memory on every device.
-Warm latency includes query encoding and every ranking stage, excluding cached
-model load, PDF checks, corpus digest, warmup and result-file I/O. Compare wall
-clock startup separately. No cold-download, throughput or battery benchmark is
-claimed. Local full outputs stay under ignored `output/`; publish only the
-consolidated text-free numeric artifact and this report, not a run diary.
+The runner verifies original PDF identity/page count, active corpus completeness,
+configuration, chunk digest, manifest immutability and finite scores. Reports retain
+repeats/order, dataset/code/model hashes, versions, startup times, peak RSS and
+index/weight sizes. Warm latency includes encoding/ranking but excludes model load,
+PDF checks, warmup and file I/O. RSS is whole-process peak, not tensor allocation
+or a guaranteed memory budget. Full new outputs stay ignored under `output/`;
+retain the existing frozen public artifact without publishing new run diaries.

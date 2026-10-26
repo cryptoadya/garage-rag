@@ -2,31 +2,31 @@
 
 [![CI](https://github.com/cryptoadya/garage-rag/actions/workflows/ci.yml/badge.svg)](https://github.com/cryptoadya/garage-rag/actions/workflows/ci.yml)
 
-A local-first RAG assistant for automotive documentation. Ask in **English,
-German or Russian**, retrieve English source passages locally, and receive an
-answer with verbatim evidence and locally verified PDF page references.
+A local-first RAG CLI for automotive documentation. Ask in **English, German or
+Russian**, search an English PDF locally, and generate answers with verbatim
+evidence and locally verified PDF page references.
 
-GarageRAG is a working CLI for finding information in an owner's
-manual. It does not replace professional diagnosis or repair instructions.
+GarageRAG demonstrates document provenance, resumable indexing, multilingual
+retrieval, bounded LangGraph orchestration and reproducible evaluation. It is an
+alpha engineering project; general answer-quality improvement from semantic
+auditing remains unproven. It does not replace professional diagnosis.
 
 ## Features
 
 - Page-aware PDF extraction and overlapping, tokenizer-bounded chunks.
-- Local multilingual semantic search with persistent, resumable indexing.
-- EN/DE/RU answers, automatic language selection and an explicit override.
-- OpenRouter free-only routing and optional Groq Cloud Free Plan generation,
-  with validated source IDs and evidence quotes.
-- Bounded LangGraph answering with semantic claim review, one optional local
-  expansion and localized refusals for insufficient or unsafe evidence.
+- Persistent Qdrant Local indexes with atomic revision activation and batch reuse.
+- Pinned E5 Small, E5 Base and BGE-M3 embedding profiles with isolated indexes.
+- Direct generation or bounded draft/audit answering with one optional local expansion.
+- OpenRouter free-only routing and an optional Groq transport with Free Plan attestation.
+- Offline synthetic tests, frozen retrieval baselines and hash-bound answer/source review.
 
-**Stack:** Python 3.12+, LangGraph, LangChain Core / ChatOpenRouter, Sentence Transformers
-(`intfloat/multilingual-e5-small` by default; optional `BAAI/bge-m3`),
-Qdrant Local, pypdf, Pydantic and Lingua.
-No Qdrant server or LLM account is required for indexing and search.
+**Stack:** Python 3.12+, Sentence Transformers, Qdrant Local, pypdf,
+LangGraph, LangChain Core / ChatOpenRouter, Pydantic and Lingua.
+Indexing and search need no LLM account or Qdrant server.
 
 ## Quick start
 
-Developed on macOS Apple Silicon with Python 3.12; CPU is the default device.
+Developed on macOS Apple Silicon; CI runs Python 3.12 on Linux. CPU is the default.
 
 ```bash
 git clone https://github.com/cryptoadya/garage-rag.git
@@ -38,10 +38,10 @@ test -f .env || cp .env.example .env
 mkdir -p data/private
 ```
 
-Supply an English text-based PDF that you have permission to use. The initial
-corpus was the [2002 BMW 5 Series owner's manual](https://www.ge39.com/files/2002Manual-5ser.pdf)
-for the E39 525i, 530i and 540i. Save your own copy as
-`data/private/bmw_e39_2002_manual.pdf`; **the manual is not distributed here**.
+Supply an English text-based PDF you have permission to use. The initial corpus
+is the [2002 BMW 5 Series owner's manual](https://www.ge39.com/files/2002Manual-5ser.pdf)
+for E39 525i/530i/540i models. Save your own copy at the path below;
+**the manual is not distributed here**.
 
 ```bash
 garage-rag index data/private/bmw_e39_2002_manual.pdf \
@@ -53,121 +53,67 @@ garage-rag stats
 garage-rag search 'How do I check the engine oil level?' --top-k 5
 ```
 
-The first embedding operation downloads the pinned E5 model from Hugging Face.
-After caching it, set `HF_HUB_OFFLINE=1` for offline retrieval. Repeating an
-unchanged index command reuses the existing revision.
+The first embedding operation downloads pinned model weights. After caching,
+set `HF_HUB_OFFLINE=1` for offline retrieval. Repeating an unchanged index command
+reuses its completed revision.
 
-For answers, set `OPENROUTER_API_KEY` in your local `.env`, then run:
+Set `OPENROUTER_API_KEY` in your local `.env` to generate answers:
 
 ```bash
 garage-rag ask 'How do I check the engine oil level?'
 garage-rag ask 'Wie prüfe ich den Motorölstand?'
 garage-rag ask 'Как проверить уровень моторного масла?'
-
-# English question, German answer.
 garage-rag ask 'How do I check the engine oil level?' --answer-language de
+# Original one-completion baseline:
+garage-rag ask 'How do I check the engine oil level?' --workflow direct
 ```
 
-`--answer-language auto|en|de|ru` defaults to the question's detected language,
-with English as the fallback. Evidence quotes remain in the source's English.
-For OpenRouter, only `openrouter/free` or an explicit `provider/model:free` is accepted; price
-caps are zero, and there are no automatic retries or paid fallbacks. Free models
-can be unavailable or rate limited. Grounded answering uses up to four completion
-attempts and two local searches; an ordinary accepted answer uses two completions.
-Use `ask --workflow direct` for the original one-call path. `ask` sends your question,
-selected passages and draft claims to the selected LLM provider; indexing and retrieval stay local.
+Default `grounded` mode uses a draft and a same-model audit, with at most four
+completion attempts and two local searches. Both modes validate language,
+source IDs and evidence quotes locally; valid citations do not prove correct
+interpretation. Questions, selected passages and audit drafts go to the chosen
+provider. Indexing and retrieval stay local.
 
-To use Groq Cloud, verify **Free / Current Plan** in your organization's Billing
-page, set `GROQ_API_KEY` and `GROQ_FREE_PLAN_CONFIRMED=true` in your local `.env`, then:
+OpenRouter accepts only `openrouter/free` or an explicit `provider/model:free`,
+with zero price caps and no retries or paid fallback. For Groq, verify your
+organization's Free Plan, set `GROQ_API_KEY` and `GROQ_FREE_PLAN_CONFIRMED=true`,
+then use `ask --provider groq`. Groq has no per-request zero-price guarantee.
+See [provider setup and quotas](docs/providers.md).
+
+## Limitations and privacy
+
+- No OCR, table/layout reconstruction or figure understanding. Check numerical
+  tables and vehicle/model/market/equipment applicability in the original PDF.
+- Retrieval can miss evidence. Similarity scores are not confidence; numeric
+  heuristics and the same-model auditor can reject valid claims or share errors.
+- Free services can be unavailable or rate limited. There is no hard total
+  workflow deadline, independent human quality acceptance or vehicle validation.
+- Qdrant Local allows one process per index. No Web UI, API server, conversation
+  memory, autonomous agent, MCP or Docker integration is implemented.
+- Keep `.env`, PDFs, indexes, caches and captures private, including custom paths.
+  Indexes contain source text; `.gitignore` cannot protect already tracked files.
+
+## Development and documentation
 
 ```bash
-garage-rag ask 'How do I check the engine oil level?' --provider groq
-# Optional persistent selection: GARAGE_RAG_PROVIDER=groq in .env.
-```
-
-Groq defaults to `openai/gpt-oss-120b`, 2,048 output tokens including reasoning,
-and the fixed `on_demand` service tier. Free Plan is an account property; Groq has
-no per-request zero-price cap. There are no upgrades, retries or provider/model
-fallbacks. See [Groq setup, quotas and resumable comparisons](docs/groq.md).
-
-See the [usage guide](docs/usage.md) for configuration, index management,
-troubleshooting and privacy precautions.
-
-## Architecture
-
-```mermaid
-flowchart LR
-    PDF[Private PDF] --> Chunks[Page-aware chunks]
-    Chunks --> E5[Local E5 embeddings]
-    E5 --> Index[Qdrant Local]
-    Question[EN / DE / RU question] --> Retrieval[Local retrieval]
-    Index --> Retrieval
-    Retrieval --> Model[Free model draft]
-    Model --> Validation[Local language and evidence validation]
-    Validation --> Audit[Semantic audit]
-    Audit --> Answer[Answer with PDF pages or refusal]
-    Audit -->|Insufficient, once only| Expansion[Local top-20 expansion]
-    Expansion --> Model
-```
-
-Source IDs refer only to passages actually sent to the model. Pydantic validates
-the response; local checks reject unknown IDs and quotes absent from the cited
-passage. Page references come from local metadata. **Valid citations do not
-prove that a claim correctly interprets its evidence.** See the
-[architecture guide](docs/architecture.md) for the pipeline and trust boundaries.
-
-## Tests and status
-
-The offline synthetic suite tests retrieval, persistence and generation contracts. [CI](https://github.com/cryptoadya/garage-rag/actions/workflows/ci.yml)
-runs pytest and Ruff on Python 3.12 using an original synthetic corpus, without
-BMW material, model downloads or live API calls. Limited live smoke checks have
-also produced validated EN/DE/RU answers; these are not quality benchmarks.
-
-For development, install `python -m pip install -e '.[dev]'`, then run:
-
-```bash
-python -m pytest
+python -m pip install -e '.[dev]'
+HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 OPENROUTER_API_KEY= GROQ_API_KEY= python -m pytest
 ruff check .
+python -m build
 ```
 
-[Test coverage, manual checks and reporting guidance](docs/testing.md) explain
-what these checks establish and how to reproduce them.
+| Guide | Contents |
+| --- | --- |
+| [Usage](docs/usage.md) | CLI, configuration, profiles and troubleshooting |
+| [Architecture](docs/architecture.md) | Ingestion, persistence, workflows and trust boundaries |
+| [Providers](docs/providers.md) | OpenRouter/Groq setup, billing boundaries and resumable runs |
+| [Testing](docs/testing.md) | Offline checks, packaging and release validation |
+| [Phase 2A](docs/benchmarks/phase2a-retrieval.md) / [Phase 2B](docs/benchmarks/phase2b-retrieval.md) | Frozen retrieval methodology, results and reproduction |
+| [Answer evaluation](docs/benchmarks/grounded-answering.md) | Scripted/live comparisons, costs and unresolved quality limits |
+| [Changelog](CHANGELOG.md) | Versioned user-facing changes |
 
-## Limits and licensing
+## License
 
-- Text extraction has no OCR, table/layout reconstruction or figure understanding.
-- Retrieval can miss relevant passages; similarity scores are not confidence.
-  Model, market, body-style and equipment qualifications must still be checked.
-- Language detection and generation are heuristic. Valid answers may be rejected;
-  models can misinterpret evidence. Inspect the sources before acting.
-- Qdrant Local permits one process per index. No API, Web UI, autonomous agents, MCP or Docker integration is implemented.
-- Keep `.env`, PDFs, extracted text, vectors, indexes and answer captures private.
-  Custom index directories also contain source text; `.gitignore` does not
-  protect files already tracked by Git.
-
-[MIT](LICENSE) covers this project's own code and synthetic test materials.
-BMW manuals are copyrighted by BMW AG and are not redistributed. Third-party
-source documents and model weights have their own licenses.
-
-## Roadmap and documentation
-
-[Retrieval evaluation](docs/benchmarks/retrieval-evaluation.md) now provides an
-offline EN/DE/RU baseline with agent-verified PDF page references and a
-[results report](docs/benchmarks/phase2a-report.md).
-
-Phase 2B compares local multilingual embedding profiles, BM25, hybrid search
-and reranking in a [separate technical report](docs/benchmarks/phase2b-retrieval.md).
-The original E5 Small route remains the default; alternative profiles use
-separate private indexes. BGE-M3 improves DE/RU retrieval in the measured
-comparison, at higher latency and with some English ordering regressions.
-Use `--profile bge-m3 --index-dir data/qdrant-bge-m3` for **index, search and ask**;
-see the report for preparation commands, metrics and limits.
-
-Phase 3 adds [bounded grounded answering](docs/grounded-answering.md) and a
-[separate answer-quality comparison](docs/benchmarks/grounded-answering.md).
-Semantic review is fallible and adds latency; its verdict is not evaluation truth.
-
-- [Usage and configuration](docs/usage.md)
-- [Architecture and safety boundaries](docs/architecture.md)
-- [Testing and result reporting](docs/testing.md)
-- [Changelog](CHANGELOG.md)
+[MIT](LICENSE) covers project code and original synthetic materials. BMW manuals
+are copyrighted by BMW AG and are not redistributed. Source documents and model
+weights retain their own licenses.

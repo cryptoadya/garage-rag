@@ -21,6 +21,7 @@ line or commit it to Git.
 | `GROQ_FREE_PLAN_CONFIRMED` | `false` | Required local attestation of Groq Free Plan |
 | `GROQ_MODEL` | `openai/gpt-oss-120b` | Initial allowlisted Groq model; `--model` overrides it |
 | `GROQ_MAX_TOKENS` | `2048` | Reasoning + answer budget, 512–4096 |
+| `GROQ_TOKEN_ACCOUNTING` | `bytes` | Conservative reservation; optional pinned offline `tokenizer` mode |
 | `OPENROUTER_MODEL` | `openrouter/free` | Free router or explicit `provider/model:free`; `ask --model` overrides it |
 | `OPENROUTER_MAX_TOKENS` | `8192` | Combined reasoning and answer budget; integer from 512 to 32768 |
 | `GARAGE_RAG_INDEX` | Profile-specific | Private index directory; `--index-dir` overrides it |
@@ -28,11 +29,11 @@ line or commit it to Git.
 
 The first embedding operation downloads the pinned E5 snapshot. After the
 initial download, `HF_HUB_OFFLINE=1` prevents subsequent Hugging Face downloads.
-Use `--device mps` before the command to try Metal on Apple Silicon; CPU is the
+Use `--device mps` before the subcommand to try Metal on Apple Silicon; CPU is the
 portable default. Indexing uses batch size 16 by default. MPS has not been
 validated by this project's acceptance checks.
 
-See [Groq Cloud](groq.md) for account-plan verification, quota behavior and
+See [Groq Cloud](providers.md) for account-plan verification, quota behavior and
 checkpoint/resume commands. Provider selection does not require re-indexing.
 
 ## Index management
@@ -114,8 +115,9 @@ Default `ask` uses bounded grounded answering: up to four completion attempts
 (including semantic audits) and two local searches. A normal accepted answer
 uses two completions. `--max-llm-calls 2 --max-searches 1` disables recovery;
 `--workflow direct` selects the original one-completion path. Each completion
-has a 60-second network-operation timeout, not a total wall-clock deadline. See [workflow design](grounded-answering.md) for
-all routes, budgets, numerical restrictions and observation fields. SDK retries and provider fallback are disabled; prompt, completion and
+has a 60-second network-operation timeout, not a total deadline. See
+[architecture](architecture.md) for routes, budgets and evidence boundaries.
+For OpenRouter, SDK retries and provider fallback are disabled; prompt, completion and
 request [price caps](https://openrouter.ai/docs/guides/routing/provider-selection#max-price)
 are zero. An explicit free model can be selected with
 `--model provider/model:free`; availability still depends on the provider.
@@ -148,8 +150,8 @@ Review their retention policies before using sensitive documents. `search`
 prints private text to the terminal; exported JSON and generated answers can
 also contain copyrighted source text. Do not commit these captures.
 
-The application disables inherited LangSmith tracing and does not configure
-content logs, index exports or telemetry. Hugging Face model downloads still
+The application disables inherited LangSmith tracing. Workflow observations
+are local and omit private content; no remote tracing backend is configured. Hugging Face model downloads still
 use the network. Keep PDFs, caches, extracted text and indexes private, including
 custom paths outside the ignored directories. See the
-[licensing notice](../README.md#limits-and-licensing) before adding documents.
+[licensing notice](../README.md#license) before adding documents.

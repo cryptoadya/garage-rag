@@ -23,13 +23,19 @@ is available in [Git commits](https://github.com/cryptoadya/garage-rag/commits/m
 - Mixed claim reviews incorrectly inheriting the latest review's independence;
   retain per-row provenance and require a named reviewer. Private review packets
   omit existing quality judgments, and observed Groq timeouts retain their provider.
+- Source distributions omitting three frozen Phase 2 result artifacts because of
+  the raw-report ignore rule; explicitly retain those public baselines.
 
 ### Changed
 
 - `ask` defaults to grounded answering; `--workflow direct` preserves the original
-  single-completion path. Prepare 0.3.0 without publishing a release.
+  single-completion path.
 - Benchmark reports default to ignored local output. Raw Phase 3 results and
   intermediate reports move to a verified private archive; Git keeps final summaries.
+- Consolidated architecture/workflow and Phase 2A methodology/results documentation;
+  shortened onboarding and evaluation reports, and centralized provider guidance.
+- Added package source/documentation/issue links and the build frontend to development
+  dependencies so documented release checks work after a development install.
 
 ## [0.2.0] - 2026-10-25
 

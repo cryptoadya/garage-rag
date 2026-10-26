@@ -1,121 +1,67 @@
-# Testing and result reporting
+# Testing and release checks
 
-## Automated checks
-
-Install development dependencies and run the same commands as
-[GitHub Actions](https://github.com/cryptoadya/garage-rag/actions/workflows/ci.yml):
+## Offline acceptance
 
 ```bash
 python -m pip install -e '.[dev]'
-python -m pytest
-ruff check .
-```
-
-For an explicitly offline test run:
-
-```bash
 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 OPENROUTER_API_KEY= GROQ_API_KEY= python -m pytest
+ruff check .
+python -m pip check
+python -m build
 ```
 
-Tests generate PDFs from the original,
-fictional [Aurora corpus](../tests/fixtures/corpus.json). A local tokenizer and
-deterministic embeddings keep tests independent of BMW material, Hugging Face
-downloads and live API calls. Qdrant persistence and retrieval are real; remote
-model replies are controlled fixtures, and SDK requests use mock transport.
+[CI](https://github.com/cryptoadya/garage-rag/actions/workflows/ci.yml) runs pytest
+and Ruff on Python 3.12/Linux with model downloads disabled. The build command
+creates wheel/sdist artifacts in ignored `dist/`. Local acceptance also uses
+Python 3.12/macOS arm64 CPU; MPS is not validated.
 
-Coverage includes extraction/page provenance, cleanup, token limits and overlap,
-embedding prefixes, indexing idempotency, interrupted-revision recovery,
-configuration isolation, bounded context, source/quote validation, EN/DE/RU
-selection and overrides, refusals, sanitized errors, zero-price routing, output
-budgets and truncation handling. These checks establish software contracts,
-not E5 ranking quality or remote-model reasoning quality. CI uses Python 3.12
-on Linux; local acceptance has also used Python 3.12 on macOS arm64 CPU. MPS
-runtime behavior has not been validated.
+Tests generate PDFs from the original fictional [Aurora corpus](../tests/fixtures/corpus.json).
+A local tokenizer and deterministic vectors avoid private BMW material, downloaded
+weights and live API calls. Qdrant persistence/retrieval and LangGraph execution
+are real; model responses and HTTP transports are controlled fixtures.
 
-## Manual smoke checks
+| Area | Contracts checked |
+| --- | --- |
+| Ingestion/index | Page provenance, cleanup, token bounds, overlap, revision reuse/recovery and profile isolation |
+| Retrieval evaluation | Hit/MRR arithmetic, labels, frozen/disjoint datasets, corpus guards, active-only BM25, fusion and reranking |
+| Generation/workflow | EN/DE/RU, source/quote/schema validation, numeric/table regressions, all-claim audit coverage, expansion retention, budgets and safe failures |
+| Provider wire behavior | Zero-price routing, disabled retries/fallbacks, truncation, Groq plan/quota guards, headers, tokenizer accounting and timing |
+| Evaluation/review | Checkpoint/resume identity, exact answer/source hashes, mixed reviewer provenance, capture tampering and unfilled private review packets |
+| Privacy | Sanitized errors/observations and whole-graph tracing suppression |
 
-Follow [Quick start](../README.md#quick-start) with a permitted English PDF and
-cached E5 weights. Repeat the identical index command to check reuse, inspect
-`stats`, then inspect `search --json` results before generating answers.
+These establish software contracts, not embedding quality, remote reasoning
+quality, representative latency or vehicle safety. Scripted answer comparisons
+are documented in [answer evaluation](benchmarks/grounded-answering.md); they
+are separate experiments and are not required to rerun for documentation changes.
 
-With a local OpenRouter key, run the README's EN/DE/RU oil-level questions
-against the BMW owner's manual, or equivalent supported questions against your
-own document. Use `--json` to check `supported`, `language`, `reason` and local
-PDF references. Compare each English quote with the sent source passage and
-review whether the claim actually follows from it. Also ask an unsupported
-repair-specification question, such as a cylinder-head bolt torque absent from
-that manual, and check for refusal. An explicit language override should change
-the answer language without translating evidence.
+## Optional manual checks
 
-Limited live checks have produced citation-validated EN/DE/RU answers, including
-from `nvidia/nemotron-3.5-super-vl:free`. This is an observation, not a guarantee
-of continuing model availability or quality. Free providers can rate limit,
-time out, emit malformed JSON or exhaust the reasoning budget. Keep response
-captures private and retry manually; do not enable paid fallback to obtain a
-passing result. A smoke check does not establish recall, abstention accuracy,
-hallucination rates or representative latency.
+Follow the [quick start](../README.md#quick-start) with a permitted English PDF.
+Repeat indexing to check reuse; inspect `stats` and `search --json` before `ask`.
+For explicitly authorized live checks, compare EN/DE/RU answers and an answer-language
+override with the exact sent evidence and original PDF. Also inspect refusal for
+an absent repair specification. Keep captures private. Connectivity and valid
+citations do not establish factual accuracy or representative refusal behavior.
+Free models can disappear, rate limit, time out or emit invalid JSON; do not
+introduce paid fallbacks to obtain a passing result.
 
-## Documentation and benchmarks
+## Packaging and publication
 
-Keep the README focused on current user-facing behavior and onboarding. Record
-significant changes in [CHANGELOG](../CHANGELOG.md) and Git; put durable technical
-instructions in thematic documentation. Do not append test-run diaries, repair
-narratives or individual API-call reports to the README.
+Inspect both wheel and sdist contents: the wheel must contain the runtime package,
+entry point and MIT license; the sdist additionally contains public docs, tests,
+synthetic fixtures and frozen benchmark JSON. Neither may include `.env`, PDFs,
+indexes, model caches, captures or private archives. Install the built wheel in
+an isolated environment and check `garage-rag --help` and module entry points.
+The sdist allowlist lives in [pyproject.toml](../pyproject.toml).
 
-Future benchmarks should be separate reports under `docs/benchmarks/`, with a
-clear question, permitted dataset and provenance, reviewed labels, metrics,
-configuration/model revisions, software and hardware versions, exact commands,
-cache state, repeated measurements and uncertainty or failure cases. Separate
-retrieval evaluation from generation and citation checks, and distinguish
-measured results from conclusions. Publish only permitted aggregate results;
-exclude copyrighted passages, credentials and private model replies.
+Check relative Markdown paths/anchors and external links, CLI examples against
+`--help`, dependency consistency and the final diff/status. Ignored files already
+tracked or present in Git history remain public. New benchmark outputs belong in
+ignored `output/`; publish reviewed aggregate summaries, not raw captures.
 
-Phase 2A provides a reproducible [offline retrieval benchmark](benchmarks/retrieval-evaluation.md)
-and a [measured EN/DE/RU baseline](benchmarks/phase2a-report.md).
-Do not treat one successful query, one refusal or an isolated timing as a
-benchmark. Before publishing artifacts,
-inspect `git status` and `git ls-files`; ignored files already in Git history
-remain public. Source-distribution packaging has an explicit file allowlist;
-include public documentation in that allowlist when adding new document paths.
-
-Phase 2B adds synthetic checks for pinned profile isolation, active-only BM25,
-deterministic rank fusion, finite reranker scores, strict chunk evidence labels,
-disjoint datasets and EN/DE/RU `ask` compatibility. Model-quality comparisons
-remain explicit local experiments; see the [Phase 2B report](benchmarks/phase2b-retrieval.md).
-
-## Phase 3 workflow and answer evaluation
-
-The offline suite executes the real LangGraph with controlled replies, including
-semantic mismatches despite valid quotations, all-claim audit coverage,
-applicability/conflict decisions, source retention during expansion, no-novel-
-context termination, lower budgets, truncated output, number-word/unit-adjacent
-numeric bypasses, table corruption, safe failures and whole-graph tracing
-suppression. SDK mock transport additionally checks actual completion count,
-zero price caps, fallback suppression, network timeout configuration and usage.
-CLI checks cover direct/grounded EN/DE/RU answers and the selected BGE profile.
-
-Run `python -m garage_rag.answer_evaluation --trials 3 --output output/answers.json`
-for the separate offline answer comparison. Live evaluation requires explicit
-opt-in and an API-call budget; it is not part of CI. See the [methodology and
-results](benchmarks/grounded-answering.md). The pipeline's own audit is never
-used as semantic evaluation ground truth. No independent human or vehicle
-verification is claimed.
-
-Groq mock-HTTP tests exercise all EN/DE/RU direct/grounded paths, real JSON and
-citation validation, one-attempt API failures, numeric/date Retry-After, quota
-header semantics, all four local quota windows and quota restoration. Live CLI
-regressions cover durable partial results, skipping successful modes, preserved
-error history and rejecting configuration/model drift before client creation.
-Live Groq results are kept separate from OpenRouter and scripted fixtures; see
-[setup and bounded comparison procedure](groq.md).
-
-Additive source-evaluation tests distinguish missing-context recovery from
-persistent generator abstention despite sufficient evidence, preserve legacy
-summaries, require exact source/answer binding and reject ambiguous labels.
-Private review-packet tests reject capture tampering and leave human judgments
-unfilled without exposing existing quality labels. Mixed claim/source reviews
-retain per-row reviewer identities; a partial human review cannot promote agent
-or legacy labels to independent human judgments. Groq tests cover observed
-timeout provider identity, opt-in pinned offline tokenizer loading, explicit
-flat token IDs (rather than the length of a token mapping), unchanged output
-budget and HTTP timing separate from limiter/checkpoint overhead.
+Before publishing v0.3.0, verify the intended `main` commit, its green CI, tests,
+lint, package builds and existing tags/releases. Move the existing `Unreleased`
+entries into a dated `0.3.0` section, leave an empty `Unreleased`, and update
+comparison links. Match package version, `v0.3.0` tag and GitHub Release; use that
+CHANGELOG section as release notes. Merge/tag/Release require separate owner
+authorization. Preparation alone does not publish a release.

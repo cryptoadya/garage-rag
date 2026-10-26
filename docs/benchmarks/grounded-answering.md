@@ -1,7 +1,7 @@
 # Phase 3 answer evaluation
 
 Phase 3 software acceptance and model-quality acceptance are separate. The
-current implementation fixes two confirmed local defects; general answer-quality
+implementation includes numeric-gate and context-expansion repairs; general answer-quality
 improvement remains unproven. No independent human or vehicle validation exists.
 
 ## Reproduce without API calls
@@ -10,6 +10,7 @@ improvement remains unproven. No independent human or vehicle validation exists.
 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 OPENROUTER_API_KEY= GROQ_API_KEY= python -m pytest
 ruff check .
 python -m build
+# Optional scripted comparison; not needed for documentation-only changes.
 python -m garage_rag.answer_evaluation --trials 3
 ```
 
@@ -31,8 +32,8 @@ retry, output repair, paid fallback or silent model switch occurs. Stop on the
 first provider error, save a partial checkpoint, and report incomplete matrices.
 Real-corpus runs additionally require the unchanged Phase 2 dataset, matching
 index/corpus/chunk digests and locally cached embedding weights. See
-[Groq setup](../groq.md) and [workflow architecture](../grounded-answering.md).
-No new live requests were made during the October 26 repair pass.
+[Groq setup](../providers.md) and [workflow architecture](../architecture.md).
+Offline replay and the later live regression are reported separately below.
 
 ## Metrics and review
 
@@ -83,8 +84,8 @@ python -m garage_rag.review_packet --report output/<checkpoint>.json \
 Packets verify request/source/reply hashes, escape HTML and omit existing quality
 judgments. Claim and source reviews retain per-row provenance; legacy labels
 without row provenance never become independent through a partial new review.
-Never publish packets. See the [engineering release audit](../phase3-release-audit.md)
-for the release boundary and prepared external-review scope.
+Never publish packets. The [archive inventory](phase3-archive.md) records the
+existing private handoff; no independent human labels have been supplied.
 
 ## Preserved historical results
 
@@ -133,15 +134,10 @@ new live answer quality. The replay script and results are archived privately.
 
 Fresh generations at `644538405478fa0f8faf91c6a512e590d9c046ab`, unchanged real
 BMW E39 held-out corpus/index/chunk digests, first requests and seed `20261026`.
-Five predeclared pairs; Groq Free Plan / `openai/gpt-oss-120b`, temperature zero,
-2,048 completion tokens and the same pinned offline tokenizer accounting.
-Console verified Free / Current Plan and 8,000 TPM / 200,000 TPD / 1,000 RPD.
-Before sending, its rounded 99.4K tokens / 55 requests matched the prior shared
-ledger: conservative remaining TPD 100,557, RPD 945 and idle TPM 8,000. Console
-usage can lag 15 minutes; TPM/RPD response headers are not TPD evidence.
-All windows were guarded before each call. **15/25 new attempts**, zero errors,
-retries, fallbacks or model changes; minimum actual send gap 10.007 seconds
-(6 RPM). Final conservative rolling-day usage: 70 requests / 140,172 tokens.
+Five predeclared pairs used Groq Free Plan / `openai/gpt-oss-120b`, temperature
+zero, 2,048 completion tokens, pinned offline tokenizer accounting and 6 RPM pacing.
+**15/25 attempts**, zero errors/retries/fallbacks/model changes. Quota state,
+reservations and exact timing remain in the private archive.
 
 Before values below are the unchanged historical selection, not a rerun or
 rescore. Answer/source judgments are hash-bound **implementation-agent review,
@@ -178,16 +174,12 @@ New HTTP time D/G is 5.14/12.32 s, RPM wait 8.75/14.48 s and proactive quota
 wait 204.81/238.57 s. These paced, ordered single trials do not measure inference
 speed or establish general model-quality improvement.
 
-Both repairs are confirmed on this live selection; no new blocking implementation
-defect was observed. Existing synthetic regression tests already cover these
-contracts and damaged tables; no algorithms or fixtures were changed for results.
-Fresh offline acceptance passed 265 tests, Ruff, wheel/sdist builds and 252
-scripted workflow runs (zero APIs). Detailed new reports, captures, traces,
-hash-bound agent labels and unfilled independent-review packets remain private
-outside Git at `~/GarageRAG-archives/phase3-live-6445384-20261026/`. SHA-256 checks
-confirm all 75 protected prior result/archive files are unchanged.
+Both repairs worked on this selected regression. Reports, captures, agent reviews
+and unfilled independent-review packets remain in the
+[private live-regression archive](phase3-archive.md#live-repair-regression).
+Historical results were not rescored or overwritten.
 
-Before closing Phase 3: independent answer/source/applicability review; genuine
+Before claiming broader quality improvement: independent answer/source/applicability review; genuine
 erroneous audit-eligible drafts with independent labels and supported controls;
 wider balanced EN/DE/RU and both-profile sampling. Report harmful acceptance,
 supported-draft rejection and all added costs. This selected repair regression

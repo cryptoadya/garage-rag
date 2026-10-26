@@ -21,6 +21,26 @@ inside those unmodified files. Credentials, `.env` and model weights are exclude
 The original private PDF remains in its existing local corpus location; obtain
 it privately and verify its recorded corpus SHA when reconstructing an index.
 
+## Live repair regression
+
+The later five-pair regression is preserved separately at
+`~/GarageRAG-archives/phase3-live-6445384-20261026/`. Its `MANIFEST.json` binds
+51 files by relative path, byte size and SHA-256, including saved outputs,
+captures, traces, reviews, runners and acceptance evidence.
+
+- Runtime commit: `644538405478fa0f8faf91c6a512e590d9c046ab`.
+- Manifest SHA-256: `5331d9f54e8e506760b35b27350b44f4d6c5a2653335aad159197266d4f1e796`.
+- Independent human review: not completed.
+
+The existing ignored handoff at `output/private/phase3-external-review-20261026/`
+contains 13 groups / 38 saved answers: five repair pairs and fourteen historical
+BMW pairs, kept separate. Its `index.html`, private README, manifest, original
+PDF, exact requests/replies, unscored copies and blank review templates support
+zero-API review. Mode identities and raw audit verdicts are visible, so this is
+not a blinded study. Keep it private; a fresh clone contains neither archive
+nor the handoff. Historical Git commits still contain older public reports;
+cleanup does not rewrite history.
+
 ## Verify and restore
 
 From the archive directory:
