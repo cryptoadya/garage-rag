@@ -75,8 +75,8 @@ supported grounded question (normally two calls: draft and audit), inspect its
 JSON/citations and the live headers, then explicitly agree on a comparison scope.
 A smoke is operational evidence, not a quality improvement claim.
 
-Example of a **proposed** one-pair EN comparison, at most five attempts; it is
-not automatically executed:
+Bounded one-pair EN command, at most five attempts; execute only within an
+explicitly agreed scope. Its completed result is recorded below:
 
 ```bash
 GROQ_FREE_PLAN_CONFIRMED=true python -m garage_rag.answer_evaluation \
@@ -135,6 +135,22 @@ No direct comparison, live DE/RU matrix or corpus/profile run followed.
 
 Offline verification passed 243 tests and Ruff; wheel/sdist builds succeeded.
 Five frozen Phase 2 dataset/result files matched their pre-change bytes.
-The next proposed scope is just the one EN pair shown above, with at most five
-new attempts, stop on first error and explicit resume. Wider language/profile
-coverage and semantic-quality conclusions remain outstanding.
+After that smoke, the proposed scope was the one EN pair shown above, with at
+most five new attempts, stop on first error and explicit resume. Its subsequent
+result is recorded below; wider quality conclusions remain outstanding.
+
+## Completed English pair on October 26, 2026
+
+The subsequently authorized one-pair `cold_pressure` comparison is complete;
+see the [Phase 3 comparison and explicit source review](benchmarks/grounded-answering.md#groq-one-english-cold-pressure-pair-october-26-2026)
+and [separate Groq result](benchmarks/groq-20261026-cold-pressure-en.v1.json).
+It used three of five allowed attempts at 6 RPM: direct one call, grounded two.
+Both returned the same complete condition-bearing answer and exact source quote;
+there were no errors or false refusals. Agent review is hash-bound and separate
+from Groq's audit, with no independent human-quality claim.
+
+The original ignored checkpoint now contains both completed modes. Repeating
+the exact comparison command with `--resume` was verified to make no API calls.
+Do not start a new EN report merely to repeat this pair. The next proposed stage
+is DE/RU only on the same scenario, maximum ten new attempts at 6 RPM after quota
+verification; it has not been executed.

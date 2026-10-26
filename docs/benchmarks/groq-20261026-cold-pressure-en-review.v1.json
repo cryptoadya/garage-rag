@@ -1,0 +1,30 @@
+{
+  "report_dataset_sha256": "f943c28ab4bce4f9c0d3293f20e6eaa680826d36b6afbac2afbb194b0dc66182",
+  "reviewer": "Codex implementation agent: explicit source inspection, separate from Groq auditor",
+  "independent_human_review": false,
+  "review_scope": "Both captured claims, source S1, cold-tire applicability condition, exact quote, local page mapping and completeness for the synthetic timing question; no vehicle-level validation.",
+  "rows": [
+    {
+      "id": "cold_pressure",
+      "language": "en",
+      "mode": "direct",
+      "trial": 1,
+      "answer_sha256": "def4484f8e38f3250d274e6b5800b93ec9eafbe73713c2d972479f23c4e0fb32",
+      "claim_support": [
+        true
+      ],
+      "complete_answer": true
+    },
+    {
+      "id": "cold_pressure",
+      "language": "en",
+      "mode": "grounded",
+      "trial": 1,
+      "answer_sha256": "1c5f3d30d962dbc8e091d81e03ffb57628ce92acbbd62d2fe8dbe6611829a759",
+      "claim_support": [
+        true
+      ],
+      "complete_answer": true
+    }
+  ]
+}

@@ -7,6 +7,10 @@ is available in [Git commits](https://github.com/cryptoadya/garage-rag/commits/m
 
 ### Added
 
+- Separate Groq English direct/grounded cold-pressure comparison with hash-bound
+  agent source review, complete checkpoints, usage/quota/paced-latency evidence
+  and a bounded, unexecuted DE/RU follow-up proposal.
+
 - Optional Groq Cloud Free Plan chat provider (`openai/gpt-oss-120b`) selected by
   CLI/environment, preserving OpenRouter, direct/grounded and EN/DE/RU contracts.
   Includes safe API/quota observations, Retry-After, conservative RPM/TPM/RPD/TPD

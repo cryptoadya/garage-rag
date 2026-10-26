@@ -1,0 +1,460 @@
+{
+  "schema_version": 1,
+  "dataset_id": "aurora-grounded-answering-v1",
+  "dataset_sha256": "f943c28ab4bce4f9c0d3293f20e6eaa680826d36b6afbac2afbb194b0dc66182",
+  "execution": "live",
+  "complete": true,
+  "planned_runs": 2,
+  "seed": 20261025,
+  "trials": 1,
+  "languages": [
+    "en"
+  ],
+  "independent_human_review": false,
+  "claim_scoring": "Hash-bound external review; unreviewed claims remain unscored",
+  "summary": {
+    "direct": {
+      "runs": 1,
+      "errors": 0,
+      "scored_runs": 1,
+      "answerable_runs": 1,
+      "unanswerable_runs": 0,
+      "answers": 1,
+      "correct_refusals": 0,
+      "false_refusals": 0,
+      "reviewed_answers": 1,
+      "reviewed_claims": 1,
+      "supported_claims": 1,
+      "claim_support_rate": 1.0,
+      "unsupported_answers": 0,
+      "complete_supported_answers": 1,
+      "locally_validated_citation_answers": 1,
+      "llm_calls": {
+        "n": 1,
+        "min": 1,
+        "p50": 1.0,
+        "p95": 1.0,
+        "max": 1
+      },
+      "search_calls": {
+        "n": 1,
+        "min": 1,
+        "p50": 1.0,
+        "p95": 1.0,
+        "max": 1
+      },
+      "elapsed_ms": {
+        "n": 1,
+        "min": 872.9303749278188,
+        "p50": 872.9303749278188,
+        "p95": 872.9303749278188,
+        "max": 872.9303749278188
+      },
+      "total_llm_calls": 1,
+      "reported_input_tokens": 458,
+      "reported_output_tokens": 188,
+      "token_usage_complete": true
+    },
+    "grounded": {
+      "runs": 1,
+      "errors": 0,
+      "scored_runs": 1,
+      "answerable_runs": 1,
+      "unanswerable_runs": 0,
+      "answers": 1,
+      "correct_refusals": 0,
+      "false_refusals": 0,
+      "reviewed_answers": 1,
+      "reviewed_claims": 1,
+      "supported_claims": 1,
+      "claim_support_rate": 1.0,
+      "unsupported_answers": 0,
+      "complete_supported_answers": 1,
+      "locally_validated_citation_answers": 1,
+      "llm_calls": {
+        "n": 1,
+        "min": 2,
+        "p50": 2.0,
+        "p95": 2.0,
+        "max": 2
+      },
+      "search_calls": {
+        "n": 1,
+        "min": 1,
+        "p50": 1.0,
+        "p95": 1.0,
+        "max": 1
+      },
+      "elapsed_ms": {
+        "n": 1,
+        "min": 19982.511749956757,
+        "p50": 19982.511749956757,
+        "p95": 19982.511749956757,
+        "max": 19982.511749956757
+      },
+      "total_llm_calls": 2,
+      "reported_input_tokens": 1054,
+      "reported_output_tokens": 401,
+      "token_usage_complete": true
+    }
+  },
+  "paired": {
+    "pairs": 1,
+    "summary": {
+      "direct": {
+        "runs": 1,
+        "errors": 0,
+        "scored_runs": 1,
+        "answerable_runs": 1,
+        "unanswerable_runs": 0,
+        "answers": 1,
+        "correct_refusals": 0,
+        "false_refusals": 0,
+        "reviewed_answers": 1,
+        "reviewed_claims": 1,
+        "supported_claims": 1,
+        "claim_support_rate": 1.0,
+        "unsupported_answers": 0,
+        "complete_supported_answers": 1,
+        "locally_validated_citation_answers": 1,
+        "llm_calls": {
+          "n": 1,
+          "min": 1,
+          "p50": 1.0,
+          "p95": 1.0,
+          "max": 1
+        },
+        "search_calls": {
+          "n": 1,
+          "min": 1,
+          "p50": 1.0,
+          "p95": 1.0,
+          "max": 1
+        },
+        "elapsed_ms": {
+          "n": 1,
+          "min": 872.9303749278188,
+          "p50": 872.9303749278188,
+          "p95": 872.9303749278188,
+          "max": 872.9303749278188
+        },
+        "total_llm_calls": 1,
+        "reported_input_tokens": 458,
+        "reported_output_tokens": 188,
+        "token_usage_complete": true
+      },
+      "grounded": {
+        "runs": 1,
+        "errors": 0,
+        "scored_runs": 1,
+        "answerable_runs": 1,
+        "unanswerable_runs": 0,
+        "answers": 1,
+        "correct_refusals": 0,
+        "false_refusals": 0,
+        "reviewed_answers": 1,
+        "reviewed_claims": 1,
+        "supported_claims": 1,
+        "claim_support_rate": 1.0,
+        "unsupported_answers": 0,
+        "complete_supported_answers": 1,
+        "locally_validated_citation_answers": 1,
+        "llm_calls": {
+          "n": 1,
+          "min": 2,
+          "p50": 2.0,
+          "p95": 2.0,
+          "max": 2
+        },
+        "search_calls": {
+          "n": 1,
+          "min": 1,
+          "p50": 1.0,
+          "p95": 1.0,
+          "max": 1
+        },
+        "elapsed_ms": {
+          "n": 1,
+          "min": 19982.511749956757,
+          "p50": 19982.511749956757,
+          "p95": 19982.511749956757,
+          "max": 19982.511749956757
+        },
+        "total_llm_calls": 2,
+        "reported_input_tokens": 1054,
+        "reported_output_tokens": 401,
+        "token_usage_complete": true
+      }
+    }
+  },
+  "rows": [
+    {
+      "id": "cold_pressure",
+      "language": "en",
+      "mode": "direct",
+      "trial": 1,
+      "supported": true,
+      "reason": "verified_citations",
+      "error": false,
+      "error_category": null,
+      "expected_answerable": true,
+      "returned_claims": 1,
+      "claim_support": [
+        true
+      ],
+      "complete_answer": true,
+      "exact_reference_match": [
+        true
+      ],
+      "answer_sha256": "def4484f8e38f3250d274e6b5800b93ec9eafbe73713c2d972479f23c4e0fb32",
+      "trace": {
+        "mode": "direct",
+        "llm_call_limit": 1,
+        "search_call_limit": 1,
+        "llm_calls": 1,
+        "search_calls": 1,
+        "input_tokens": 458,
+        "output_tokens": 188,
+        "usage_records": 1,
+        "elapsed_ms": 872.9303749278188,
+        "events": [
+          {
+            "node": "retrieve",
+            "outcome": "context",
+            "elapsed_ms": 0.766957993619144,
+            "source_count": 1
+          },
+          {
+            "node": "draft",
+            "outcome": "verified_citations",
+            "elapsed_ms": 872.1512919291854,
+            "source_count": 1
+          }
+        ],
+        "provider_errors": [],
+        "rate_limits": [
+          {
+            "rpd_limit": 1000,
+            "rpd_remaining": 999,
+            "tpm_limit": 8000,
+            "tpm_remaining": 7281,
+            "rpd_reset_seconds": 86.4,
+            "tpm_reset_seconds": 5.392
+          }
+        ],
+        "token_usage_complete": true
+      }
+    },
+    {
+      "id": "cold_pressure",
+      "language": "en",
+      "mode": "grounded",
+      "trial": 1,
+      "supported": true,
+      "reason": "audited_evidence",
+      "error": false,
+      "error_category": null,
+      "expected_answerable": true,
+      "returned_claims": 1,
+      "claim_support": [
+        true
+      ],
+      "complete_answer": true,
+      "exact_reference_match": [
+        true
+      ],
+      "answer_sha256": "1c5f3d30d962dbc8e091d81e03ffb57628ce92acbbd62d2fe8dbe6611829a759",
+      "trace": {
+        "mode": "grounded",
+        "llm_call_limit": 4,
+        "search_call_limit": 2,
+        "llm_calls": 2,
+        "search_calls": 1,
+        "input_tokens": 1054,
+        "output_tokens": 401,
+        "usage_records": 2,
+        "elapsed_ms": 19982.511749956757,
+        "events": [
+          {
+            "node": "retrieve",
+            "outcome": "context_available",
+            "elapsed_ms": 0.059165991842746735,
+            "source_count": 1
+          },
+          {
+            "node": "draft",
+            "outcome": "audit",
+            "elapsed_ms": 9808.147416100837,
+            "source_count": 1
+          },
+          {
+            "node": "audit",
+            "outcome": "audited_evidence",
+            "elapsed_ms": 10165.296041988768,
+            "source_count": 1
+          },
+          {
+            "node": "finish",
+            "outcome": "done",
+            "elapsed_ms": 0.002540997229516506,
+            "source_count": 1
+          }
+        ],
+        "provider_errors": [],
+        "rate_limits": [
+          {
+            "rpd_limit": 1000,
+            "rpd_remaining": 998,
+            "tpm_limit": 8000,
+            "tpm_remaining": 7278,
+            "rpd_reset_seconds": 172.8,
+            "tpm_reset_seconds": 5.415
+          },
+          {
+            "rpd_limit": 1000,
+            "rpd_remaining": 997,
+            "tpm_limit": 8000,
+            "tpm_remaining": 7147,
+            "rpd_reset_seconds": 259.2,
+            "tpm_reset_seconds": 6.397
+          }
+        ],
+        "token_usage_complete": true
+      }
+    }
+  ],
+  "previous_errors": [],
+  "identity": {
+    "dataset_sha256": "f943c28ab4bce4f9c0d3293f20e6eaa680826d36b6afbac2afbb194b0dc66182",
+    "cases": [
+      "cold_pressure"
+    ],
+    "languages": [
+      "en"
+    ],
+    "trials": 1,
+    "seed": 20261025,
+    "execution": "live",
+    "provider": "groq",
+    "model": "openai/gpt-oss-120b",
+    "profile": "baseline",
+    "source_sha256": {
+      "__init__.py": "430e9cd14efb7fdb6f354a9c1199c49e8d4b396ccc6e18aefeedbd14d11b284b",
+      "__main__.py": "13a1a5b340cdcfc1902b62be90e508c7c71886000d5bf087e7854aadf09fb35e",
+      "answer_evaluation.py": "5d210b3d1ec16fddbb3b4b768653bfd794074bf1381a7024f48374a4f494ed11",
+      "cli.py": "9df8aa32e9a0b5114aaf4eddea9ca0b34de7def7a758aac9a12af4f5c9bbe3fb",
+      "config.py": "0f8cf0beaa1c1995774957fca80fcef4f3d793254076b43e709b21ebbd7c3f11",
+      "embeddings.py": "783d577fa5745433c828b17e316666a8fec349d26efd0c56a713ced4000f6bf9",
+      "evaluation.py": "5f531cb17587c6fbc8a0c52b34ba260161cd6d890b9b30800cdefbde1ed50cb3",
+      "generation.py": "0d73cd1bfcf542e4e3e0cd78a88691013e5c368862a33813a8c6d9148bacab64",
+      "groq.py": "b0eb54f7873ef0b92fd406a0cda3efefe3fade2f457439375b3b4829a907e5a0",
+      "grounding.py": "41301832394412af937bbbd4dc993995aba08b8b890b7d3e06ac6023f31f5ed5",
+      "index.py": "90f958269d16f349e725d9eb72929f6c1a51fe299c2e617e706333981c633fe0",
+      "ingestion.py": "356bfd626ab37b184c5bc1508ae5c81284b19b9191e998aa39053e7be78b59e3",
+      "language.py": "c29eccb62fc860a71e57f931e231b225363dd24b550b6fbd56809c2cec53cc41",
+      "optimization.py": "575913c365e31c94b35e0dcfb6f2baae0c5fb6446877f31656f5c959358d5872",
+      "profiles.py": "3429f17737e9b279cc0e7cb9c5faa22eba28b4c409d9dd9360443fc999efde2f",
+      "retrieval.py": "c2eb8e0145e4ffb46334cf27b1d5709b0e3d77d6a61f1f552f11dbf888ec9a40",
+      "telemetry.py": "af8569a16862ee92f74a13dcf6978eba7826a903bcbec330e68be3a1e9da78b9",
+      "workflow.py": "73c52dcaa44f912bdf62bf407a7396c10ec88fe4847352eb8561dcee1049c54f"
+    },
+    "index_sha256": null,
+    "max_tokens": "2048",
+    "requests_per_minute": 6
+  },
+  "provenance": {
+    "created_at": "2026-10-26T09:19:05.493320+00:00",
+    "python": "3.12.0",
+    "platform": "macOS-27.0.1-arm64-arm-64bit",
+    "provider": "groq",
+    "model": "openai/gpt-oss-120b",
+    "max_api_calls": 5,
+    "generation": {
+      "max_tokens": 2048,
+      "temperature": 0,
+      "network_timeout_ms": 60000,
+      "free_only": true,
+      "retries": 0,
+      "free_plan_attested": true,
+      "requests_per_minute": 6,
+      "attempted_api_calls": 3,
+      "previous_attempted_api_calls": 0
+    },
+    "quota_state": {
+      "saved_at": 1793006345.4933481,
+      "history": [
+        [
+          20.869251957978122,
+          646
+        ],
+        [
+          10.854089915985242,
+          675
+        ],
+        [
+          0.8407937500160187,
+          780
+        ]
+      ],
+      "rate_limits": {
+        "rpd_limit": 1000,
+        "rpd_remaining": 997,
+        "tpm_limit": 8000,
+        "tpm_remaining": 7147,
+        "rpd_reset_seconds": 259.2,
+        "tpm_reset_seconds": 6.397
+      },
+      "headers_age": 0.022917540976777673,
+      "resume_after": 0.0
+    },
+    "libraries": {
+      "langgraph": "1.2.17",
+      "langchain-core": "1.7.0",
+      "garage-rag": "0.3.0"
+    },
+    "source_sha256": {
+      "__init__.py": "430e9cd14efb7fdb6f354a9c1199c49e8d4b396ccc6e18aefeedbd14d11b284b",
+      "__main__.py": "13a1a5b340cdcfc1902b62be90e508c7c71886000d5bf087e7854aadf09fb35e",
+      "answer_evaluation.py": "5d210b3d1ec16fddbb3b4b768653bfd794074bf1381a7024f48374a4f494ed11",
+      "cli.py": "9df8aa32e9a0b5114aaf4eddea9ca0b34de7def7a758aac9a12af4f5c9bbe3fb",
+      "config.py": "0f8cf0beaa1c1995774957fca80fcef4f3d793254076b43e709b21ebbd7c3f11",
+      "embeddings.py": "783d577fa5745433c828b17e316666a8fec349d26efd0c56a713ced4000f6bf9",
+      "evaluation.py": "5f531cb17587c6fbc8a0c52b34ba260161cd6d890b9b30800cdefbde1ed50cb3",
+      "generation.py": "0d73cd1bfcf542e4e3e0cd78a88691013e5c368862a33813a8c6d9148bacab64",
+      "groq.py": "b0eb54f7873ef0b92fd406a0cda3efefe3fade2f457439375b3b4829a907e5a0",
+      "grounding.py": "41301832394412af937bbbd4dc993995aba08b8b890b7d3e06ac6023f31f5ed5",
+      "index.py": "90f958269d16f349e725d9eb72929f6c1a51fe299c2e617e706333981c633fe0",
+      "ingestion.py": "356bfd626ab37b184c5bc1508ae5c81284b19b9191e998aa39053e7be78b59e3",
+      "language.py": "c29eccb62fc860a71e57f931e231b225363dd24b550b6fbd56809c2cec53cc41",
+      "optimization.py": "575913c365e31c94b35e0dcfb6f2baae0c5fb6446877f31656f5c959358d5872",
+      "profiles.py": "3429f17737e9b279cc0e7cb9c5faa22eba28b4c409d9dd9360443fc999efde2f",
+      "retrieval.py": "c2eb8e0145e4ffb46334cf27b1d5709b0e3d77d6a61f1f552f11dbf888ec9a40",
+      "telemetry.py": "af8569a16862ee92f74a13dcf6978eba7826a903bcbec330e68be3a1e9da78b9",
+      "workflow.py": "73c52dcaa44f912bdf62bf407a7396c10ec88fe4847352eb8561dcee1049c54f"
+    }
+  },
+  "review": {
+    "reviewer": "Codex implementation agent: explicit source inspection, separate from Groq auditor",
+    "independent_human_review": false,
+    "rows_reviewed": 2
+  },
+  "publication": {
+    "runtime_commit": "6c95612390a892cbe98ad66ea6b9817dfed0d607",
+    "raw_checkpoint_sha256": "892df63ce9e32106e307135ce6d670b159dfad5dd075c3aedd7ce8b3badfac5d",
+    "reviewed_report_sha256": "dfd3be66f2e1d133c86bf02d24f27da24f559c69ed88173de7daaf867dc37640",
+    "review_file_sha256": "86754616efa5525cac00248d7fb6c54afff70013c0fcbe231fb81df47c440d96",
+    "redactions": [
+      "Absolute local private-capture path removed from identity"
+    ],
+    "resume_from": "Original ignored local checkpoint; this reviewed publication is not a resume checkpoint",
+    "free_plan_reverified_in_console": true,
+    "console_model_limits": {
+      "rpm": 30,
+      "rpd": 1000,
+      "tpm": 8000,
+      "tpd": 200000
+    },
+    "completed_resume_check": "Checkpoint already complete; no API calls",
+    "next_live_stage_executed": false
+  }
+}

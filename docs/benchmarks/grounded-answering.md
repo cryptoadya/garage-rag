@@ -367,3 +367,104 @@ and obtain independent human review of claims, source sufficiency, language
 quality and table/applicability labels. Grounded mode is a tested bounded
 workflow with stronger rejection contracts; it is not established as a generally
 more accurate model-answering system by these partial live measurements.
+
+## Groq: one English cold-pressure pair (October 26, 2026)
+
+This is a separate Groq provider/model result, not an extension of the OpenRouter
+sample or the earlier Groq grounded-only smoke. The existing evaluator ran the
+unchanged Aurora `cold_pressure` case once in English on `openai/gpt-oss-120b`,
+with seed 20261025, direct first then grounded. Free / Current Plan was reverified
+in the organization's Console before inference. Runtime commit was `6c95612`;
+retrieval, scenario, prompts, labels and evaluation methodology were unchanged.
+
+The exact run used the existing checkpoint/resume infrastructure:
+
+```bash
+GROQ_FREE_PLAN_CONFIRMED=true GROQ_MAX_TOKENS=2048 \
+python -m garage_rag.answer_evaluation \
+  --live --provider groq --model openai/gpt-oss-120b \
+  --cases cold_pressure --languages en --trials 1 --seed 20261025 \
+  --max-api-calls 5 --requests-per-minute 6 \
+  --output output/groq/gpt-oss-120b/cold-pressure-en.json \
+  --private-captures output/private/groq/gpt-oss-120b/cold-pressure-en.json
+```
+
+It exited zero with **one complete pair / two rows and three attempted API calls**
+out of the five-call ceiling. There were no retries, fallback, errors, repairs or
+context expansions. A subsequent identical command with `--resume` reported
+`Checkpoint already complete; no API calls`; no additional inference occurred.
+Each completed mode was atomically saved. Raw checkpoints and answer/source
+captures remain ignored locally. The [reviewed public result](groq-20261026-cold-pressure-en.v1.json)
+retains runtime/source hashes and the original checkpoint hash, with the absolute
+private-capture path removed; it is not the checkpoint used for resumption.
+
+| Observation (one run per mode) | Direct | Grounded |
+| --- | ---: | ---: |
+| Supported, complete answers after explicit agent source review | 1 | 1 |
+| False refusals / provider errors | 0 / 0 | 0 / 0 |
+| Attempted API calls | 1 | 2 |
+| Local searches / expansions | 1 / 0 | 1 / 0 |
+| Input / output tokens, including reasoning | 458 / 188 | 1,054 / 401 |
+| Total reported tokens | 646 | 1,455 |
+| Workflow elapsed time, seconds | 0.873 | 19.983 |
+
+Total usage for this pair was **1,512 input + 589 output = 2,101 tokens**, reported
+for all three attempts. Grounded added one call and 809 tokens for this observation,
+with no answer-quality difference. Its elapsed time includes the shared 6-RPM
+limiter's wait before both its draft and its audit. Recorded request starts were
+about 10.015 and 10.013 seconds apart. These are paced end-to-end workflow timings,
+not comparable inference-only latency estimates or representative performance
+statistics. This single supported timing question does not test difficult
+abstention, recovery, contradiction or numeric/table behavior.
+
+### Explicit source review, separate from the Groq audit
+
+Both captured answers have identical claim/quote text and say to check tire
+pressure **when the tires are cold**. Source `S1` states precisely that timing
+condition. Both claims preserve the condition, add no pressure value, temperature
+threshold, repair procedure or vehicle-specific applicability, and fully answer
+this scenario's question. Their evidence is an exact, unmodified quotation from
+the supplied synthetic owner's-manual passage; `S1` maps locally to PDF page 1.
+No model/year/body-style restrictions are present in this fixture, so this result
+cannot establish applicability to an actual BMW or the real manual. Neither mode
+refused; no false refusal or unsupported claim was observed in this pair.
+
+The implementation agent inspected both private captures against the supplied
+passage and entered explicit per-claim support/completeness labels in a
+[hash-bound review](groq-20261026-cold-pressure-en-review.v1.json). The existing
+`--report-input` / `--review-file` path applied those labels without API calls.
+The full answer hashes differ because their `reason` fields differ; the answer
+texts themselves are identical. Grounded's own `audited_evidence` verdict was
+not used as evaluation ground truth. **This is agent source review, not
+independent human review.** No general quality advantage is demonstrated.
+
+### Quota and billing observations
+
+The confirmed Free Plan's recorded model limits are 30 RPM, 1,000 RPD,
+8,000 TPM and 200,000 TPD. The run was paced at 6 RPM and used conservative
+pre-request token/day guards. Live headers independently reported RPD limit
+1,000 and TPM limit 8,000; final remaining fields were **997 RPD / 7,147 TPM**.
+No 429, Retry-After, paid tier switch or billing action occurred. Groq has no
+per-request zero-price cap; the free billing boundary is the verified account
+plan and fixed non-upgrading request path described in [Groq setup](../groq.md).
+
+Headers do not expose RPM/TPD balances. Together with the preceding separately
+recorded smoke, this client observed five successful calls and 3,527 reported
+tokens on this date, well below the recorded daily caps. That local total is
+not an organization-wide billing audit. Do not infer cumulative daily request
+usage by subtracting the latest remaining header from 1,000: header balances
+and reset observations changed between runs. Console usage can lag by up to
+15 minutes. Raw header observations are retained rather than reconciled by guess.
+
+### Next proposed bounded step — not executed
+
+Run only `cold_pressure` in **DE and RU**, once per language with both modes,
+at 6 RPM and at most **10 new attempts** (five reserved per pair), checking quota
+headroom first. Combined with this EN observation, it would give initial
+three-language compatibility evidence for one simple source/condition. Review
+translated claims, retention of the cold-tire condition, unchanged English
+quotes, refusals, usage and paced latency; stop on the first error and preserve
+checkpoints. Do not rerun this completed EN pair or automatically extend to other
+cases/profiles. Harder EN cases and real-corpus applicability remain subsequent,
+separately authorized work. Phase 3 quality acceptance and independent human
+review remain open. No merge, tag or Release was performed.
