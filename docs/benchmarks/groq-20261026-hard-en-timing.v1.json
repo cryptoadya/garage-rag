@@ -1,0 +1,405 @@
+{
+  "schema_version": 1,
+  "provider": "groq",
+  "model": "openai/gpt-oss-120b",
+  "definitions": {
+    "http": "Full client.post round trip including network/server queue/generation, excluding limiter",
+    "limiter": "Measured actual sleeps in existing BudgetedPacedLLM",
+    "provider": "Raw usage total_time and separate queue_time; not an independent client measurement"
+  },
+  "runs": [
+    {
+      "schema_version": 1,
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "language": "en",
+      "case": "false_entailment",
+      "prior_stage_attempts": 0,
+      "stage_attempt_limit": 20,
+      "max_new_attempts": 5,
+      "requests_per_minute": 6,
+      "measurement_script_sha256": "a4792f7869846c66d3546340418a6fd9c3e0d643a3db78b58dca8a5db850cb59",
+      "quota_seed_sha256": {
+        "previous": "657c4e3d208d903c38f8d80e4d1aec45c4a21a7530b373e2204e50e7ed5e45be"
+      },
+      "initial_known_daily_calls": 11,
+      "initial_known_daily_tokens": 8020,
+      "rows": [
+        {
+          "mode": "direct",
+          "language": "en",
+          "trial": 1,
+          "limiter_wait_ms": 0,
+          "http_calls": [
+            {
+              "phase": "draft",
+              "started_at": 1793008385.837018,
+              "http_status": 200,
+              "http_elapsed_ms": 730.3951249923557,
+              "provider_usage_seconds": {
+                "queue_time": 0.303558727,
+                "prompt_time": 0.132342598,
+                "completion_time": 0.139612567,
+                "total_time": 0.271955165
+              }
+            }
+          ],
+          "searches": [
+            {
+              "top_k": 5,
+              "count": 1,
+              "content_sha256": [
+                "889e2677b0071865743fef42f7990a446e2143e82e073a05745933f101ab9657"
+              ]
+            }
+          ],
+          "answer_sha256": "2debc38a6481dd3468368cc5859f3cf6757bcb2dfed20b6fc548e6b1419dedf5",
+          "workflow_elapsed_ms": 752.0735000725836,
+          "error": false
+        },
+        {
+          "mode": "grounded",
+          "language": "en",
+          "trial": 1,
+          "limiter_wait_ms": 9242.87454097066,
+          "http_calls": [
+            {
+              "phase": "draft",
+              "started_at": 1793008395.860448,
+              "http_status": 200,
+              "http_elapsed_ms": 1544.1196670290083,
+              "provider_usage_seconds": {
+                "queue_time": 0.208116729,
+                "prompt_time": 1.116898233,
+                "completion_time": 0.133899826,
+                "total_time": 1.250798059
+              }
+            }
+          ],
+          "searches": [
+            {
+              "top_k": 5,
+              "count": 1,
+              "content_sha256": [
+                "889e2677b0071865743fef42f7990a446e2143e82e073a05745933f101ab9657"
+              ]
+            },
+            {
+              "top_k": 20,
+              "count": 1,
+              "content_sha256": [
+                "889e2677b0071865743fef42f7990a446e2143e82e073a05745933f101ab9657"
+              ]
+            }
+          ],
+          "answer_sha256": "81227f8c565ff898f1ed4e7460c28fd5fb04ea07d29557ec7ccc4bccc0f7e038",
+          "workflow_elapsed_ms": 10837.233250029385,
+          "error": false
+        }
+      ]
+    },
+    {
+      "schema_version": 1,
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "language": "en",
+      "case": "conflicting_sources",
+      "prior_stage_attempts": 2,
+      "stage_attempt_limit": 20,
+      "max_new_attempts": 5,
+      "requests_per_minute": 6,
+      "measurement_script_sha256": "a4792f7869846c66d3546340418a6fd9c3e0d643a3db78b58dca8a5db850cb59",
+      "quota_seed_sha256": {
+        "previous": "dc19ad3e70b450c822f0b28dd1f307a6d55050143e92baf575e67a95dbb13759"
+      },
+      "initial_known_daily_calls": 13,
+      "initial_known_daily_tokens": 9066,
+      "rows": [
+        {
+          "mode": "direct",
+          "language": "en",
+          "trial": 1,
+          "limiter_wait_ms": 0,
+          "http_calls": [
+            {
+              "phase": "draft",
+              "started_at": 1793008513.133953,
+              "http_status": 200,
+              "http_elapsed_ms": 349.54937489237636,
+              "provider_usage_seconds": {
+                "queue_time": 0.019392238,
+                "prompt_time": 0.023990685,
+                "completion_time": 0.218656563,
+                "total_time": 0.242647248
+              }
+            }
+          ],
+          "searches": [
+            {
+              "top_k": 5,
+              "count": 2,
+              "content_sha256": [
+                "8e9dd7ab64cd58cbdd051a86e2cbf080a1e3958393f4fbbc69b90b59a32a849d",
+                "5570020ccd8f6cd795ee261bab410eeee9ee27695a1c4b82d1c7dc962fc17a43"
+              ]
+            }
+          ],
+          "answer_sha256": "2debc38a6481dd3468368cc5859f3cf6757bcb2dfed20b6fc548e6b1419dedf5",
+          "workflow_elapsed_ms": 367.0236669713631,
+          "error": false
+        },
+        {
+          "mode": "grounded",
+          "language": "en",
+          "trial": 1,
+          "limiter_wait_ms": 9627.868041978218,
+          "http_calls": [
+            {
+              "phase": "draft",
+              "started_at": 1793008523.16125,
+              "http_status": 200,
+              "http_elapsed_ms": 667.8055829834193,
+              "provider_usage_seconds": {
+                "queue_time": 0.297175216,
+                "prompt_time": 0.016284792,
+                "completion_time": 0.249181411,
+                "total_time": 0.265466203
+              }
+            }
+          ],
+          "searches": [
+            {
+              "top_k": 5,
+              "count": 2,
+              "content_sha256": [
+                "8e9dd7ab64cd58cbdd051a86e2cbf080a1e3958393f4fbbc69b90b59a32a849d",
+                "5570020ccd8f6cd795ee261bab410eeee9ee27695a1c4b82d1c7dc962fc17a43"
+              ]
+            },
+            {
+              "top_k": 20,
+              "count": 2,
+              "content_sha256": [
+                "8e9dd7ab64cd58cbdd051a86e2cbf080a1e3958393f4fbbc69b90b59a32a849d",
+                "5570020ccd8f6cd795ee261bab410eeee9ee27695a1c4b82d1c7dc962fc17a43"
+              ]
+            }
+          ],
+          "answer_sha256": "81227f8c565ff898f1ed4e7460c28fd5fb04ea07d29557ec7ccc4bccc0f7e038",
+          "workflow_elapsed_ms": 10337.989625055343,
+          "error": false
+        }
+      ]
+    },
+    {
+      "schema_version": 1,
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "language": "en",
+      "case": "recovery",
+      "prior_stage_attempts": 4,
+      "stage_attempt_limit": 20,
+      "max_new_attempts": 5,
+      "requests_per_minute": 6,
+      "measurement_script_sha256": "a4792f7869846c66d3546340418a6fd9c3e0d643a3db78b58dca8a5db850cb59",
+      "quota_seed_sha256": {
+        "previous": "c4a527b57609648816c1b50bfe02d1ddea11d67b87c1d17cbcb9946ad7bfed6b"
+      },
+      "initial_known_daily_calls": 15,
+      "initial_known_daily_tokens": 10305,
+      "rows": [
+        {
+          "mode": "direct",
+          "language": "en",
+          "trial": 1,
+          "limiter_wait_ms": 0,
+          "http_calls": [
+            {
+              "phase": "draft",
+              "started_at": 1793008629.0271082,
+              "http_status": 200,
+              "http_elapsed_ms": 585.7812500325963,
+              "provider_usage_seconds": {
+                "queue_time": 0.299322382,
+                "prompt_time": 0.024180833,
+                "completion_time": 0.143446559,
+                "total_time": 0.167627392
+              }
+            }
+          ],
+          "searches": [
+            {
+              "top_k": 5,
+              "count": 1,
+              "content_sha256": [
+                "889e2677b0071865743fef42f7990a446e2143e82e073a05745933f101ab9657"
+              ]
+            }
+          ],
+          "answer_sha256": "2debc38a6481dd3468368cc5859f3cf6757bcb2dfed20b6fc548e6b1419dedf5",
+          "workflow_elapsed_ms": 602.105375030078,
+          "error": false
+        },
+        {
+          "mode": "grounded",
+          "language": "en",
+          "trial": 1,
+          "limiter_wait_ms": 28281.290708924644,
+          "http_calls": [
+            {
+              "phase": "draft",
+              "started_at": 1793008639.050665,
+              "http_status": 200,
+              "http_elapsed_ms": 456.43708296120167,
+              "provider_usage_seconds": {
+                "queue_time": 0.051210227,
+                "prompt_time": 0.081111677,
+                "completion_time": 0.215113036,
+                "total_time": 0.296224713
+              }
+            },
+            {
+              "phase": "draft",
+              "started_at": 1793008649.0724149,
+              "http_status": 200,
+              "http_elapsed_ms": 620.4112078994513,
+              "provider_usage_seconds": {
+                "queue_time": 0.017785852,
+                "prompt_time": 0.016146635,
+                "completion_time": 0.502065245,
+                "total_time": 0.51821188
+              }
+            },
+            {
+              "phase": "audit",
+              "started_at": 1793008659.093478,
+              "http_status": 200,
+              "http_elapsed_ms": 819.7844160022214,
+              "provider_usage_seconds": {
+                "queue_time": 0.299704496,
+                "prompt_time": 0.016511246,
+                "completion_time": 0.416525525,
+                "total_time": 0.433036771
+              }
+            }
+          ],
+          "searches": [
+            {
+              "top_k": 5,
+              "count": 1,
+              "content_sha256": [
+                "889e2677b0071865743fef42f7990a446e2143e82e073a05745933f101ab9657"
+              ]
+            },
+            {
+              "top_k": 20,
+              "count": 2,
+              "content_sha256": [
+                "889e2677b0071865743fef42f7990a446e2143e82e073a05745933f101ab9657",
+                "e598a5c133d9779d3608bdf7c07cd60290f847a960ed14b67cb248a40c54434e"
+              ]
+            }
+          ],
+          "answer_sha256": "dc2e39ce9f92c7682c0dc46f421f8c519f512e6fbdeb78790de66c1ece4716e0",
+          "workflow_elapsed_ms": 30300.369624979794,
+          "error": false
+        }
+      ]
+    },
+    {
+      "schema_version": 1,
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "language": "en",
+      "case": "persistent_false_refusal",
+      "prior_stage_attempts": 8,
+      "stage_attempt_limit": 20,
+      "max_new_attempts": 5,
+      "requests_per_minute": 6,
+      "measurement_script_sha256": "a4792f7869846c66d3546340418a6fd9c3e0d643a3db78b58dca8a5db850cb59",
+      "quota_seed_sha256": {
+        "previous": "7418f77571b1349b2f920ec676fe862ec321d43393f49da5a33670cd4e018ace"
+      },
+      "initial_known_daily_calls": 19,
+      "initial_known_daily_tokens": 12974,
+      "rows": [
+        {
+          "mode": "direct",
+          "language": "en",
+          "trial": 1,
+          "limiter_wait_ms": 0,
+          "http_calls": [
+            {
+              "phase": "draft",
+              "started_at": 1793008784.9997451,
+              "http_status": 200,
+              "http_elapsed_ms": 588.528958032839,
+              "provider_usage_seconds": {
+                "queue_time": 0.019637452,
+                "prompt_time": 0.014732393,
+                "completion_time": 0.446919267,
+                "total_time": 0.46165166
+              }
+            }
+          ],
+          "searches": [
+            {
+              "top_k": 5,
+              "count": 1,
+              "content_sha256": [
+                "e598a5c133d9779d3608bdf7c07cd60290f847a960ed14b67cb248a40c54434e"
+              ]
+            }
+          ],
+          "answer_sha256": "0f18c259ea42eae6817e4e5d77f043fec4120dfad96b9e810d23f93a6d4280b3",
+          "workflow_elapsed_ms": 632.1089169941843,
+          "error": false
+        },
+        {
+          "mode": "grounded",
+          "language": "en",
+          "trial": 1,
+          "limiter_wait_ms": 18775.502583011985,
+          "http_calls": [
+            {
+              "phase": "draft",
+              "started_at": 1793008795.0190232,
+              "http_status": 200,
+              "http_elapsed_ms": 595.755000016652,
+              "provider_usage_seconds": {
+                "queue_time": 0.048509135,
+                "prompt_time": 0.021351517,
+                "completion_time": 0.444795677,
+                "total_time": 0.466147194
+              }
+            },
+            {
+              "phase": "audit",
+              "started_at": 1793008805.0404558,
+              "http_status": 200,
+              "http_elapsed_ms": 662.2021249495447,
+              "provider_usage_seconds": {
+                "queue_time": 0.194627579,
+                "prompt_time": 0.03063429,
+                "completion_time": 0.348933723,
+                "total_time": 0.379568013
+              }
+            }
+          ],
+          "searches": [
+            {
+              "top_k": 5,
+              "count": 1,
+              "content_sha256": [
+                "e598a5c133d9779d3608bdf7c07cd60290f847a960ed14b67cb248a40c54434e"
+              ]
+            }
+          ],
+          "answer_sha256": "f29114e2ec3d5a5fe684a5d46f1d9b013eeeffd86d9b8776c9edb2b1e82c1d3f",
+          "workflow_elapsed_ms": 20085.8760420233,
+          "error": false
+        }
+      ]
+    }
+  ]
+}

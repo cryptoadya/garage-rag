@@ -7,6 +7,10 @@ is available in [Git commits](https://github.com/cryptoadya/garage-rag/commits/m
 
 ### Added
 
+- Four harder Groq EN live pairs with source-relative agent review, preserved
+  dataset-level metrics, request/search/token/timing evidence and documented
+  recovery benefit, audit-evidence limits and scoring follow-up proposals.
+
 - Completed Groq DE/RU cold-pressure pairs and a combined EN/DE/RU summary,
   with separate hash-bound translation/source review and measured HTTP,
   provider-reported and rate-limiter timing observations; EN was not rerun.

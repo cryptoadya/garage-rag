@@ -588,7 +588,7 @@ are published. **38 focused offline evaluator/Groq tests passed**, as did Ruff,
 JSON, answer/source/artifact hash checks and the final diff check. Live
 observations above are not mocked tests.
 
-### Proposed next step: four harder EN pairs — not executed
+### Originally proposed next step: four harder EN pairs
 
 Use the unchanged existing scenarios, one EN pair at a time, at 6 RPM with at
 most five attempts each (**20 attempts reserved for all four**), quota checks
@@ -609,3 +609,15 @@ extra calls, tokens and false refusals. Same-model audit is not independent
 scoring. Start with these four EN diagnostics before authorizing DE/RU variants;
 no hard-case inference was executed in this follow-up. Phase 3 acceptance and
 independent human review remain open; no merge or Release was performed.
+
+
+## Completed harder Groq EN comparisons (October 26, 2026)
+
+The subsequently authorized four-pair stage is complete: 11/20 new attempts,
+no errors, no retries/fallback and no repeated cold-pressure checks. See the
+[full per-scenario comparison, source-relative review, costs and limitations](groq-hard-en-20261026.md).
+Grounded recovered missing evidence once; other outcomes were equivalent in
+source-relative correctness. The live negative cases already refused before
+audit, and the persistent-refusal fault did not occur. General audit benefit
+and independent human evaluation remain unproven. Both legacy dataset-level
+metrics and the separate available-source interpretation are preserved.

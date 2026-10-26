@@ -163,8 +163,21 @@ answer rows preserve the cold-tire condition and exact English evidence, with no
 observed errors or false refusals under explicit agent source/translation review.
 The [combined result and next proposal](benchmarks/grounded-answering.md#groq-deru-completion-and-combined-enderu-result-october-26-2026)
 separates HTTP/provider-reported time from limiter waits for DE/RU; that split was
-not recorded for EN. Current production code is unchanged. The next proposed
-scope is four harder EN cases (unsupported entailment, conflicting sources,
-missing-source recovery and false-refusal control), maximum 20 attempts in
-separate five-attempt pairs; it has not been executed. No general quality gain
-or independent human review is claimed.
+not recorded for EN. Current production code is unchanged. The next scope
+proposed then was four harder EN cases (unsupported entailment, conflicting
+sources, missing-source recovery and false-refusal control), maximum 20 attempts
+in separate five-attempt pairs. Its subsequent results are recorded below.
+No general quality gain or independent human review is claimed.
+
+
+## Completed harder English comparisons
+
+The four authorized EN cases have now completed, using 11 of 20 new attempts
+at 6 RPM. [Detailed results](benchmarks/groq-hard-en-20261026.md) show one useful
+missing-evidence recovery through expansion and three source-relative quality
+ties. Grounded added three calls, three searches and 2,398 tokens overall.
+No cold-pressure case was rerun, no unsupported draft reached audit, and no
+extra false refusal was observed given the actual sources. The report preserves
+the legacy recovery false-refusal metric alongside an explicit context-relative
+agent review; independent human review and general quality improvement remain
+outstanding. No further live stage is scheduled or executed by this report.

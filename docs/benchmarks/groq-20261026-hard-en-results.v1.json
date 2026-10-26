@@ -1,0 +1,2484 @@
+{
+  "schema_version": 1,
+  "execution": "live",
+  "provider": "groq",
+  "model": "openai/gpt-oss-120b",
+  "runtime_commit": "cf0f54b7a3ee7b516beb37ad68df2509f5f2d3b5",
+  "cases": [
+    "false_entailment",
+    "conflicting_sources",
+    "recovery",
+    "persistent_false_refusal"
+  ],
+  "languages": [
+    "en"
+  ],
+  "attempt_limit": 20,
+  "attempts": 11,
+  "requests_per_minute": 6,
+  "free_plan_reverified": true,
+  "console_limits": {
+    "rpm": 30,
+    "rpd": 1000,
+    "tpm": 8000,
+    "tpd": 200000
+  },
+  "independent_human_review": false,
+  "cold_pressure_repeated": false,
+  "legacy_dataset_summary": {
+    "direct": {
+      "runs": 4,
+      "errors": 0,
+      "scored_runs": 4,
+      "answerable_runs": 2,
+      "unanswerable_runs": 2,
+      "answers": 1,
+      "correct_refusals": 2,
+      "false_refusals": 1,
+      "reviewed_answers": 1,
+      "reviewed_claims": 1,
+      "supported_claims": 1,
+      "claim_support_rate": 1.0,
+      "unsupported_answers": 0,
+      "complete_supported_answers": 1,
+      "locally_validated_citation_answers": 1,
+      "llm_calls": {
+        "n": 4,
+        "min": 1,
+        "p50": 1.0,
+        "p95": 1.0,
+        "max": 1
+      },
+      "search_calls": {
+        "n": 4,
+        "min": 1,
+        "p50": 1.0,
+        "p95": 1.0,
+        "max": 1
+      },
+      "elapsed_ms": {
+        "n": 4,
+        "min": 367.0236669713631,
+        "p50": 617.1071460121311,
+        "p95": 734.0788126108237,
+        "max": 752.0735000725836
+      },
+      "total_llm_calls": 4,
+      "reported_input_tokens": 1879,
+      "reported_output_tokens": 449,
+      "token_usage_complete": true
+    },
+    "grounded": {
+      "runs": 4,
+      "errors": 0,
+      "scored_runs": 4,
+      "answerable_runs": 2,
+      "unanswerable_runs": 2,
+      "answers": 2,
+      "correct_refusals": 2,
+      "false_refusals": 0,
+      "reviewed_answers": 2,
+      "reviewed_claims": 2,
+      "supported_claims": 2,
+      "claim_support_rate": 1.0,
+      "unsupported_answers": 0,
+      "complete_supported_answers": 2,
+      "locally_validated_citation_answers": 2,
+      "llm_calls": {
+        "n": 4,
+        "min": 1,
+        "p50": 1.5,
+        "p95": 2.8499999999999996,
+        "max": 3
+      },
+      "search_calls": {
+        "n": 4,
+        "min": 1,
+        "p50": 2.0,
+        "p95": 2.0,
+        "max": 2
+      },
+      "elapsed_ms": {
+        "n": 4,
+        "min": 10337.989625055343,
+        "p50": 15461.554646026343,
+        "p95": 28768.195587536316,
+        "max": 30300.369624979794
+      },
+      "total_llm_calls": 7,
+      "reported_input_tokens": 3626,
+      "reported_output_tokens": 1100,
+      "token_usage_complete": true
+    }
+  },
+  "legacy_paired_summary": {
+    "pairs": 4,
+    "summary": {
+      "direct": {
+        "runs": 4,
+        "errors": 0,
+        "scored_runs": 4,
+        "answerable_runs": 2,
+        "unanswerable_runs": 2,
+        "answers": 1,
+        "correct_refusals": 2,
+        "false_refusals": 1,
+        "reviewed_answers": 1,
+        "reviewed_claims": 1,
+        "supported_claims": 1,
+        "claim_support_rate": 1.0,
+        "unsupported_answers": 0,
+        "complete_supported_answers": 1,
+        "locally_validated_citation_answers": 1,
+        "llm_calls": {
+          "n": 4,
+          "min": 1,
+          "p50": 1.0,
+          "p95": 1.0,
+          "max": 1
+        },
+        "search_calls": {
+          "n": 4,
+          "min": 1,
+          "p50": 1.0,
+          "p95": 1.0,
+          "max": 1
+        },
+        "elapsed_ms": {
+          "n": 4,
+          "min": 367.0236669713631,
+          "p50": 617.1071460121311,
+          "p95": 734.0788126108237,
+          "max": 752.0735000725836
+        },
+        "total_llm_calls": 4,
+        "reported_input_tokens": 1879,
+        "reported_output_tokens": 449,
+        "token_usage_complete": true
+      },
+      "grounded": {
+        "runs": 4,
+        "errors": 0,
+        "scored_runs": 4,
+        "answerable_runs": 2,
+        "unanswerable_runs": 2,
+        "answers": 2,
+        "correct_refusals": 2,
+        "false_refusals": 0,
+        "reviewed_answers": 2,
+        "reviewed_claims": 2,
+        "supported_claims": 2,
+        "claim_support_rate": 1.0,
+        "unsupported_answers": 0,
+        "complete_supported_answers": 2,
+        "locally_validated_citation_answers": 2,
+        "llm_calls": {
+          "n": 4,
+          "min": 1,
+          "p50": 1.5,
+          "p95": 2.8499999999999996,
+          "max": 3
+        },
+        "search_calls": {
+          "n": 4,
+          "min": 1,
+          "p50": 2.0,
+          "p95": 2.0,
+          "max": 2
+        },
+        "elapsed_ms": {
+          "n": 4,
+          "min": 10337.989625055343,
+          "p50": 15461.554646026343,
+          "p95": 28768.195587536316,
+          "max": 30300.369624979794
+        },
+        "total_llm_calls": 7,
+        "reported_input_tokens": 3626,
+        "reported_output_tokens": 1100,
+        "token_usage_complete": true
+      }
+    }
+  },
+  "source_relative_review_summary": {
+    "direct": {
+      "reviewed_runs": 4,
+      "supported_complete_answers": 1,
+      "correct_refusals": 3,
+      "false_refusals_given_available_context": 0,
+      "unsupported_claims_observed": 0
+    },
+    "grounded": {
+      "reviewed_runs": 4,
+      "supported_complete_answers": 2,
+      "correct_refusals": 2,
+      "false_refusals_given_available_context": 0,
+      "unsupported_claims_observed": 0
+    }
+  },
+  "review_artifact": {
+    "path": "groq-20261026-hard-en-review.v1.json",
+    "sha256": "414f87ae0c8923e863eb44f78a6da1550099db6e3dbbcf9e431d1f647eed9edf"
+  },
+  "timing_artifact": {
+    "path": "groq-20261026-hard-en-timing.v1.json",
+    "sha256": "de3c5f19b276dda9d47d9d422a328cffdd171ebbe2293ff762b892a508dfd26f"
+  },
+  "per_case": [
+    {
+      "id": "false_entailment",
+      "metrics": [
+        {
+          "mode": "direct",
+          "answer_sha256": "2debc38a6481dd3468368cc5859f3cf6757bcb2dfed20b6fc548e6b1419dedf5",
+          "supported": false,
+          "reason": "insufficient_evidence",
+          "llm_calls": 1,
+          "search_calls": 1,
+          "input_tokens": 457,
+          "output_tokens": 67,
+          "workflow_elapsed_ms": 752.0735000725836,
+          "http_elapsed_ms": 730.3951249923557,
+          "limiter_wait_ms": 0,
+          "provider_total_seconds": 0.271955165,
+          "provider_queue_seconds": 0.303558727
+        },
+        {
+          "mode": "grounded",
+          "answer_sha256": "81227f8c565ff898f1ed4e7460c28fd5fb04ea07d29557ec7ccc4bccc0f7e038",
+          "supported": false,
+          "reason": "no_new_context",
+          "llm_calls": 1,
+          "search_calls": 2,
+          "input_tokens": 457,
+          "output_tokens": 65,
+          "workflow_elapsed_ms": 10837.233250029385,
+          "http_elapsed_ms": 1544.1196670290083,
+          "limiter_wait_ms": 9242.87454097066,
+          "provider_total_seconds": 1.250798059,
+          "provider_queue_seconds": 0.208116729
+        }
+      ],
+      "source_relative_comparison": "equivalent quality; no extra supported claim or prevented live error",
+      "source_review_notes": [
+        "The sent tire-pressure source contains no spare-key location; refusing is correct.",
+        "The sent tire-pressure source contains no spare-key location; refusing is correct."
+      ],
+      "quota_check": {
+        "prior_stage_attempts": 0,
+        "initial_known_daily_calls": 11,
+        "initial_known_daily_tokens": 8020,
+        "quota_seed_sha256": {
+          "previous": "657c4e3d208d903c38f8d80e4d1aec45c4a21a7530b373e2204e50e7ed5e45be"
+        },
+        "final_headers": {
+          "rpd_limit": 1000,
+          "rpd_remaining": 998,
+          "tpm_limit": 8000,
+          "tpm_remaining": 7476,
+          "rpd_reset_seconds": 172.8,
+          "tpm_reset_seconds": 3.93
+        }
+      }
+    },
+    {
+      "id": "conflicting_sources",
+      "metrics": [
+        {
+          "mode": "direct",
+          "answer_sha256": "2debc38a6481dd3468368cc5859f3cf6757bcb2dfed20b6fc548e6b1419dedf5",
+          "supported": false,
+          "reason": "insufficient_evidence",
+          "llm_calls": 1,
+          "search_calls": 1,
+          "input_tokens": 508,
+          "output_tokens": 103,
+          "workflow_elapsed_ms": 367.0236669713631,
+          "http_elapsed_ms": 349.54937489237636,
+          "limiter_wait_ms": 0,
+          "provider_total_seconds": 0.242647248,
+          "provider_queue_seconds": 0.019392238
+        },
+        {
+          "mode": "grounded",
+          "answer_sha256": "81227f8c565ff898f1ed4e7460c28fd5fb04ea07d29557ec7ccc4bccc0f7e038",
+          "supported": false,
+          "reason": "no_new_context",
+          "llm_calls": 1,
+          "search_calls": 2,
+          "input_tokens": 508,
+          "output_tokens": 120,
+          "workflow_elapsed_ms": 10337.989625055343,
+          "http_elapsed_ms": 667.8055829834193,
+          "limiter_wait_ms": 9627.868041978218,
+          "provider_total_seconds": 0.265466203,
+          "provider_queue_seconds": 0.297175216
+        }
+      ],
+      "source_relative_comparison": "equivalent quality; no extra supported claim or prevented live error",
+      "source_review_notes": [
+        "Both sent unqualified torque statements conflict; selecting either would be unjustified. Refusing is correct.",
+        "Both sent unqualified torque statements conflict; selecting either would be unjustified. Refusing is correct."
+      ],
+      "quota_check": {
+        "prior_stage_attempts": 2,
+        "initial_known_daily_calls": 13,
+        "initial_known_daily_tokens": 9066,
+        "quota_seed_sha256": {
+          "previous": "dc19ad3e70b450c822f0b28dd1f307a6d55050143e92baf575e67a95dbb13759"
+        },
+        "final_headers": {
+          "rpd_limit": 1000,
+          "rpd_remaining": 997,
+          "tpm_limit": 8000,
+          "tpm_remaining": 7389,
+          "rpd_reset_seconds": 259.2,
+          "tpm_reset_seconds": 4.582
+        }
+      }
+    },
+    {
+      "id": "recovery",
+      "metrics": [
+        {
+          "mode": "direct",
+          "answer_sha256": "2debc38a6481dd3468368cc5859f3cf6757bcb2dfed20b6fc548e6b1419dedf5",
+          "supported": false,
+          "reason": "insufficient_evidence",
+          "llm_calls": 1,
+          "search_calls": 1,
+          "input_tokens": 457,
+          "output_tokens": 66,
+          "workflow_elapsed_ms": 602.105375030078,
+          "http_elapsed_ms": 585.7812500325963,
+          "limiter_wait_ms": 0,
+          "provider_total_seconds": 0.167627392,
+          "provider_queue_seconds": 0.299322382
+        },
+        {
+          "mode": "grounded",
+          "answer_sha256": "dc2e39ce9f92c7682c0dc46f421f8c519f512e6fbdeb78790de66c1ece4716e0",
+          "supported": true,
+          "reason": "audited_evidence",
+          "llm_calls": 3,
+          "search_calls": 2,
+          "input_tokens": 1609,
+          "output_tokens": 537,
+          "workflow_elapsed_ms": 30300.369624979794,
+          "http_elapsed_ms": 1896.6327068628743,
+          "limiter_wait_ms": 28281.290708924644,
+          "provider_total_seconds": 1.247473364,
+          "provider_queue_seconds": 0.368700575
+        }
+      ],
+      "source_relative_comparison": "better task completion through additional evidence, not a direct correctness failure",
+      "source_review_notes": [
+        "Only the tire-pressure passage was sent to direct; its refusal is justified. The dataset-level answer label describes expanded evidence, not this context.",
+        "Initial refusal is justified; expanded source S2 explicitly provides the key location. Final claim and exact S2/page-2 quotation are supported and complete."
+      ],
+      "quota_check": {
+        "prior_stage_attempts": 4,
+        "initial_known_daily_calls": 15,
+        "initial_known_daily_tokens": 10305,
+        "quota_seed_sha256": {
+          "previous": "c4a527b57609648816c1b50bfe02d1ddea11d67b87c1d17cbcb9946ad7bfed6b"
+        },
+        "final_headers": {
+          "rpd_limit": 1000,
+          "rpd_remaining": 994,
+          "tpm_limit": 8000,
+          "tpm_remaining": 7122,
+          "rpd_reset_seconds": 518.4,
+          "tpm_reset_seconds": 6.585
+        }
+      }
+    },
+    {
+      "id": "persistent_false_refusal",
+      "metrics": [
+        {
+          "mode": "direct",
+          "answer_sha256": "0f18c259ea42eae6817e4e5d77f043fec4120dfad96b9e810d23f93a6d4280b3",
+          "supported": true,
+          "reason": "verified_citations",
+          "llm_calls": 1,
+          "search_calls": 1,
+          "input_tokens": 457,
+          "output_tokens": 213,
+          "workflow_elapsed_ms": 632.1089169941843,
+          "http_elapsed_ms": 588.528958032839,
+          "limiter_wait_ms": 0,
+          "provider_total_seconds": 0.46165166,
+          "provider_queue_seconds": 0.019637452
+        },
+        {
+          "mode": "grounded",
+          "answer_sha256": "f29114e2ec3d5a5fe684a5d46f1d9b013eeeffd86d9b8776c9edb2b1e82c1d3f",
+          "supported": true,
+          "reason": "audited_evidence",
+          "llm_calls": 2,
+          "search_calls": 1,
+          "input_tokens": 1052,
+          "output_tokens": 378,
+          "workflow_elapsed_ms": 20085.8760420233,
+          "http_elapsed_ms": 1257.9571249661967,
+          "limiter_wait_ms": 18775.502583011985,
+          "provider_total_seconds": 0.845715207,
+          "provider_queue_seconds": 0.243136714
+        }
+      ],
+      "source_relative_comparison": "equivalent quality; no extra supported claim or prevented live error",
+      "source_review_notes": [
+        "The initial source explicitly supplies the key location. The actual model answers correctly with an exact S1/page-1 quote; the scripted false-refusal behavior was not observed.",
+        "The initial source explicitly supplies the key location. The actual model answers correctly with an exact S1/page-1 quote; the scripted false-refusal behavior was not observed."
+      ],
+      "quota_check": {
+        "prior_stage_attempts": 8,
+        "initial_known_daily_calls": 19,
+        "initial_known_daily_tokens": 12974,
+        "quota_seed_sha256": {
+          "previous": "7418f77571b1349b2f920ec676fe862ec321d43393f49da5a33670cd4e018ace"
+        },
+        "final_headers": {
+          "rpd_limit": 1000,
+          "rpd_remaining": 992,
+          "tpm_limit": 8000,
+          "tpm_remaining": 7192,
+          "rpd_reset_seconds": 691.2,
+          "tpm_reset_seconds": 6.06
+        }
+      }
+    }
+  ],
+  "reports": [
+    {
+      "schema_version": 1,
+      "dataset_id": "aurora-grounded-answering-v1",
+      "dataset_sha256": "f943c28ab4bce4f9c0d3293f20e6eaa680826d36b6afbac2afbb194b0dc66182",
+      "execution": "live",
+      "complete": true,
+      "planned_runs": 2,
+      "seed": 20261025,
+      "trials": 1,
+      "languages": [
+        "en"
+      ],
+      "independent_human_review": false,
+      "claim_scoring": "Hash-bound external review; unreviewed claims remain unscored",
+      "summary": {
+        "direct": {
+          "runs": 1,
+          "errors": 0,
+          "scored_runs": 1,
+          "answerable_runs": 0,
+          "unanswerable_runs": 1,
+          "answers": 0,
+          "correct_refusals": 1,
+          "false_refusals": 0,
+          "reviewed_answers": 0,
+          "reviewed_claims": 0,
+          "supported_claims": 0,
+          "claim_support_rate": null,
+          "unsupported_answers": 0,
+          "complete_supported_answers": 0,
+          "locally_validated_citation_answers": 0,
+          "llm_calls": {
+            "n": 1,
+            "min": 1,
+            "p50": 1.0,
+            "p95": 1.0,
+            "max": 1
+          },
+          "search_calls": {
+            "n": 1,
+            "min": 1,
+            "p50": 1.0,
+            "p95": 1.0,
+            "max": 1
+          },
+          "elapsed_ms": {
+            "n": 1,
+            "min": 752.0735000725836,
+            "p50": 752.0735000725836,
+            "p95": 752.0735000725836,
+            "max": 752.0735000725836
+          },
+          "total_llm_calls": 1,
+          "reported_input_tokens": 457,
+          "reported_output_tokens": 67,
+          "token_usage_complete": true
+        },
+        "grounded": {
+          "runs": 1,
+          "errors": 0,
+          "scored_runs": 1,
+          "answerable_runs": 0,
+          "unanswerable_runs": 1,
+          "answers": 0,
+          "correct_refusals": 1,
+          "false_refusals": 0,
+          "reviewed_answers": 0,
+          "reviewed_claims": 0,
+          "supported_claims": 0,
+          "claim_support_rate": null,
+          "unsupported_answers": 0,
+          "complete_supported_answers": 0,
+          "locally_validated_citation_answers": 0,
+          "llm_calls": {
+            "n": 1,
+            "min": 1,
+            "p50": 1.0,
+            "p95": 1.0,
+            "max": 1
+          },
+          "search_calls": {
+            "n": 1,
+            "min": 2,
+            "p50": 2.0,
+            "p95": 2.0,
+            "max": 2
+          },
+          "elapsed_ms": {
+            "n": 1,
+            "min": 10837.233250029385,
+            "p50": 10837.233250029385,
+            "p95": 10837.233250029385,
+            "max": 10837.233250029385
+          },
+          "total_llm_calls": 1,
+          "reported_input_tokens": 457,
+          "reported_output_tokens": 65,
+          "token_usage_complete": true
+        }
+      },
+      "paired": {
+        "pairs": 1,
+        "summary": {
+          "direct": {
+            "runs": 1,
+            "errors": 0,
+            "scored_runs": 1,
+            "answerable_runs": 0,
+            "unanswerable_runs": 1,
+            "answers": 0,
+            "correct_refusals": 1,
+            "false_refusals": 0,
+            "reviewed_answers": 0,
+            "reviewed_claims": 0,
+            "supported_claims": 0,
+            "claim_support_rate": null,
+            "unsupported_answers": 0,
+            "complete_supported_answers": 0,
+            "locally_validated_citation_answers": 0,
+            "llm_calls": {
+              "n": 1,
+              "min": 1,
+              "p50": 1.0,
+              "p95": 1.0,
+              "max": 1
+            },
+            "search_calls": {
+              "n": 1,
+              "min": 1,
+              "p50": 1.0,
+              "p95": 1.0,
+              "max": 1
+            },
+            "elapsed_ms": {
+              "n": 1,
+              "min": 752.0735000725836,
+              "p50": 752.0735000725836,
+              "p95": 752.0735000725836,
+              "max": 752.0735000725836
+            },
+            "total_llm_calls": 1,
+            "reported_input_tokens": 457,
+            "reported_output_tokens": 67,
+            "token_usage_complete": true
+          },
+          "grounded": {
+            "runs": 1,
+            "errors": 0,
+            "scored_runs": 1,
+            "answerable_runs": 0,
+            "unanswerable_runs": 1,
+            "answers": 0,
+            "correct_refusals": 1,
+            "false_refusals": 0,
+            "reviewed_answers": 0,
+            "reviewed_claims": 0,
+            "supported_claims": 0,
+            "claim_support_rate": null,
+            "unsupported_answers": 0,
+            "complete_supported_answers": 0,
+            "locally_validated_citation_answers": 0,
+            "llm_calls": {
+              "n": 1,
+              "min": 1,
+              "p50": 1.0,
+              "p95": 1.0,
+              "max": 1
+            },
+            "search_calls": {
+              "n": 1,
+              "min": 2,
+              "p50": 2.0,
+              "p95": 2.0,
+              "max": 2
+            },
+            "elapsed_ms": {
+              "n": 1,
+              "min": 10837.233250029385,
+              "p50": 10837.233250029385,
+              "p95": 10837.233250029385,
+              "max": 10837.233250029385
+            },
+            "total_llm_calls": 1,
+            "reported_input_tokens": 457,
+            "reported_output_tokens": 65,
+            "token_usage_complete": true
+          }
+        }
+      },
+      "rows": [
+        {
+          "id": "false_entailment",
+          "language": "en",
+          "mode": "direct",
+          "trial": 1,
+          "supported": false,
+          "reason": "insufficient_evidence",
+          "error": false,
+          "error_category": null,
+          "expected_answerable": false,
+          "returned_claims": 0,
+          "claim_support": [],
+          "complete_answer": false,
+          "exact_reference_match": [],
+          "answer_sha256": "2debc38a6481dd3468368cc5859f3cf6757bcb2dfed20b6fc548e6b1419dedf5",
+          "trace": {
+            "mode": "direct",
+            "llm_call_limit": 1,
+            "search_call_limit": 1,
+            "llm_calls": 1,
+            "search_calls": 1,
+            "input_tokens": 457,
+            "output_tokens": 67,
+            "usage_records": 1,
+            "elapsed_ms": 752.0735000725836,
+            "events": [
+              {
+                "node": "retrieve",
+                "outcome": "context",
+                "elapsed_ms": 1.5891670482233167,
+                "source_count": 1
+              },
+              {
+                "node": "draft",
+                "outcome": "insufficient_evidence",
+                "elapsed_ms": 750.4759170114994,
+                "source_count": 1
+              }
+            ],
+            "provider_errors": [],
+            "rate_limits": [
+              {
+                "rpd_limit": 1000,
+                "rpd_remaining": 999,
+                "tpm_limit": 8000,
+                "tpm_remaining": 7335,
+                "rpd_reset_seconds": 86.4,
+                "tpm_reset_seconds": 4.987
+              }
+            ],
+            "token_usage_complete": true
+          }
+        },
+        {
+          "id": "false_entailment",
+          "language": "en",
+          "mode": "grounded",
+          "trial": 1,
+          "supported": false,
+          "reason": "no_new_context",
+          "error": false,
+          "error_category": null,
+          "expected_answerable": false,
+          "returned_claims": 0,
+          "claim_support": [],
+          "complete_answer": false,
+          "exact_reference_match": [],
+          "answer_sha256": "81227f8c565ff898f1ed4e7460c28fd5fb04ea07d29557ec7ccc4bccc0f7e038",
+          "trace": {
+            "mode": "grounded",
+            "llm_call_limit": 4,
+            "search_call_limit": 2,
+            "llm_calls": 1,
+            "search_calls": 2,
+            "input_tokens": 457,
+            "output_tokens": 65,
+            "usage_records": 1,
+            "elapsed_ms": 10837.233250029385,
+            "events": [
+              {
+                "node": "retrieve",
+                "outcome": "context_available",
+                "elapsed_ms": 4.358625039458275,
+                "source_count": 1
+              },
+              {
+                "node": "draft",
+                "outcome": "insufficient_evidence",
+                "elapsed_ms": 10804.686457966454,
+                "source_count": 1
+              },
+              {
+                "node": "expand",
+                "outcome": "no_new_context",
+                "elapsed_ms": 14.655917068012059,
+                "source_count": 1
+              },
+              {
+                "node": "finish",
+                "outcome": "done",
+                "elapsed_ms": 0.011875061318278313,
+                "source_count": 1
+              }
+            ],
+            "provider_errors": [],
+            "rate_limits": [
+              {
+                "rpd_limit": 1000,
+                "rpd_remaining": 998,
+                "tpm_limit": 8000,
+                "tpm_remaining": 7476,
+                "rpd_reset_seconds": 172.8,
+                "tpm_reset_seconds": 3.93
+              }
+            ],
+            "token_usage_complete": true
+          }
+        }
+      ],
+      "previous_errors": [],
+      "identity": {
+        "dataset_sha256": "f943c28ab4bce4f9c0d3293f20e6eaa680826d36b6afbac2afbb194b0dc66182",
+        "cases": [
+          "false_entailment"
+        ],
+        "languages": [
+          "en"
+        ],
+        "trials": 1,
+        "seed": 20261025,
+        "execution": "live",
+        "provider": "groq",
+        "model": "openai/gpt-oss-120b",
+        "profile": "baseline",
+        "source_sha256": {
+          "__init__.py": "430e9cd14efb7fdb6f354a9c1199c49e8d4b396ccc6e18aefeedbd14d11b284b",
+          "__main__.py": "13a1a5b340cdcfc1902b62be90e508c7c71886000d5bf087e7854aadf09fb35e",
+          "answer_evaluation.py": "5d210b3d1ec16fddbb3b4b768653bfd794074bf1381a7024f48374a4f494ed11",
+          "cli.py": "9df8aa32e9a0b5114aaf4eddea9ca0b34de7def7a758aac9a12af4f5c9bbe3fb",
+          "config.py": "0f8cf0beaa1c1995774957fca80fcef4f3d793254076b43e709b21ebbd7c3f11",
+          "embeddings.py": "783d577fa5745433c828b17e316666a8fec349d26efd0c56a713ced4000f6bf9",
+          "evaluation.py": "5f531cb17587c6fbc8a0c52b34ba260161cd6d890b9b30800cdefbde1ed50cb3",
+          "generation.py": "0d73cd1bfcf542e4e3e0cd78a88691013e5c368862a33813a8c6d9148bacab64",
+          "groq.py": "b0eb54f7873ef0b92fd406a0cda3efefe3fade2f457439375b3b4829a907e5a0",
+          "grounding.py": "41301832394412af937bbbd4dc993995aba08b8b890b7d3e06ac6023f31f5ed5",
+          "index.py": "90f958269d16f349e725d9eb72929f6c1a51fe299c2e617e706333981c633fe0",
+          "ingestion.py": "356bfd626ab37b184c5bc1508ae5c81284b19b9191e998aa39053e7be78b59e3",
+          "language.py": "c29eccb62fc860a71e57f931e231b225363dd24b550b6fbd56809c2cec53cc41",
+          "optimization.py": "575913c365e31c94b35e0dcfb6f2baae0c5fb6446877f31656f5c959358d5872",
+          "profiles.py": "3429f17737e9b279cc0e7cb9c5faa22eba28b4c409d9dd9360443fc999efde2f",
+          "retrieval.py": "c2eb8e0145e4ffb46334cf27b1d5709b0e3d77d6a61f1f552f11dbf888ec9a40",
+          "telemetry.py": "af8569a16862ee92f74a13dcf6978eba7826a903bcbec330e68be3a1e9da78b9",
+          "workflow.py": "73c52dcaa44f912bdf62bf407a7396c10ec88fe4847352eb8561dcee1049c54f"
+        },
+        "index_sha256": null,
+        "max_tokens": "2048",
+        "requests_per_minute": 6
+      },
+      "provenance": {
+        "created_at": "2026-10-26T09:53:17.513453+00:00",
+        "python": "3.12.0",
+        "platform": "macOS-27.0.1-arm64-arm-64bit",
+        "provider": "groq",
+        "model": "openai/gpt-oss-120b",
+        "max_api_calls": 5,
+        "generation": {
+          "max_tokens": 2048,
+          "temperature": 0,
+          "network_timeout_ms": 60000,
+          "free_only": true,
+          "retries": 0,
+          "free_plan_attested": true,
+          "requests_per_minute": 6,
+          "attempted_api_calls": 2,
+          "previous_attempted_api_calls": 0
+        },
+        "quota_state": {
+          "saved_at": 1793008397.513553,
+          "history": [
+            [
+              2072.8849344879854,
+              646
+            ],
+            [
+              2062.8697724459926,
+              675
+            ],
+            [
+              2052.8564762800233,
+              780
+            ],
+            [
+              2621.8608797168126,
+              646
+            ],
+            [
+              2611.8502580078784,
+              780
+            ],
+            [
+              1302.719577949727,
+              656
+            ],
+            [
+              1292.702195699676,
+              687
+            ],
+            [
+              1282.6851544496603,
+              803
+            ],
+            [
+              1213.3249048040016,
+              749
+            ],
+            [
+              1203.3057730121072,
+              749
+            ],
+            [
+              1193.2884888870176,
+              849
+            ],
+            [
+              11.678541083005257,
+              524
+            ],
+            [
+              1.6596460420405492,
+              522
+            ]
+          ],
+          "rate_limits": {
+            "rpd_limit": 1000,
+            "rpd_remaining": 998,
+            "tpm_limit": 8000,
+            "tpm_remaining": 7476,
+            "rpd_reset_seconds": 172.8,
+            "tpm_reset_seconds": 3.93
+          },
+          "headers_age": 0.10464379203040153,
+          "resume_after": 0.0
+        },
+        "libraries": {
+          "langgraph": "1.2.17",
+          "langchain-core": "1.7.0",
+          "garage-rag": "0.3.0"
+        },
+        "source_sha256": {
+          "__init__.py": "430e9cd14efb7fdb6f354a9c1199c49e8d4b396ccc6e18aefeedbd14d11b284b",
+          "__main__.py": "13a1a5b340cdcfc1902b62be90e508c7c71886000d5bf087e7854aadf09fb35e",
+          "answer_evaluation.py": "5d210b3d1ec16fddbb3b4b768653bfd794074bf1381a7024f48374a4f494ed11",
+          "cli.py": "9df8aa32e9a0b5114aaf4eddea9ca0b34de7def7a758aac9a12af4f5c9bbe3fb",
+          "config.py": "0f8cf0beaa1c1995774957fca80fcef4f3d793254076b43e709b21ebbd7c3f11",
+          "embeddings.py": "783d577fa5745433c828b17e316666a8fec349d26efd0c56a713ced4000f6bf9",
+          "evaluation.py": "5f531cb17587c6fbc8a0c52b34ba260161cd6d890b9b30800cdefbde1ed50cb3",
+          "generation.py": "0d73cd1bfcf542e4e3e0cd78a88691013e5c368862a33813a8c6d9148bacab64",
+          "groq.py": "b0eb54f7873ef0b92fd406a0cda3efefe3fade2f457439375b3b4829a907e5a0",
+          "grounding.py": "41301832394412af937bbbd4dc993995aba08b8b890b7d3e06ac6023f31f5ed5",
+          "index.py": "90f958269d16f349e725d9eb72929f6c1a51fe299c2e617e706333981c633fe0",
+          "ingestion.py": "356bfd626ab37b184c5bc1508ae5c81284b19b9191e998aa39053e7be78b59e3",
+          "language.py": "c29eccb62fc860a71e57f931e231b225363dd24b550b6fbd56809c2cec53cc41",
+          "optimization.py": "575913c365e31c94b35e0dcfb6f2baae0c5fb6446877f31656f5c959358d5872",
+          "profiles.py": "3429f17737e9b279cc0e7cb9c5faa22eba28b4c409d9dd9360443fc999efde2f",
+          "retrieval.py": "c2eb8e0145e4ffb46334cf27b1d5709b0e3d77d6a61f1f552f11dbf888ec9a40",
+          "telemetry.py": "af8569a16862ee92f74a13dcf6978eba7826a903bcbec330e68be3a1e9da78b9",
+          "workflow.py": "73c52dcaa44f912bdf62bf407a7396c10ec88fe4847352eb8561dcee1049c54f"
+        }
+      },
+      "review": {
+        "reviewer": "Codex implementation agent: explicit inspection of actual sent sources and live replies, separate from Groq auditor",
+        "independent_human_review": false,
+        "rows_reviewed": 2
+      },
+      "publication": {
+        "runtime_commit": "cf0f54b7a3ee7b516beb37ad68df2509f5f2d3b5",
+        "raw_checkpoint_sha256": "dc19ad3e70b450c822f0b28dd1f307a6d55050143e92baf575e67a95dbb13759",
+        "private_capture_sha256": "b272dfc2bd47fe86b2b6cbefa3df8dc492c96d45641e37ff96c07d0ea8fb25b3",
+        "private_wire_capture_sha256": "6b7b159be8bef5451c0f0b495357fb504ff3f7c07f2fb63d6bcfc07aa3dc44f4",
+        "private_timing_sha256": "46e3d1f5b6f4ea6f1b87a224c9df68062bfc4cd4fef3f6be504af490bff47d39",
+        "redactions": [
+          "Absolute local capture path removed from identity"
+        ],
+        "initial_direct_grounded_messages_identical": true,
+        "live_http_calls_only": true,
+        "scripted_data_not_in_model_requests": true
+      }
+    },
+    {
+      "schema_version": 1,
+      "dataset_id": "aurora-grounded-answering-v1",
+      "dataset_sha256": "f943c28ab4bce4f9c0d3293f20e6eaa680826d36b6afbac2afbb194b0dc66182",
+      "execution": "live",
+      "complete": true,
+      "planned_runs": 2,
+      "seed": 20261025,
+      "trials": 1,
+      "languages": [
+        "en"
+      ],
+      "independent_human_review": false,
+      "claim_scoring": "Hash-bound external review; unreviewed claims remain unscored",
+      "summary": {
+        "direct": {
+          "runs": 1,
+          "errors": 0,
+          "scored_runs": 1,
+          "answerable_runs": 0,
+          "unanswerable_runs": 1,
+          "answers": 0,
+          "correct_refusals": 1,
+          "false_refusals": 0,
+          "reviewed_answers": 0,
+          "reviewed_claims": 0,
+          "supported_claims": 0,
+          "claim_support_rate": null,
+          "unsupported_answers": 0,
+          "complete_supported_answers": 0,
+          "locally_validated_citation_answers": 0,
+          "llm_calls": {
+            "n": 1,
+            "min": 1,
+            "p50": 1.0,
+            "p95": 1.0,
+            "max": 1
+          },
+          "search_calls": {
+            "n": 1,
+            "min": 1,
+            "p50": 1.0,
+            "p95": 1.0,
+            "max": 1
+          },
+          "elapsed_ms": {
+            "n": 1,
+            "min": 367.0236669713631,
+            "p50": 367.0236669713631,
+            "p95": 367.0236669713631,
+            "max": 367.0236669713631
+          },
+          "total_llm_calls": 1,
+          "reported_input_tokens": 508,
+          "reported_output_tokens": 103,
+          "token_usage_complete": true
+        },
+        "grounded": {
+          "runs": 1,
+          "errors": 0,
+          "scored_runs": 1,
+          "answerable_runs": 0,
+          "unanswerable_runs": 1,
+          "answers": 0,
+          "correct_refusals": 1,
+          "false_refusals": 0,
+          "reviewed_answers": 0,
+          "reviewed_claims": 0,
+          "supported_claims": 0,
+          "claim_support_rate": null,
+          "unsupported_answers": 0,
+          "complete_supported_answers": 0,
+          "locally_validated_citation_answers": 0,
+          "llm_calls": {
+            "n": 1,
+            "min": 1,
+            "p50": 1.0,
+            "p95": 1.0,
+            "max": 1
+          },
+          "search_calls": {
+            "n": 1,
+            "min": 2,
+            "p50": 2.0,
+            "p95": 2.0,
+            "max": 2
+          },
+          "elapsed_ms": {
+            "n": 1,
+            "min": 10337.989625055343,
+            "p50": 10337.989625055343,
+            "p95": 10337.989625055343,
+            "max": 10337.989625055343
+          },
+          "total_llm_calls": 1,
+          "reported_input_tokens": 508,
+          "reported_output_tokens": 120,
+          "token_usage_complete": true
+        }
+      },
+      "paired": {
+        "pairs": 1,
+        "summary": {
+          "direct": {
+            "runs": 1,
+            "errors": 0,
+            "scored_runs": 1,
+            "answerable_runs": 0,
+            "unanswerable_runs": 1,
+            "answers": 0,
+            "correct_refusals": 1,
+            "false_refusals": 0,
+            "reviewed_answers": 0,
+            "reviewed_claims": 0,
+            "supported_claims": 0,
+            "claim_support_rate": null,
+            "unsupported_answers": 0,
+            "complete_supported_answers": 0,
+            "locally_validated_citation_answers": 0,
+            "llm_calls": {
+              "n": 1,
+              "min": 1,
+              "p50": 1.0,
+              "p95": 1.0,
+              "max": 1
+            },
+            "search_calls": {
+              "n": 1,
+              "min": 1,
+              "p50": 1.0,
+              "p95": 1.0,
+              "max": 1
+            },
+            "elapsed_ms": {
+              "n": 1,
+              "min": 367.0236669713631,
+              "p50": 367.0236669713631,
+              "p95": 367.0236669713631,
+              "max": 367.0236669713631
+            },
+            "total_llm_calls": 1,
+            "reported_input_tokens": 508,
+            "reported_output_tokens": 103,
+            "token_usage_complete": true
+          },
+          "grounded": {
+            "runs": 1,
+            "errors": 0,
+            "scored_runs": 1,
+            "answerable_runs": 0,
+            "unanswerable_runs": 1,
+            "answers": 0,
+            "correct_refusals": 1,
+            "false_refusals": 0,
+            "reviewed_answers": 0,
+            "reviewed_claims": 0,
+            "supported_claims": 0,
+            "claim_support_rate": null,
+            "unsupported_answers": 0,
+            "complete_supported_answers": 0,
+            "locally_validated_citation_answers": 0,
+            "llm_calls": {
+              "n": 1,
+              "min": 1,
+              "p50": 1.0,
+              "p95": 1.0,
+              "max": 1
+            },
+            "search_calls": {
+              "n": 1,
+              "min": 2,
+              "p50": 2.0,
+              "p95": 2.0,
+              "max": 2
+            },
+            "elapsed_ms": {
+              "n": 1,
+              "min": 10337.989625055343,
+              "p50": 10337.989625055343,
+              "p95": 10337.989625055343,
+              "max": 10337.989625055343
+            },
+            "total_llm_calls": 1,
+            "reported_input_tokens": 508,
+            "reported_output_tokens": 120,
+            "token_usage_complete": true
+          }
+        }
+      },
+      "rows": [
+        {
+          "id": "conflicting_sources",
+          "language": "en",
+          "mode": "direct",
+          "trial": 1,
+          "supported": false,
+          "reason": "insufficient_evidence",
+          "error": false,
+          "error_category": null,
+          "expected_answerable": false,
+          "returned_claims": 0,
+          "claim_support": [],
+          "complete_answer": false,
+          "exact_reference_match": [],
+          "answer_sha256": "2debc38a6481dd3468368cc5859f3cf6757bcb2dfed20b6fc548e6b1419dedf5",
+          "trace": {
+            "mode": "direct",
+            "llm_call_limit": 1,
+            "search_call_limit": 1,
+            "llm_calls": 1,
+            "search_calls": 1,
+            "input_tokens": 508,
+            "output_tokens": 103,
+            "usage_records": 1,
+            "elapsed_ms": 367.0236669713631,
+            "events": [
+              {
+                "node": "retrieve",
+                "outcome": "context",
+                "elapsed_ms": 1.7417919589206576,
+                "source_count": 2
+              },
+              {
+                "node": "draft",
+                "outcome": "insufficient_evidence",
+                "elapsed_ms": 365.2670419542119,
+                "source_count": 2
+              }
+            ],
+            "provider_errors": [],
+            "rate_limits": [
+              {
+                "rpd_limit": 1000,
+                "rpd_remaining": 998,
+                "tpm_limit": 8000,
+                "tpm_remaining": 7425,
+                "rpd_reset_seconds": 172.8,
+                "tpm_reset_seconds": 4.312
+              }
+            ],
+            "token_usage_complete": true
+          }
+        },
+        {
+          "id": "conflicting_sources",
+          "language": "en",
+          "mode": "grounded",
+          "trial": 1,
+          "supported": false,
+          "reason": "no_new_context",
+          "error": false,
+          "error_category": null,
+          "expected_answerable": false,
+          "returned_claims": 0,
+          "claim_support": [],
+          "complete_answer": false,
+          "exact_reference_match": [],
+          "answer_sha256": "81227f8c565ff898f1ed4e7460c28fd5fb04ea07d29557ec7ccc4bccc0f7e038",
+          "trace": {
+            "mode": "grounded",
+            "llm_call_limit": 4,
+            "search_call_limit": 2,
+            "llm_calls": 1,
+            "search_calls": 2,
+            "input_tokens": 508,
+            "output_tokens": 120,
+            "usage_records": 1,
+            "elapsed_ms": 10337.989625055343,
+            "events": [
+              {
+                "node": "retrieve",
+                "outcome": "context_available",
+                "elapsed_ms": 2.0474999910220504,
+                "source_count": 2
+              },
+              {
+                "node": "draft",
+                "outcome": "insufficient_evidence",
+                "elapsed_ms": 10321.186083951034,
+                "source_count": 2
+              },
+              {
+                "node": "expand",
+                "outcome": "no_new_context",
+                "elapsed_ms": 3.364417003467679,
+                "source_count": 2
+              },
+              {
+                "node": "finish",
+                "outcome": "done",
+                "elapsed_ms": 0.006458023563027382,
+                "source_count": 2
+              }
+            ],
+            "provider_errors": [],
+            "rate_limits": [
+              {
+                "rpd_limit": 1000,
+                "rpd_remaining": 997,
+                "tpm_limit": 8000,
+                "tpm_remaining": 7389,
+                "rpd_reset_seconds": 259.2,
+                "tpm_reset_seconds": 4.582
+              }
+            ],
+            "token_usage_complete": true
+          }
+        }
+      ],
+      "previous_errors": [],
+      "identity": {
+        "dataset_sha256": "f943c28ab4bce4f9c0d3293f20e6eaa680826d36b6afbac2afbb194b0dc66182",
+        "cases": [
+          "conflicting_sources"
+        ],
+        "languages": [
+          "en"
+        ],
+        "trials": 1,
+        "seed": 20261025,
+        "execution": "live",
+        "provider": "groq",
+        "model": "openai/gpt-oss-120b",
+        "profile": "baseline",
+        "source_sha256": {
+          "__init__.py": "430e9cd14efb7fdb6f354a9c1199c49e8d4b396ccc6e18aefeedbd14d11b284b",
+          "__main__.py": "13a1a5b340cdcfc1902b62be90e508c7c71886000d5bf087e7854aadf09fb35e",
+          "answer_evaluation.py": "5d210b3d1ec16fddbb3b4b768653bfd794074bf1381a7024f48374a4f494ed11",
+          "cli.py": "9df8aa32e9a0b5114aaf4eddea9ca0b34de7def7a758aac9a12af4f5c9bbe3fb",
+          "config.py": "0f8cf0beaa1c1995774957fca80fcef4f3d793254076b43e709b21ebbd7c3f11",
+          "embeddings.py": "783d577fa5745433c828b17e316666a8fec349d26efd0c56a713ced4000f6bf9",
+          "evaluation.py": "5f531cb17587c6fbc8a0c52b34ba260161cd6d890b9b30800cdefbde1ed50cb3",
+          "generation.py": "0d73cd1bfcf542e4e3e0cd78a88691013e5c368862a33813a8c6d9148bacab64",
+          "groq.py": "b0eb54f7873ef0b92fd406a0cda3efefe3fade2f457439375b3b4829a907e5a0",
+          "grounding.py": "41301832394412af937bbbd4dc993995aba08b8b890b7d3e06ac6023f31f5ed5",
+          "index.py": "90f958269d16f349e725d9eb72929f6c1a51fe299c2e617e706333981c633fe0",
+          "ingestion.py": "356bfd626ab37b184c5bc1508ae5c81284b19b9191e998aa39053e7be78b59e3",
+          "language.py": "c29eccb62fc860a71e57f931e231b225363dd24b550b6fbd56809c2cec53cc41",
+          "optimization.py": "575913c365e31c94b35e0dcfb6f2baae0c5fb6446877f31656f5c959358d5872",
+          "profiles.py": "3429f17737e9b279cc0e7cb9c5faa22eba28b4c409d9dd9360443fc999efde2f",
+          "retrieval.py": "c2eb8e0145e4ffb46334cf27b1d5709b0e3d77d6a61f1f552f11dbf888ec9a40",
+          "telemetry.py": "af8569a16862ee92f74a13dcf6978eba7826a903bcbec330e68be3a1e9da78b9",
+          "workflow.py": "73c52dcaa44f912bdf62bf407a7396c10ec88fe4847352eb8561dcee1049c54f"
+        },
+        "index_sha256": null,
+        "max_tokens": "2048",
+        "requests_per_minute": 6
+      },
+      "provenance": {
+        "created_at": "2026-10-26T09:55:23.856403+00:00",
+        "python": "3.12.0",
+        "platform": "macOS-27.0.1-arm64-arm-64bit",
+        "provider": "groq",
+        "model": "openai/gpt-oss-120b",
+        "max_api_calls": 5,
+        "generation": {
+          "max_tokens": 2048,
+          "temperature": 0,
+          "network_timeout_ms": 60000,
+          "free_only": true,
+          "retries": 0,
+          "free_plan_attested": true,
+          "requests_per_minute": 6,
+          "attempted_api_calls": 2,
+          "previous_attempted_api_calls": 0
+        },
+        "quota_state": {
+          "saved_at": 1793008523.8564239,
+          "history": [
+            [
+              2199.2261563396314,
+              646
+            ],
+            [
+              2189.2109942976385,
+              675
+            ],
+            [
+              2179.1976981316693,
+              780
+            ],
+            [
+              2748.2021015684586,
+              646
+            ],
+            [
+              2738.1914798595244,
+              780
+            ],
+            [
+              1429.060799801373,
+              656
+            ],
+            [
+              1419.043417551322,
+              687
+            ],
+            [
+              1409.0263763013063,
+              803
+            ],
+            [
+              1339.6661266556475,
+              749
+            ],
+            [
+              1329.6469948637532,
+              749
+            ],
+            [
+              1319.6297107386636,
+              849
+            ],
+            [
+              138.01976293465123,
+              524
+            ],
+            [
+              128.00086789368652,
+              522
+            ],
+            [
+              10.722656166995876,
+              611
+            ],
+            [
+              0.7028548750095069,
+              628
+            ]
+          ],
+          "rate_limits": {
+            "rpd_limit": 1000,
+            "rpd_remaining": 997,
+            "tpm_limit": 8000,
+            "tpm_remaining": 7389,
+            "rpd_reset_seconds": 259.2,
+            "tpm_reset_seconds": 4.582
+          },
+          "headers_age": 0.01935541699640453,
+          "resume_after": 0.0
+        },
+        "libraries": {
+          "langgraph": "1.2.17",
+          "langchain-core": "1.7.0",
+          "garage-rag": "0.3.0"
+        },
+        "source_sha256": {
+          "__init__.py": "430e9cd14efb7fdb6f354a9c1199c49e8d4b396ccc6e18aefeedbd14d11b284b",
+          "__main__.py": "13a1a5b340cdcfc1902b62be90e508c7c71886000d5bf087e7854aadf09fb35e",
+          "answer_evaluation.py": "5d210b3d1ec16fddbb3b4b768653bfd794074bf1381a7024f48374a4f494ed11",
+          "cli.py": "9df8aa32e9a0b5114aaf4eddea9ca0b34de7def7a758aac9a12af4f5c9bbe3fb",
+          "config.py": "0f8cf0beaa1c1995774957fca80fcef4f3d793254076b43e709b21ebbd7c3f11",
+          "embeddings.py": "783d577fa5745433c828b17e316666a8fec349d26efd0c56a713ced4000f6bf9",
+          "evaluation.py": "5f531cb17587c6fbc8a0c52b34ba260161cd6d890b9b30800cdefbde1ed50cb3",
+          "generation.py": "0d73cd1bfcf542e4e3e0cd78a88691013e5c368862a33813a8c6d9148bacab64",
+          "groq.py": "b0eb54f7873ef0b92fd406a0cda3efefe3fade2f457439375b3b4829a907e5a0",
+          "grounding.py": "41301832394412af937bbbd4dc993995aba08b8b890b7d3e06ac6023f31f5ed5",
+          "index.py": "90f958269d16f349e725d9eb72929f6c1a51fe299c2e617e706333981c633fe0",
+          "ingestion.py": "356bfd626ab37b184c5bc1508ae5c81284b19b9191e998aa39053e7be78b59e3",
+          "language.py": "c29eccb62fc860a71e57f931e231b225363dd24b550b6fbd56809c2cec53cc41",
+          "optimization.py": "575913c365e31c94b35e0dcfb6f2baae0c5fb6446877f31656f5c959358d5872",
+          "profiles.py": "3429f17737e9b279cc0e7cb9c5faa22eba28b4c409d9dd9360443fc999efde2f",
+          "retrieval.py": "c2eb8e0145e4ffb46334cf27b1d5709b0e3d77d6a61f1f552f11dbf888ec9a40",
+          "telemetry.py": "af8569a16862ee92f74a13dcf6978eba7826a903bcbec330e68be3a1e9da78b9",
+          "workflow.py": "73c52dcaa44f912bdf62bf407a7396c10ec88fe4847352eb8561dcee1049c54f"
+        }
+      },
+      "review": {
+        "reviewer": "Codex implementation agent: explicit inspection of actual sent sources and live replies, separate from Groq auditor",
+        "independent_human_review": false,
+        "rows_reviewed": 2
+      },
+      "publication": {
+        "runtime_commit": "cf0f54b7a3ee7b516beb37ad68df2509f5f2d3b5",
+        "raw_checkpoint_sha256": "c4a527b57609648816c1b50bfe02d1ddea11d67b87c1d17cbcb9946ad7bfed6b",
+        "private_capture_sha256": "680ef468b5633a8acc2e0ef94e68cb494f07d0d323ef4fb9f05de56c95390719",
+        "private_wire_capture_sha256": "60501ff22bbdd73379b45d1806ff1b6bb28f23fb2d77a73e44df5afa4be8fb7f",
+        "private_timing_sha256": "20e1fe0d6369e787b8a2970c83e64730a648b4905ba5b99265db2b8c4f41e94e",
+        "redactions": [
+          "Absolute local capture path removed from identity"
+        ],
+        "initial_direct_grounded_messages_identical": true,
+        "live_http_calls_only": true,
+        "scripted_data_not_in_model_requests": true
+      }
+    },
+    {
+      "schema_version": 1,
+      "dataset_id": "aurora-grounded-answering-v1",
+      "dataset_sha256": "f943c28ab4bce4f9c0d3293f20e6eaa680826d36b6afbac2afbb194b0dc66182",
+      "execution": "live",
+      "complete": true,
+      "planned_runs": 2,
+      "seed": 20261025,
+      "trials": 1,
+      "languages": [
+        "en"
+      ],
+      "independent_human_review": false,
+      "claim_scoring": "Hash-bound external review; unreviewed claims remain unscored",
+      "summary": {
+        "direct": {
+          "runs": 1,
+          "errors": 0,
+          "scored_runs": 1,
+          "answerable_runs": 1,
+          "unanswerable_runs": 0,
+          "answers": 0,
+          "correct_refusals": 0,
+          "false_refusals": 1,
+          "reviewed_answers": 0,
+          "reviewed_claims": 0,
+          "supported_claims": 0,
+          "claim_support_rate": null,
+          "unsupported_answers": 0,
+          "complete_supported_answers": 0,
+          "locally_validated_citation_answers": 0,
+          "llm_calls": {
+            "n": 1,
+            "min": 1,
+            "p50": 1.0,
+            "p95": 1.0,
+            "max": 1
+          },
+          "search_calls": {
+            "n": 1,
+            "min": 1,
+            "p50": 1.0,
+            "p95": 1.0,
+            "max": 1
+          },
+          "elapsed_ms": {
+            "n": 1,
+            "min": 602.105375030078,
+            "p50": 602.105375030078,
+            "p95": 602.105375030078,
+            "max": 602.105375030078
+          },
+          "total_llm_calls": 1,
+          "reported_input_tokens": 457,
+          "reported_output_tokens": 66,
+          "token_usage_complete": true
+        },
+        "grounded": {
+          "runs": 1,
+          "errors": 0,
+          "scored_runs": 1,
+          "answerable_runs": 1,
+          "unanswerable_runs": 0,
+          "answers": 1,
+          "correct_refusals": 0,
+          "false_refusals": 0,
+          "reviewed_answers": 1,
+          "reviewed_claims": 1,
+          "supported_claims": 1,
+          "claim_support_rate": 1.0,
+          "unsupported_answers": 0,
+          "complete_supported_answers": 1,
+          "locally_validated_citation_answers": 1,
+          "llm_calls": {
+            "n": 1,
+            "min": 3,
+            "p50": 3.0,
+            "p95": 3.0,
+            "max": 3
+          },
+          "search_calls": {
+            "n": 1,
+            "min": 2,
+            "p50": 2.0,
+            "p95": 2.0,
+            "max": 2
+          },
+          "elapsed_ms": {
+            "n": 1,
+            "min": 30300.369624979794,
+            "p50": 30300.369624979794,
+            "p95": 30300.369624979794,
+            "max": 30300.369624979794
+          },
+          "total_llm_calls": 3,
+          "reported_input_tokens": 1609,
+          "reported_output_tokens": 537,
+          "token_usage_complete": true
+        }
+      },
+      "paired": {
+        "pairs": 1,
+        "summary": {
+          "direct": {
+            "runs": 1,
+            "errors": 0,
+            "scored_runs": 1,
+            "answerable_runs": 1,
+            "unanswerable_runs": 0,
+            "answers": 0,
+            "correct_refusals": 0,
+            "false_refusals": 1,
+            "reviewed_answers": 0,
+            "reviewed_claims": 0,
+            "supported_claims": 0,
+            "claim_support_rate": null,
+            "unsupported_answers": 0,
+            "complete_supported_answers": 0,
+            "locally_validated_citation_answers": 0,
+            "llm_calls": {
+              "n": 1,
+              "min": 1,
+              "p50": 1.0,
+              "p95": 1.0,
+              "max": 1
+            },
+            "search_calls": {
+              "n": 1,
+              "min": 1,
+              "p50": 1.0,
+              "p95": 1.0,
+              "max": 1
+            },
+            "elapsed_ms": {
+              "n": 1,
+              "min": 602.105375030078,
+              "p50": 602.105375030078,
+              "p95": 602.105375030078,
+              "max": 602.105375030078
+            },
+            "total_llm_calls": 1,
+            "reported_input_tokens": 457,
+            "reported_output_tokens": 66,
+            "token_usage_complete": true
+          },
+          "grounded": {
+            "runs": 1,
+            "errors": 0,
+            "scored_runs": 1,
+            "answerable_runs": 1,
+            "unanswerable_runs": 0,
+            "answers": 1,
+            "correct_refusals": 0,
+            "false_refusals": 0,
+            "reviewed_answers": 1,
+            "reviewed_claims": 1,
+            "supported_claims": 1,
+            "claim_support_rate": 1.0,
+            "unsupported_answers": 0,
+            "complete_supported_answers": 1,
+            "locally_validated_citation_answers": 1,
+            "llm_calls": {
+              "n": 1,
+              "min": 3,
+              "p50": 3.0,
+              "p95": 3.0,
+              "max": 3
+            },
+            "search_calls": {
+              "n": 1,
+              "min": 2,
+              "p50": 2.0,
+              "p95": 2.0,
+              "max": 2
+            },
+            "elapsed_ms": {
+              "n": 1,
+              "min": 30300.369624979794,
+              "p50": 30300.369624979794,
+              "p95": 30300.369624979794,
+              "max": 30300.369624979794
+            },
+            "total_llm_calls": 3,
+            "reported_input_tokens": 1609,
+            "reported_output_tokens": 537,
+            "token_usage_complete": true
+          }
+        }
+      },
+      "rows": [
+        {
+          "id": "recovery",
+          "language": "en",
+          "mode": "direct",
+          "trial": 1,
+          "supported": false,
+          "reason": "insufficient_evidence",
+          "error": false,
+          "error_category": null,
+          "expected_answerable": true,
+          "returned_claims": 0,
+          "claim_support": [],
+          "complete_answer": false,
+          "exact_reference_match": [],
+          "answer_sha256": "2debc38a6481dd3468368cc5859f3cf6757bcb2dfed20b6fc548e6b1419dedf5",
+          "trace": {
+            "mode": "direct",
+            "llm_call_limit": 1,
+            "search_call_limit": 1,
+            "llm_calls": 1,
+            "search_calls": 1,
+            "input_tokens": 457,
+            "output_tokens": 66,
+            "usage_records": 1,
+            "elapsed_ms": 602.105375030078,
+            "events": [
+              {
+                "node": "retrieve",
+                "outcome": "context",
+                "elapsed_ms": 1.5564999775961041,
+                "source_count": 1
+              },
+              {
+                "node": "draft",
+                "outcome": "insufficient_evidence",
+                "elapsed_ms": 600.5378749687225,
+                "source_count": 1
+              }
+            ],
+            "provider_errors": [],
+            "rate_limits": [
+              {
+                "rpd_limit": 1000,
+                "rpd_remaining": 997,
+                "tpm_limit": 8000,
+                "tpm_remaining": 7423,
+                "rpd_reset_seconds": 259.2,
+                "tpm_reset_seconds": 4.327
+              }
+            ],
+            "token_usage_complete": true
+          }
+        },
+        {
+          "id": "recovery",
+          "language": "en",
+          "mode": "grounded",
+          "trial": 1,
+          "supported": true,
+          "reason": "audited_evidence",
+          "error": false,
+          "error_category": null,
+          "expected_answerable": true,
+          "returned_claims": 1,
+          "claim_support": [
+            true
+          ],
+          "complete_answer": true,
+          "exact_reference_match": [
+            true
+          ],
+          "answer_sha256": "dc2e39ce9f92c7682c0dc46f421f8c519f512e6fbdeb78790de66c1ece4716e0",
+          "trace": {
+            "mode": "grounded",
+            "llm_call_limit": 4,
+            "search_call_limit": 2,
+            "llm_calls": 3,
+            "search_calls": 2,
+            "input_tokens": 1609,
+            "output_tokens": 537,
+            "usage_records": 3,
+            "elapsed_ms": 30300.369624979794,
+            "events": [
+              {
+                "node": "retrieve",
+                "outcome": "context_available",
+                "elapsed_ms": 2.2339579882100224,
+                "source_count": 1
+              },
+              {
+                "node": "draft",
+                "outcome": "insufficient_evidence",
+                "elapsed_ms": 9873.399292002432,
+                "source_count": 1
+              },
+              {
+                "node": "expand",
+                "outcome": "draft",
+                "elapsed_ms": 3.545542014762759,
+                "source_count": 2
+              },
+              {
+                "node": "draft",
+                "outcome": "audit",
+                "elapsed_ms": 10202.741249930114,
+                "source_count": 2
+              },
+              {
+                "node": "audit",
+                "outcome": "audited_evidence",
+                "elapsed_ms": 10205.663291970268,
+                "source_count": 2
+              },
+              {
+                "node": "finish",
+                "outcome": "done",
+                "elapsed_ms": 0.0025830231606960297,
+                "source_count": 2
+              }
+            ],
+            "provider_errors": [],
+            "rate_limits": [
+              {
+                "rpd_limit": 1000,
+                "rpd_remaining": 996,
+                "tpm_limit": 8000,
+                "tpm_remaining": 7423,
+                "rpd_reset_seconds": 345.6,
+                "tpm_reset_seconds": 4.327
+              },
+              {
+                "rpd_limit": 1000,
+                "rpd_remaining": 995,
+                "tpm_limit": 8000,
+                "tpm_remaining": 7373,
+                "rpd_reset_seconds": 432.0,
+                "tpm_reset_seconds": 4.702
+              },
+              {
+                "rpd_limit": 1000,
+                "rpd_remaining": 994,
+                "tpm_limit": 8000,
+                "tpm_remaining": 7122,
+                "rpd_reset_seconds": 518.4,
+                "tpm_reset_seconds": 6.585
+              }
+            ],
+            "token_usage_complete": true
+          }
+        }
+      ],
+      "previous_errors": [],
+      "identity": {
+        "dataset_sha256": "f943c28ab4bce4f9c0d3293f20e6eaa680826d36b6afbac2afbb194b0dc66182",
+        "cases": [
+          "recovery"
+        ],
+        "languages": [
+          "en"
+        ],
+        "trials": 1,
+        "seed": 20261025,
+        "execution": "live",
+        "provider": "groq",
+        "model": "openai/gpt-oss-120b",
+        "profile": "baseline",
+        "source_sha256": {
+          "__init__.py": "430e9cd14efb7fdb6f354a9c1199c49e8d4b396ccc6e18aefeedbd14d11b284b",
+          "__main__.py": "13a1a5b340cdcfc1902b62be90e508c7c71886000d5bf087e7854aadf09fb35e",
+          "answer_evaluation.py": "5d210b3d1ec16fddbb3b4b768653bfd794074bf1381a7024f48374a4f494ed11",
+          "cli.py": "9df8aa32e9a0b5114aaf4eddea9ca0b34de7def7a758aac9a12af4f5c9bbe3fb",
+          "config.py": "0f8cf0beaa1c1995774957fca80fcef4f3d793254076b43e709b21ebbd7c3f11",
+          "embeddings.py": "783d577fa5745433c828b17e316666a8fec349d26efd0c56a713ced4000f6bf9",
+          "evaluation.py": "5f531cb17587c6fbc8a0c52b34ba260161cd6d890b9b30800cdefbde1ed50cb3",
+          "generation.py": "0d73cd1bfcf542e4e3e0cd78a88691013e5c368862a33813a8c6d9148bacab64",
+          "groq.py": "b0eb54f7873ef0b92fd406a0cda3efefe3fade2f457439375b3b4829a907e5a0",
+          "grounding.py": "41301832394412af937bbbd4dc993995aba08b8b890b7d3e06ac6023f31f5ed5",
+          "index.py": "90f958269d16f349e725d9eb72929f6c1a51fe299c2e617e706333981c633fe0",
+          "ingestion.py": "356bfd626ab37b184c5bc1508ae5c81284b19b9191e998aa39053e7be78b59e3",
+          "language.py": "c29eccb62fc860a71e57f931e231b225363dd24b550b6fbd56809c2cec53cc41",
+          "optimization.py": "575913c365e31c94b35e0dcfb6f2baae0c5fb6446877f31656f5c959358d5872",
+          "profiles.py": "3429f17737e9b279cc0e7cb9c5faa22eba28b4c409d9dd9360443fc999efde2f",
+          "retrieval.py": "c2eb8e0145e4ffb46334cf27b1d5709b0e3d77d6a61f1f552f11dbf888ec9a40",
+          "telemetry.py": "af8569a16862ee92f74a13dcf6978eba7826a903bcbec330e68be3a1e9da78b9",
+          "workflow.py": "73c52dcaa44f912bdf62bf407a7396c10ec88fe4847352eb8561dcee1049c54f"
+        },
+        "index_sha256": null,
+        "max_tokens": "2048",
+        "requests_per_minute": 6
+      },
+      "provenance": {
+        "created_at": "2026-10-26T09:57:39.946209+00:00",
+        "python": "3.12.0",
+        "platform": "macOS-27.0.1-arm64-arm-64bit",
+        "provider": "groq",
+        "model": "openai/gpt-oss-120b",
+        "max_api_calls": 5,
+        "generation": {
+          "max_tokens": 2048,
+          "temperature": 0,
+          "network_timeout_ms": 60000,
+          "free_only": true,
+          "retries": 0,
+          "free_plan_attested": true,
+          "requests_per_minute": 6,
+          "attempted_api_calls": 4,
+          "previous_attempted_api_calls": 0
+        },
+        "quota_state": {
+          "saved_at": 1793008659.946238,
+          "history": [
+            [
+              2335.3168107159436,
+              646
+            ],
+            [
+              2325.3016486739507,
+              675
+            ],
+            [
+              2315.2883525079815,
+              780
+            ],
+            [
+              2884.2927559447708,
+              646
+            ],
+            [
+              2874.2821342358366,
+              780
+            ],
+            [
+              1565.151454177685,
+              656
+            ],
+            [
+              1555.134071927634,
+              687
+            ],
+            [
+              1545.1170306776185,
+              803
+            ],
+            [
+              1475.7567810319597,
+              749
+            ],
+            [
+              1465.7376492400654,
+              749
+            ],
+            [
+              1455.7203651149757,
+              849
+            ],
+            [
+              274.1104173109634,
+              524
+            ],
+            [
+              264.0915222699987,
+              522
+            ],
+            [
+              146.81331054330803,
+              611
+            ],
+            [
+              136.79350925132167,
+              628
+            ],
+            [
+              30.921570708043873,
+              523
+            ],
+            [
+              20.901951999985613,
+              559
+            ],
+            [
+              10.879839500063099,
+              740
+            ],
+            [
+              0.8591132500441745,
+              847
+            ]
+          ],
+          "rate_limits": {
+            "rpd_limit": 1000,
+            "rpd_remaining": 994,
+            "tpm_limit": 8000,
+            "tpm_remaining": 7122,
+            "rpd_reset_seconds": 518.4,
+            "tpm_reset_seconds": 6.585
+          },
+          "headers_age": 0.020367125049233437,
+          "resume_after": 0.0
+        },
+        "libraries": {
+          "langgraph": "1.2.17",
+          "langchain-core": "1.7.0",
+          "garage-rag": "0.3.0"
+        },
+        "source_sha256": {
+          "__init__.py": "430e9cd14efb7fdb6f354a9c1199c49e8d4b396ccc6e18aefeedbd14d11b284b",
+          "__main__.py": "13a1a5b340cdcfc1902b62be90e508c7c71886000d5bf087e7854aadf09fb35e",
+          "answer_evaluation.py": "5d210b3d1ec16fddbb3b4b768653bfd794074bf1381a7024f48374a4f494ed11",
+          "cli.py": "9df8aa32e9a0b5114aaf4eddea9ca0b34de7def7a758aac9a12af4f5c9bbe3fb",
+          "config.py": "0f8cf0beaa1c1995774957fca80fcef4f3d793254076b43e709b21ebbd7c3f11",
+          "embeddings.py": "783d577fa5745433c828b17e316666a8fec349d26efd0c56a713ced4000f6bf9",
+          "evaluation.py": "5f531cb17587c6fbc8a0c52b34ba260161cd6d890b9b30800cdefbde1ed50cb3",
+          "generation.py": "0d73cd1bfcf542e4e3e0cd78a88691013e5c368862a33813a8c6d9148bacab64",
+          "groq.py": "b0eb54f7873ef0b92fd406a0cda3efefe3fade2f457439375b3b4829a907e5a0",
+          "grounding.py": "41301832394412af937bbbd4dc993995aba08b8b890b7d3e06ac6023f31f5ed5",
+          "index.py": "90f958269d16f349e725d9eb72929f6c1a51fe299c2e617e706333981c633fe0",
+          "ingestion.py": "356bfd626ab37b184c5bc1508ae5c81284b19b9191e998aa39053e7be78b59e3",
+          "language.py": "c29eccb62fc860a71e57f931e231b225363dd24b550b6fbd56809c2cec53cc41",
+          "optimization.py": "575913c365e31c94b35e0dcfb6f2baae0c5fb6446877f31656f5c959358d5872",
+          "profiles.py": "3429f17737e9b279cc0e7cb9c5faa22eba28b4c409d9dd9360443fc999efde2f",
+          "retrieval.py": "c2eb8e0145e4ffb46334cf27b1d5709b0e3d77d6a61f1f552f11dbf888ec9a40",
+          "telemetry.py": "af8569a16862ee92f74a13dcf6978eba7826a903bcbec330e68be3a1e9da78b9",
+          "workflow.py": "73c52dcaa44f912bdf62bf407a7396c10ec88fe4847352eb8561dcee1049c54f"
+        }
+      },
+      "review": {
+        "reviewer": "Codex implementation agent: explicit inspection of actual sent sources and live replies, separate from Groq auditor",
+        "independent_human_review": false,
+        "rows_reviewed": 2
+      },
+      "publication": {
+        "runtime_commit": "cf0f54b7a3ee7b516beb37ad68df2509f5f2d3b5",
+        "raw_checkpoint_sha256": "7418f77571b1349b2f920ec676fe862ec321d43393f49da5a33670cd4e018ace",
+        "private_capture_sha256": "94fbd1096ba607c2a776cae94acf2012ce8ac1147c40426cc08c0e32ff3066f7",
+        "private_wire_capture_sha256": "63498d5aaffa4ecb5337dd22c4e4cf26e3f6d5062a337b7f031bd5943c247c8b",
+        "private_timing_sha256": "03f31143668f095966b517dca12777268942d51db79faaf1e7d6ef067ebc8117",
+        "redactions": [
+          "Absolute local capture path removed from identity"
+        ],
+        "initial_direct_grounded_messages_identical": true,
+        "live_http_calls_only": true,
+        "scripted_data_not_in_model_requests": true
+      }
+    },
+    {
+      "schema_version": 1,
+      "dataset_id": "aurora-grounded-answering-v1",
+      "dataset_sha256": "f943c28ab4bce4f9c0d3293f20e6eaa680826d36b6afbac2afbb194b0dc66182",
+      "execution": "live",
+      "complete": true,
+      "planned_runs": 2,
+      "seed": 20261025,
+      "trials": 1,
+      "languages": [
+        "en"
+      ],
+      "independent_human_review": false,
+      "claim_scoring": "Hash-bound external review; unreviewed claims remain unscored",
+      "summary": {
+        "direct": {
+          "runs": 1,
+          "errors": 0,
+          "scored_runs": 1,
+          "answerable_runs": 1,
+          "unanswerable_runs": 0,
+          "answers": 1,
+          "correct_refusals": 0,
+          "false_refusals": 0,
+          "reviewed_answers": 1,
+          "reviewed_claims": 1,
+          "supported_claims": 1,
+          "claim_support_rate": 1.0,
+          "unsupported_answers": 0,
+          "complete_supported_answers": 1,
+          "locally_validated_citation_answers": 1,
+          "llm_calls": {
+            "n": 1,
+            "min": 1,
+            "p50": 1.0,
+            "p95": 1.0,
+            "max": 1
+          },
+          "search_calls": {
+            "n": 1,
+            "min": 1,
+            "p50": 1.0,
+            "p95": 1.0,
+            "max": 1
+          },
+          "elapsed_ms": {
+            "n": 1,
+            "min": 632.1089169941843,
+            "p50": 632.1089169941843,
+            "p95": 632.1089169941843,
+            "max": 632.1089169941843
+          },
+          "total_llm_calls": 1,
+          "reported_input_tokens": 457,
+          "reported_output_tokens": 213,
+          "token_usage_complete": true
+        },
+        "grounded": {
+          "runs": 1,
+          "errors": 0,
+          "scored_runs": 1,
+          "answerable_runs": 1,
+          "unanswerable_runs": 0,
+          "answers": 1,
+          "correct_refusals": 0,
+          "false_refusals": 0,
+          "reviewed_answers": 1,
+          "reviewed_claims": 1,
+          "supported_claims": 1,
+          "claim_support_rate": 1.0,
+          "unsupported_answers": 0,
+          "complete_supported_answers": 1,
+          "locally_validated_citation_answers": 1,
+          "llm_calls": {
+            "n": 1,
+            "min": 2,
+            "p50": 2.0,
+            "p95": 2.0,
+            "max": 2
+          },
+          "search_calls": {
+            "n": 1,
+            "min": 1,
+            "p50": 1.0,
+            "p95": 1.0,
+            "max": 1
+          },
+          "elapsed_ms": {
+            "n": 1,
+            "min": 20085.8760420233,
+            "p50": 20085.8760420233,
+            "p95": 20085.8760420233,
+            "max": 20085.8760420233
+          },
+          "total_llm_calls": 2,
+          "reported_input_tokens": 1052,
+          "reported_output_tokens": 378,
+          "token_usage_complete": true
+        }
+      },
+      "paired": {
+        "pairs": 1,
+        "summary": {
+          "direct": {
+            "runs": 1,
+            "errors": 0,
+            "scored_runs": 1,
+            "answerable_runs": 1,
+            "unanswerable_runs": 0,
+            "answers": 1,
+            "correct_refusals": 0,
+            "false_refusals": 0,
+            "reviewed_answers": 1,
+            "reviewed_claims": 1,
+            "supported_claims": 1,
+            "claim_support_rate": 1.0,
+            "unsupported_answers": 0,
+            "complete_supported_answers": 1,
+            "locally_validated_citation_answers": 1,
+            "llm_calls": {
+              "n": 1,
+              "min": 1,
+              "p50": 1.0,
+              "p95": 1.0,
+              "max": 1
+            },
+            "search_calls": {
+              "n": 1,
+              "min": 1,
+              "p50": 1.0,
+              "p95": 1.0,
+              "max": 1
+            },
+            "elapsed_ms": {
+              "n": 1,
+              "min": 632.1089169941843,
+              "p50": 632.1089169941843,
+              "p95": 632.1089169941843,
+              "max": 632.1089169941843
+            },
+            "total_llm_calls": 1,
+            "reported_input_tokens": 457,
+            "reported_output_tokens": 213,
+            "token_usage_complete": true
+          },
+          "grounded": {
+            "runs": 1,
+            "errors": 0,
+            "scored_runs": 1,
+            "answerable_runs": 1,
+            "unanswerable_runs": 0,
+            "answers": 1,
+            "correct_refusals": 0,
+            "false_refusals": 0,
+            "reviewed_answers": 1,
+            "reviewed_claims": 1,
+            "supported_claims": 1,
+            "claim_support_rate": 1.0,
+            "unsupported_answers": 0,
+            "complete_supported_answers": 1,
+            "locally_validated_citation_answers": 1,
+            "llm_calls": {
+              "n": 1,
+              "min": 2,
+              "p50": 2.0,
+              "p95": 2.0,
+              "max": 2
+            },
+            "search_calls": {
+              "n": 1,
+              "min": 1,
+              "p50": 1.0,
+              "p95": 1.0,
+              "max": 1
+            },
+            "elapsed_ms": {
+              "n": 1,
+              "min": 20085.8760420233,
+              "p50": 20085.8760420233,
+              "p95": 20085.8760420233,
+              "max": 20085.8760420233
+            },
+            "total_llm_calls": 2,
+            "reported_input_tokens": 1052,
+            "reported_output_tokens": 378,
+            "token_usage_complete": true
+          }
+        }
+      },
+      "rows": [
+        {
+          "id": "persistent_false_refusal",
+          "language": "en",
+          "mode": "direct",
+          "trial": 1,
+          "supported": true,
+          "reason": "verified_citations",
+          "error": false,
+          "error_category": null,
+          "expected_answerable": true,
+          "returned_claims": 1,
+          "claim_support": [
+            true
+          ],
+          "complete_answer": true,
+          "exact_reference_match": [
+            true
+          ],
+          "answer_sha256": "0f18c259ea42eae6817e4e5d77f043fec4120dfad96b9e810d23f93a6d4280b3",
+          "trace": {
+            "mode": "direct",
+            "llm_call_limit": 1,
+            "search_call_limit": 1,
+            "llm_calls": 1,
+            "search_calls": 1,
+            "input_tokens": 457,
+            "output_tokens": 213,
+            "usage_records": 1,
+            "elapsed_ms": 632.1089169941843,
+            "events": [
+              {
+                "node": "retrieve",
+                "outcome": "context",
+                "elapsed_ms": 1.8796249059960246,
+                "source_count": 1
+              },
+              {
+                "node": "draft",
+                "outcome": "verified_citations",
+                "elapsed_ms": 630.2124579669908,
+                "source_count": 1
+              }
+            ],
+            "provider_errors": [],
+            "rate_limits": [
+              {
+                "rpd_limit": 1000,
+                "rpd_remaining": 994,
+                "tpm_limit": 8000,
+                "tpm_remaining": 7326,
+                "rpd_reset_seconds": 518.4,
+                "tpm_reset_seconds": 5.055
+              }
+            ],
+            "token_usage_complete": true
+          }
+        },
+        {
+          "id": "persistent_false_refusal",
+          "language": "en",
+          "mode": "grounded",
+          "trial": 1,
+          "supported": true,
+          "reason": "audited_evidence",
+          "error": false,
+          "error_category": null,
+          "expected_answerable": true,
+          "returned_claims": 1,
+          "claim_support": [
+            true
+          ],
+          "complete_answer": true,
+          "exact_reference_match": [
+            true
+          ],
+          "answer_sha256": "f29114e2ec3d5a5fe684a5d46f1d9b013eeeffd86d9b8776c9edb2b1e82c1d3f",
+          "trace": {
+            "mode": "grounded",
+            "llm_call_limit": 4,
+            "search_call_limit": 2,
+            "llm_calls": 2,
+            "search_calls": 1,
+            "input_tokens": 1052,
+            "output_tokens": 378,
+            "usage_records": 2,
+            "elapsed_ms": 20085.8760420233,
+            "events": [
+              {
+                "node": "retrieve",
+                "outcome": "context_available",
+                "elapsed_ms": 1.4952919445931911,
+                "source_count": 1
+              },
+              {
+                "node": "draft",
+                "outcome": "audit",
+                "elapsed_ms": 9982.573832967319,
+                "source_count": 1
+              },
+              {
+                "node": "audit",
+                "outcome": "audited_evidence",
+                "elapsed_ms": 10093.89783302322,
+                "source_count": 1
+              },
+              {
+                "node": "finish",
+                "outcome": "done",
+                "elapsed_ms": 0.0030410010367631912,
+                "source_count": 1
+              }
+            ],
+            "provider_errors": [],
+            "rate_limits": [
+              {
+                "rpd_limit": 1000,
+                "rpd_remaining": 993,
+                "tpm_limit": 8000,
+                "tpm_remaining": 7330,
+                "rpd_reset_seconds": 604.8,
+                "tpm_reset_seconds": 5.025
+              },
+              {
+                "rpd_limit": 1000,
+                "rpd_remaining": 992,
+                "tpm_limit": 8000,
+                "tpm_remaining": 7192,
+                "rpd_reset_seconds": 691.2,
+                "tpm_reset_seconds": 6.06
+              }
+            ],
+            "token_usage_complete": true
+          }
+        }
+      ],
+      "previous_errors": [],
+      "identity": {
+        "dataset_sha256": "f943c28ab4bce4f9c0d3293f20e6eaa680826d36b6afbac2afbb194b0dc66182",
+        "cases": [
+          "persistent_false_refusal"
+        ],
+        "languages": [
+          "en"
+        ],
+        "trials": 1,
+        "seed": 20261025,
+        "execution": "live",
+        "provider": "groq",
+        "model": "openai/gpt-oss-120b",
+        "profile": "baseline",
+        "source_sha256": {
+          "__init__.py": "430e9cd14efb7fdb6f354a9c1199c49e8d4b396ccc6e18aefeedbd14d11b284b",
+          "__main__.py": "13a1a5b340cdcfc1902b62be90e508c7c71886000d5bf087e7854aadf09fb35e",
+          "answer_evaluation.py": "5d210b3d1ec16fddbb3b4b768653bfd794074bf1381a7024f48374a4f494ed11",
+          "cli.py": "9df8aa32e9a0b5114aaf4eddea9ca0b34de7def7a758aac9a12af4f5c9bbe3fb",
+          "config.py": "0f8cf0beaa1c1995774957fca80fcef4f3d793254076b43e709b21ebbd7c3f11",
+          "embeddings.py": "783d577fa5745433c828b17e316666a8fec349d26efd0c56a713ced4000f6bf9",
+          "evaluation.py": "5f531cb17587c6fbc8a0c52b34ba260161cd6d890b9b30800cdefbde1ed50cb3",
+          "generation.py": "0d73cd1bfcf542e4e3e0cd78a88691013e5c368862a33813a8c6d9148bacab64",
+          "groq.py": "b0eb54f7873ef0b92fd406a0cda3efefe3fade2f457439375b3b4829a907e5a0",
+          "grounding.py": "41301832394412af937bbbd4dc993995aba08b8b890b7d3e06ac6023f31f5ed5",
+          "index.py": "90f958269d16f349e725d9eb72929f6c1a51fe299c2e617e706333981c633fe0",
+          "ingestion.py": "356bfd626ab37b184c5bc1508ae5c81284b19b9191e998aa39053e7be78b59e3",
+          "language.py": "c29eccb62fc860a71e57f931e231b225363dd24b550b6fbd56809c2cec53cc41",
+          "optimization.py": "575913c365e31c94b35e0dcfb6f2baae0c5fb6446877f31656f5c959358d5872",
+          "profiles.py": "3429f17737e9b279cc0e7cb9c5faa22eba28b4c409d9dd9360443fc999efde2f",
+          "retrieval.py": "c2eb8e0145e4ffb46334cf27b1d5709b0e3d77d6a61f1f552f11dbf888ec9a40",
+          "telemetry.py": "af8569a16862ee92f74a13dcf6978eba7826a903bcbec330e68be3a1e9da78b9",
+          "workflow.py": "73c52dcaa44f912bdf62bf407a7396c10ec88fe4847352eb8561dcee1049c54f"
+        },
+        "index_sha256": null,
+        "max_tokens": "2048",
+        "requests_per_minute": 6
+      },
+      "provenance": {
+        "created_at": "2026-10-26T10:00:05.729629+00:00",
+        "python": "3.12.0",
+        "platform": "macOS-27.0.1-arm64-arm-64bit",
+        "provider": "groq",
+        "model": "openai/gpt-oss-120b",
+        "max_api_calls": 5,
+        "generation": {
+          "max_tokens": 2048,
+          "temperature": 0,
+          "network_timeout_ms": 60000,
+          "free_only": true,
+          "retries": 0,
+          "free_plan_attested": true,
+          "requests_per_minute": 6,
+          "attempted_api_calls": 3,
+          "previous_attempted_api_calls": 0
+        },
+        "quota_state": {
+          "saved_at": 1793008805.7296472,
+          "history": [
+            [
+              2481.1007825679844,
+              646
+            ],
+            [
+              2471.0856205259915,
+              675
+            ],
+            [
+              2461.0723243600223,
+              780
+            ],
+            [
+              3030.0767277968116,
+              646
+            ],
+            [
+              3020.0661060878774,
+              780
+            ],
+            [
+              1710.935426029726,
+              656
+            ],
+            [
+              1700.918043779675,
+              687
+            ],
+            [
+              1690.9010025296593,
+              803
+            ],
+            [
+              1621.5407528840005,
+              749
+            ],
+            [
+              1611.5216210921062,
+              749
+            ],
+            [
+              1601.5043369670166,
+              849
+            ],
+            [
+              419.89438916300423,
+              524
+            ],
+            [
+              409.8754941220395,
+              522
+            ],
+            [
+              292.5972823953489,
+              611
+            ],
+            [
+              282.5774811033625,
+              628
+            ],
+            [
+              176.70554256008472,
+              523
+            ],
+            [
+              166.68592385202646,
+              559
+            ],
+            [
+              156.66381135210395,
+              740
+            ],
+            [
+              146.64308510208502,
+              847
+            ],
+            [
+              20.732393833925016,
+              670
+            ],
+            [
+              10.714471374987625,
+              670
+            ],
+            [
+              0.6953355419682339,
+              760
+            ]
+          ],
+          "rate_limits": {
+            "rpd_limit": 1000,
+            "rpd_remaining": 992,
+            "tpm_limit": 8000,
+            "tpm_remaining": 7192,
+            "rpd_reset_seconds": 691.2,
+            "tpm_reset_seconds": 6.06
+          },
+          "headers_age": 0.018412541947327554,
+          "resume_after": 0.0
+        },
+        "libraries": {
+          "langgraph": "1.2.17",
+          "langchain-core": "1.7.0",
+          "garage-rag": "0.3.0"
+        },
+        "source_sha256": {
+          "__init__.py": "430e9cd14efb7fdb6f354a9c1199c49e8d4b396ccc6e18aefeedbd14d11b284b",
+          "__main__.py": "13a1a5b340cdcfc1902b62be90e508c7c71886000d5bf087e7854aadf09fb35e",
+          "answer_evaluation.py": "5d210b3d1ec16fddbb3b4b768653bfd794074bf1381a7024f48374a4f494ed11",
+          "cli.py": "9df8aa32e9a0b5114aaf4eddea9ca0b34de7def7a758aac9a12af4f5c9bbe3fb",
+          "config.py": "0f8cf0beaa1c1995774957fca80fcef4f3d793254076b43e709b21ebbd7c3f11",
+          "embeddings.py": "783d577fa5745433c828b17e316666a8fec349d26efd0c56a713ced4000f6bf9",
+          "evaluation.py": "5f531cb17587c6fbc8a0c52b34ba260161cd6d890b9b30800cdefbde1ed50cb3",
+          "generation.py": "0d73cd1bfcf542e4e3e0cd78a88691013e5c368862a33813a8c6d9148bacab64",
+          "groq.py": "b0eb54f7873ef0b92fd406a0cda3efefe3fade2f457439375b3b4829a907e5a0",
+          "grounding.py": "41301832394412af937bbbd4dc993995aba08b8b890b7d3e06ac6023f31f5ed5",
+          "index.py": "90f958269d16f349e725d9eb72929f6c1a51fe299c2e617e706333981c633fe0",
+          "ingestion.py": "356bfd626ab37b184c5bc1508ae5c81284b19b9191e998aa39053e7be78b59e3",
+          "language.py": "c29eccb62fc860a71e57f931e231b225363dd24b550b6fbd56809c2cec53cc41",
+          "optimization.py": "575913c365e31c94b35e0dcfb6f2baae0c5fb6446877f31656f5c959358d5872",
+          "profiles.py": "3429f17737e9b279cc0e7cb9c5faa22eba28b4c409d9dd9360443fc999efde2f",
+          "retrieval.py": "c2eb8e0145e4ffb46334cf27b1d5709b0e3d77d6a61f1f552f11dbf888ec9a40",
+          "telemetry.py": "af8569a16862ee92f74a13dcf6978eba7826a903bcbec330e68be3a1e9da78b9",
+          "workflow.py": "73c52dcaa44f912bdf62bf407a7396c10ec88fe4847352eb8561dcee1049c54f"
+        }
+      },
+      "review": {
+        "reviewer": "Codex implementation agent: explicit inspection of actual sent sources and live replies, separate from Groq auditor",
+        "independent_human_review": false,
+        "rows_reviewed": 2
+      },
+      "publication": {
+        "runtime_commit": "cf0f54b7a3ee7b516beb37ad68df2509f5f2d3b5",
+        "raw_checkpoint_sha256": "12334908a01123affacc7252faf6e2bcc1d340d43f7de4463d233deec3b43890",
+        "private_capture_sha256": "bbcac4c47fe750df2c32198ddb934e3141df245254e4ea506dfe06cb7f6c2dc3",
+        "private_wire_capture_sha256": "663ce3fee30cf78cad4dfb7b292ebdf5934aff7a2213364ac2d66b50f412b2c9",
+        "private_timing_sha256": "01380b85e371dede7e95c448f295c933b1f17e702c8c3f8c544407bd6479e900",
+        "redactions": [
+          "Absolute local capture path removed from identity"
+        ],
+        "initial_direct_grounded_messages_identical": true,
+        "live_http_calls_only": true,
+        "scripted_data_not_in_model_requests": true
+      }
+    }
+  ],
+  "next_stage_executed": false
+}
