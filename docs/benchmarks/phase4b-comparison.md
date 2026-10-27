@@ -9,6 +9,10 @@ observed. This completes the comparison boundary, not all-answer-success or
 production/vehicle-readiness acceptance. See the
 [final Structured Outputs result](#final-structured-outputs-comparison--completed-with-bounded-stop).
 
+PR #5 also contains a subsequent, **offline-only** Agentic context-management
+change. Its [separate validation](#post-comparison-agentic-context-management--offline-only)
+does not change any historical score or establish successful toolkit recovery.
+
 Offline software acceptance, 2026-10-26, based on `main` / `v0.4.0` (`da4b3cc`).
 The earlier authorized Aurora attempt on 2026-10-27 stopped on a provider error
 (see below); no independent human review was performed. **The offline results
@@ -915,3 +919,111 @@ D/G request identity, context hashes, unchanged runtime source hashes, caps/spac
 complete usage and historical reservation retention. No full suite/build was rerun
 for this report-only update. No retries, fallback, resume, prompt/retrieval tuning,
 additional experiments, merge or Release occurred.
+
+
+## Post-comparison Agentic context management — offline only
+
+Implemented on 2026-10-27 after the historical six-workflow comparison above.
+**Historical outcomes remain Direct 2/2, Grounded 2/2, Agentic 1/2.** No provider
+API requests, new live labels, merge, tag or Release are part of this change.
+
+### Audit and cause
+
+`generation.build_context` deduplicates document/page/text and packs intact
+passages in hit order, skipping passages that exceed its serialized character
+budget. Direct/Grounded retain this unchanged primitive and their original
+limits. Agentic instead requested 20 passages / 12,000 characters, reconstructed
+previous evidence from only its sent source map (discarding retrieval scores),
+then compared the entire combined identity set with the packed result. Any
+missing identity stopped the workflow, irrespective of relevance. A second
+search could therefore trigger `context_budget_exhausted` before new evidence
+was committed or sent. The rejected raw hits were not captured. Repeated complete
+source arrays also accumulated in planner history and consumed token budget.
+
+The existing final live capture cannot recover those missing raw second-search
+hits. The fresh offline retrieval below is a new observation, not a reconstruction
+of unavailable historical evidence.
+
+### Implementation boundary and guarantees
+
+`agentic_context.EvidenceStore` now owns full per-search snapshots and provenance
+(method/query/top-k/rank/score, original text and metadata). Exact text plus full
+metadata deduplicate repeated hits without merging different revisions or
+applicability. IDs are assigned on discovery and survive exclusion/re-entry.
+`select_context` rebuilds the LLM subset from the whole store after each search.
+Whole passages and original source/page mappings are preserved; excluded source
+IDs cannot pass the existing citation validator.
+
+On overflow, all lexical question/query matches, every search's first semantic
+hit, recognized EN/DE/RU warnings/conditions, explicit safety/layout metadata,
+suspect extraction and retrieved same/adjacent pages are protected together.
+Only lower-ranked, unconnected, cue-free nonmatches may be excluded for budget.
+Priority is question overlap, query overlap and reciprocal retrieval rank, then
+discovery order; raw dense and BM25 scores are not compared. A protected set that
+does not fit stops explicitly, as does overflow with no usable lexical relevance
+anchors. No passage is clipped, summarized or replaced with a generated extract.
+
+Planner history contains one current source payload plus bounded search history.
+Public diagnostics contain counts, IDs, selection/protection/exclusion reasons,
+blocked IDs, sizes and hashes, and the actual attempted planner/writer/auditor
+source sets after token reservation. Raw results, including selection-rejected
+searches, are available in private evaluation captures. PDF passages, queries,
+metadata and paths are absent from the public diagnostics/report.
+
+The 12,000-character/20-passage Agentic context ceiling, six LLM calls, four
+searches, twelve graph steps and 24,000 default / 48,000 maximum conservative
+no-refund token budget are unchanged. Full messages/history/schema/output
+reservations still apply before every call, including multibyte text and the
+mandatory audit. Provider/free-plan/session guards remain in force. Groq's strict
+Structured Outputs planner/schema and Direct/Grounded are unchanged; the writer's
+single context-description sentence now says selected rather than accumulated.
+Writer validation and auditor logic are unchanged. Package 0.5.0 remains the
+coherent upcoming version; no version increment or release is needed here.
+
+These are retention and orchestration guarantees, not a semantic proof. Lexical
+matching and safety cues cannot identify every unmarked warning, paraphrased
+conflict or missing page continuation. Same-model auditing remains fallible.
+Conservative protection can retain irrelevant warnings and refuse an otherwise
+answerable question. No general safety/completeness or Agentic-quality claim is
+made, and no check is weakened to obtain a positive answer.
+
+### Separate offline acceptance
+
+- New store/selector/graph coverage: overlapping searches and scores/provenance,
+  irrelevant overflow, essential second-search evidence, stable IDs through
+  eviction/re-entry, rejected citations, intact conditions/conflicts, EN/DE/RU
+  warning cues, page continuations, extraction/layout uncertainty, deterministic
+  limits, multibyte token reservation, private captures and sanitized public data.
+- BMW E39: fresh genuine local E5/Qdrant searches using the two recorded planner
+  queries, offline weights from the existing cache, without invoking a model API.
+  They returned 10 hits / 9 unique passages. The first context fits (5 passages,
+  8,031 serialized characters); the second protected set still exceeds the limit
+  and safely stops. All 10 raw hits are now captured. This establishes inspectable
+  bounded refusal, **not toolkit answer recovery**. The index manifest is unchanged.
+  Private files: `output/private/agentic-context-offline-20261027/`; no source text
+  is copied into this report. The private regression is skipped when captures are
+  absent from a public checkout.
+
+Local acceptance: **439 pytest tests passed**, including 23 new context-management
+cases (one uses the private BMW capture); Ruff and `pip check` passed. Wheel and sdist
+builds passed, their allowlisted contents include the new runtime/tests/docs and
+exclude private material, and an isolated wheel installation passed import and both
+CLI/module `--help` checks using the existing local dependency environment.
+CI results for the delivered commit are recorded in PR #5; these local checks do
+not substitute for remote CI. All model HTTP tests use mocked transports.
+
+### One proposed bounded live check — not executed
+
+After separate authorization, run only Agentic on the original BMW E39 toolkit
+question, English, one trial, same GPT-OSS 120B/temperature zero and 1,024 completion
+tokens including reasoning. Keep the strict planner schema, top-k <=5, at most four
+searches/six HTTP attempts, a 24,000-token no-refund workflow/session reservation
+cap, free-plan preflight, >=61-second actual HTTP spacing and fresh private paths.
+No retry, fallback, resume, forced query sequence or other mode is included.
+
+Inspect every selection and actual source delivery, citation/source/page integrity,
+conditions and warnings against the original PDF, and final writer/audit output if
+reached. A model-selected route repeating the offline protected overflow must
+remain a clearly diagnosed refusal; it is not a successful toolkit recovery.
+Only an intact, supported, audited answer would establish recovery for this single
+case. Either outcome is new evidence, separate from the frozen Phase 4B scores.

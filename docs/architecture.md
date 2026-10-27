@@ -8,7 +8,7 @@ The implementation lives in [`src/garage_rag`](../src/garage_rag):
 | `ingestion`, `embeddings`, `config`, `profiles` | Page extraction, token bounds and pinned model settings |
 | `index`, `retrieval` | Persistent dense search; agentic/offline BM25, offline fusion and reranking |
 | `generation`, `language`, `groq` | Context, schemas, language selection and provider transport |
-| `workflow`, `agentic`, `local_tools`, `grounding`, `telemetry` | Bounded LangGraph, local numeric gate, audit and safe observations |
+| `workflow`, `agentic`, `agentic_context`, `local_tools`, `grounding`, `telemetry` | Bounded LangGraph, evidence storage/selection, local numeric gate, audit and safe observations |
 | `evaluation`, `optimization` | Frozen retrieval evaluation and profile comparisons |
 | `answer_evaluation`, `source_evaluation`, `review_packet` | Paired answer evaluation and private hash-bound review |
 | `cli` | `index`, `stats`, `search` and `ask` commands |
@@ -107,8 +107,10 @@ flowchart TD
     M[Retrieval planner: no answer schema] --> C{Validated search or terminal decision?}
     C -- dense_search or lexical_search --> G{Allowlist, schema and budgets}
     G -- valid --> L[Local active Qdrant or BM25 search]
-    L --> E[Accumulate whole evidence and native call/result pair]
-    E --> B{Another planning turn fits?}
+    L --> E[Private Evidence Store: full hits, scores and origins]
+    E --> S[Deterministic whole-passage Context Selector]
+    S --> X[Bounded LLM Context and current call/result pair]
+    X --> B{Another planning turn fits?}
     B -- yes --> M
     B -- search/call ceiling --> D[Structured writer: no active tools]
     C -- finalize --> D
@@ -117,7 +119,7 @@ flowchart TD
     V --> A[Separate applicability/completeness audit]
     A -- accept --> O[Locally formatted cited answer]
     G -- invalid/exhausted --> F
-    E -- overflow --> F
+    S -- protected overflow or uncertain relevance --> F
     V -- invalid --> F
     A -- reject --> F
 ```
@@ -135,7 +137,7 @@ Malformed controls and invented function names refuse without repair or retry.
 The model still chooses tools and rewrites queries from returned evidence; no
 translation dictionary or fixed search order is prescribed. A separate writer
 receives fresh answer instructions and **no active tools**, with the last validated
-local assistant/tool correlation pair containing all accumulated evidence.
+local assistant/tool correlation pair containing the complete selected evidence.
 For Groq this pair is generated locally after validated JSON search; planner
 history serializes it as ordinary assistant/user JSON, without provider tools. The original
 `tool_call_id` is returned even when the search/call cap routes directly to writing.
@@ -160,14 +162,64 @@ URLs, executable names, function registries or remote tools are accepted.
 The non-Groq backend round-trips native call IDs; Groq uses local correlation IDs.
 In both paths,
 malformed/unknown/batched calls, duplicate IDs and repeated tool/query/top-k tuples
-stop before execution. Search results return all accumulated whole evidence with
-stable `S1…S20` IDs. Deduplication uses document/page/text. The serialized source
-budget remains 12,000 characters; unlike baseline context packing, overflowing
-any accumulated evidence refuses rather than dropping a warning or conflict.
-Earlier search results remain in the bounded retrieval history. At most 20 passages can
-be returned by four searches of five hits; tool and transcript overhead consumes
-the separate token budget. There is no checkpoint, persistent agent memory or
-agent-controlled filesystem mutation.
+stop before execution. Four searches of five hits bound the per-run store to
+20 results before deduplication. There is no checkpoint, persistent agent memory
+or agent-controlled filesystem mutation.
+
+### Agentic context management
+
+`agentic_context` separates three objects; Direct/Grounded still use the unchanged
+`generation.build_context` (8 passages / 12,000 serialized characters).
+
+1. **Evidence Store** owns full snapshots of every successful search: query,
+   method, top-k, rank, raw score, text and original metadata/document ID. Exact
+   text **and all metadata** identify duplicates, so revisions and different
+   applicability remain distinct. Every occurrence retains its search/rank origin.
+   Stable discovery-order `S1…S20` IDs are never reassigned after exclusion or re-entry.
+2. **Context Selector** reconsiders the entire store after every search, independently
+   of the preceding selected context. If everything fits, discovery order is kept.
+   On overflow it protects all question/query term matches, the first semantic hit
+   of every search, recognized safety/condition cues (EN/DE/RU), explicit
+   warning/condition/layout metadata, suspect extraction, and retrieved same/adjacent
+   pages in the same document revision. Page protection is non-transitive.
+   All protected passages must fit **together**; otherwise `context_budget_exhausted`
+   stops before planner/writer delivery, with no partial candidate context. This
+   preserves both positive and negative topical results without deciding which
+   source is correct. With no topical anchors and overflow, selection stops with
+   `context_relevance_uncertain` instead of guessing across languages/paraphrases.
+3. **LLM Context** contains at most 20 whole passages / 12,000 serialized characters.
+   Remaining slots are packed by question overlap, then query overlap, then summed
+   reciprocal retrieval rank (`1/(60+rank)`), with discovery order breaking ties.
+   Raw dense/BM25 scores are never compared. Only lower-ranked, cue-free nonmatches
+   outside protected pages may be excluded for budget. Text is never cut or
+   summarized. Full applicability metadata travels with selected text; only the
+   display URL and a duplicate page label are omitted from the wire metadata.
+   Original documents, URLs and pages remain in the local source map.
+
+Planner history retains the question, latest correlated search/result pair, and a
+bounded query/ID history. Earlier copies of source text are replaced, not appended.
+The writer receives the same final selected context and the current pair; existing
+citation/language/numeric checks and auditor logic are unchanged. A source remaining
+only in the store is unavailable for citation. `new_sources` counts newly selected
+IDs, so eviction cannot produce a negative count.
+
+`context_selections` reports cumulative found/stored/duplicate counts, selected and
+excluded counts/IDs, protection and exclusion reasons, blocked IDs, serialized size,
+unchanged bounds and a hash of the private store. `context_deliveries` records each
+attempted planner/writer/auditor input after reservation succeeds (IDs, source hash,
+call and selection number). A rejected token reservation has no delivery record;
+a later provider/quota failure can still appear as an attempted delivery. No PDF
+text, metadata, filenames, queries or paths enter these public diagnostics.
+Evaluation private captures include `evidence_store`, even when selection stops;
+rejected raw hits can now be inspected without reconstructing historical searches.
+
+Lexical relevance and safety cues are conservative heuristics, not semantic proofs.
+Unmarked warnings or paraphrased conflicts on unrelated pages can escape detection;
+the selector cannot establish document-wide completeness, reconstruct missing page
+continuations, or make a same-model audit independent. It deliberately refuses
+large protected sets, including some unrelated warnings. Whole selected passages,
+explicit exclusions and private originals make this limitation inspectable; no
+universal safety or sufficient-evidence guarantee is claimed.
 
 Hard ceilings are six LLM attempts (including the final audit), four attempted
 searches and twelve executed graph nodes; a recursion limit of sixteen is an

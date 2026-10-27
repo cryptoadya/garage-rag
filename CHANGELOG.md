@@ -19,6 +19,13 @@ is available in [Git commits](https://github.com/cryptoadya/garage-rag/commits/m
 
 ### Fixed
 
+- Agentic keeps a private evidence store separate from its bounded model context.
+  Deterministic whole-passage selection can omit low-relevance overflow while
+  preserving stable citations, topical evidence, semantic leads, safety cues and
+  page companions. Protected overflow and uncertain relevance stop explicitly.
+  Sanitized selection/delivery diagnostics and private raw search captures expose
+  exclusions; planner history carries one current context instead of stale copies.
+  This is offline software validation, separate from historical Phase 4B results.
 - Groq Agentic planner uses strict Structured Outputs decisions with local search
   dispatch, without combining native tools and structured output. Schema overhead
   stays inside shared token/quota guards; Direct/Grounded and writer/auditor keep

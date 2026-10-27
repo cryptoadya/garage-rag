@@ -631,6 +631,11 @@ def _evaluate(
                     "answer": asdict(result.answer),
                     "error": result.error,
                     "context": json.loads(result.context.text) if result.context else None,
+                    **(
+                        {"evidence_store": result.evidence_store.capture()}
+                        if getattr(result, "evidence_store", None) is not None
+                        else {}
+                    ),
                     "draft": (
                         result.candidate.draft.model_dump()
                         if result.candidate and result.candidate.draft

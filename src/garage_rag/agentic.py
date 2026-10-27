@@ -2,7 +2,7 @@
 
 import json
 import time
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from typing import Literal, TypedDict
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
@@ -11,6 +11,8 @@ from langgraph.graph import END, START, StateGraph
 from langsmith import tracing_context
 from pydantic import ValidationError
 
+from .agentic_context import EvidenceStore, select_context
+from .config import digest
 from .generation import (
     SYSTEM_PROMPT,
     Answer,
@@ -18,13 +20,11 @@ from .generation import (
     Context,
     Draft,
     GenerationError,
-    build_context,
     invoke_model,
     parse_response,
     validate_draft,
 )
 from .grounding import audit_candidate, numeric_evidence_safe
-from .index import SearchHit
 from .language import LANGUAGES, REFUSALS, resolve_answer_language
 from .local_tools import (
     CONTROL_TOOLS,
@@ -107,6 +107,13 @@ class AgenticTrace(RunTrace):
     reserved_tokens: int = 0  # Conservative sum; no refunds, even if usage is absent.
     steps: int = 0
     step_limit: int = 12
+    context_selections: list[dict] = field(default_factory=list)
+    context_deliveries: list[dict] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class AgenticResult(WorkflowResult):
+    evidence_store: EvidenceStore | None = field(default=None, repr=False)
 
 
 class LocalSearch:
@@ -162,6 +169,31 @@ class _Budgeted:
         if self.trace.reserved_tokens + reserve > self.trace.token_budget:
             raise GenerationError("token_budget_exhausted")
         self.trace.reserved_tokens += reserve  # Include failed calls and invisible reasoning.
+        # Record actual attempted delivery only after the reservation passes.
+        # Private messages remain private; public diagnostics contain IDs/hashes only.
+        sources = []
+        for message in reversed(messages):
+            if message.type in {"tool", "human"}:
+                try:
+                    payload = json.loads(message.content)
+                    if isinstance(payload, dict) and "sources" in payload:
+                        sources = payload["sources"]
+                        break
+                except (ValueError, TypeError):
+                    pass
+        self.trace.context_deliveries.append(
+            {
+                "phase": "planner"
+                if self.tools
+                else "auditor"
+                if messages[0].content.startswith("You are the evidence auditor")
+                else "writer",
+                "source_ids": [s["source_id"] for s in sources],
+                "sources_sha256": digest(sources),
+                "call": self.trace.llm_calls + 1,
+                "selection": len(self.trace.context_selections),
+            }
+        )
         response = self.metered.invoke(messages)
         usage = getattr(response, "usage_metadata", None)
         if usage and type(usage.get("total_tokens")) is int and usage["total_tokens"] > reserve:
@@ -205,6 +237,7 @@ def run_agentic(
     tools = [*(TOOLS if allow_lexical else TOOLS[:1]), *CONTROL_TOOLS]
     started = time.perf_counter()
     ids, queries = set(), set()
+    evidence_store = EvidenceStore()
 
     def refused(reason):
         return Answer(False, REFUSALS[language], reason, language)
@@ -318,12 +351,12 @@ def run_agentic(
         if not state["context"].sources:
             return stop("no_context")
         # Fresh answer instructions, no retrieval instructions or active tools.
-        # The last native call/result pair carries ALL accumulated sources and
+        # The last native call/result pair carries the selected complete sources and
         # returns the result with its actual ID even at the search/call ceiling.
         messages = [
             SystemMessage(
                 content=SYSTEM_PROMPT
-                + "\nThe final tool result contains the complete accumulated sources array."
+                + "\nThe final tool result contains the complete selected sources array."
                 + f"\nWrite every claim in {LANGUAGES[language]}."
             ),
             state["messages"][0],
@@ -361,35 +394,35 @@ def run_agentic(
         trace.search_calls += 1  # Failed searches also consume a slot.
         try:
             hits = search(METHODS[call["name"]], args.query, args.top_k)
-            previous = [SearchHit(d, 0) for d in state["context"].sources.values()]
-            combined = [*previous, *hits]
-            context = build_context(combined, max_chunks=20, compact=True)
-
-            def identity(document):
-                return (
-                    document.metadata["document"],
-                    document.metadata["pdf_page"],
-                    document.page_content,
-                )
-
-            # Never hide an applicable warning/conflict, even if newly retrieved.
-            if {identity(h.document) for h in combined} != {
-                identity(d) for d in context.sources.values()
-            }:
-                return stop("context_budget_exhausted")
+            evidence_store.add(
+                hits, method=METHODS[call["name"]], query=args.query, top_k=args.top_k
+            )
+            selection = select_context(evidence_store, question)
+            trace.context_selections.append(selection.diagnostics)
+            if selection.reason:
+                return {"context": selection.context, **stop(selection.reason)}
+            context = selection.context
         except Exception:
             return stop("retrieval_error", "Local agentic retrieval failed.")
         result = json.dumps(
             {
                 "sources": json.loads(context.text),
-                "new_sources": len(context.sources) - len(state["context"].sources),
+                "new_sources": len(set(context.sources) - set(state["context"].sources)),
+                "selection": selection.diagnostics,
+                "search_history": evidence_store.history(),
             },
             ensure_ascii=False,
             separators=(",", ":"),
         )
         return {
             "context": context,
-            "messages": [*state["messages"], ToolMessage(content=result, tool_call_id=call["id"])],
+            # Replace earlier source payloads, retaining exact latest pairing and
+            # a bounded query/ID history. The store still owns every original hit.
+            "messages": [
+                state["messages"][0],
+                state["messages"][-1],
+                ToolMessage(content=result, tool_call_id=call["id"]),
+            ],
             "route": (
                 "draft"
                 if trace.search_calls >= limits.max_searches
@@ -486,6 +519,11 @@ def run_agentic(
     except Exception:
         state = {"answer": refused("agentic_error"), "error": "Agentic workflow failed."}
     trace.elapsed_ms = (time.perf_counter() - started) * 1000
-    return WorkflowResult(
-        state["answer"], trace, state.get("candidate"), state.get("context"), state.get("error")
+    return AgenticResult(
+        state["answer"],
+        trace,
+        state.get("candidate"),
+        state.get("context"),
+        state.get("error"),
+        evidence_store,
     )
