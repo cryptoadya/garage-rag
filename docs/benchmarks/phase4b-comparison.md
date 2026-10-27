@@ -1,13 +1,13 @@
 # Phase 4B: direct / grounded / agentic
 
-**Phase 4B is NOT READY for closure.** The latest authorized six-output comparison
-stopped on attempt five: Agentic's second planner emitted text JSON instead of a
-required native action, producing HTTP 400 / `tool_use_failed`. Direct/Grounded
-hood answers form one complete, source-supported tie; Agentic has no completed
-answer and all toolkit modes are missing. The earlier successful diagnostic
-smoke remains valid but did not establish full-workflow reliability. See the
-[final comparison result](#final-authorized-comparison--partial-not-ready-for-closure).
-All source assessments are explicitly AI-based, not independent human review.
+**Phase 4B comparison is ready for closure, with a negative Agentic result.**
+The final Structured Outputs run recorded all six workflows: Direct 2/2,
+Grounded 2/2 and Agentic 1/2 complete supported answers under separate unblinded
+AI source review, not human review. All 12 HTTP calls succeeded; Agentic toolkit
+stopped safely at the context guard. No Agentic retrieval/quality advantage was
+observed. This completes the comparison boundary, not all-answer-success or
+production/vehicle-readiness acceptance. See the
+[final Structured Outputs result](#final-structured-outputs-comparison--completed-with-bounded-stop).
 
 Offline software acceptance, 2026-10-26, based on `main` / `v0.4.0` (`da4b3cc`).
 The earlier authorized Aurora attempt on 2026-10-27 stopped on a provider error
@@ -753,3 +753,165 @@ perform separate source-based AI review with explicit non-human provenance,
 existing hash-bound rescoring and matched pair/triple summaries. The prior
 native-protocol runner is incompatible and must not be reused unchanged; no
 launch or automation is installed by this proposal.
+
+
+## Final Structured Outputs comparison — completed with bounded stop
+
+**Closure decision: READY for closure of Phase 4B as an evidence-collection and
+comparison stage, with the negative result below.** Six planned workflow rows
+were executed and separately source-reviewed. Five are complete positive answers;
+one is a safe, incomplete Agentic toolkit stop. This is not six successful answers,
+a claim that Agentic is production-ready, or authorization to merge/release.
+Earlier HTTP failures, the diagnostic success, incorrect preparation inference
+about toolkit evidence and all historical measurements remain preserved above.
+
+### Frozen execution and integrity
+
+The single user-authorized run used **`b41dac9`**, the new production Groq
+Structured Outputs planner, on **2026-10-27 18:52:57–19:04:10 UTC /
+19:52:57–20:04:10 Europe/Berlin**. Its protocol/order was durably recorded before
+generation: **hood_release then toolkit_access, Direct → Grounded → Agentic for
+each, one trial, six planned rows**. The existing evaluator's execution-only
+schedule was fixed; the retained seed is metadata, not a randomization claim.
+No workflow/prompt/retrieval tuning or benchmark change occurred during execution.
+
+A newly written isolated Structured Outputs runner was used, not the old native
+runner. HTTP hooks enforced no `tools`, `tool_choice` or parallel-tool options in
+any request. All four planner requests used the exact hash-bound production
+`json_schema` with `strict=true`, ordinary chat history and no native call/result
+messages. All four returned locally valid structured decisions. Existing
+JSON-object writer/auditor paths retained their validated **locally generated**
+correlation pairs; these are not provider-generated native calls. The same Groq
+GPT-OSS 120B model, temperature zero, reasoning settings and **1,024 completion
+tokens including reasoning per call** were preserved.
+
+Preflight verified clean pinned code, original PDF SHA256/186 pages, canonical
+dataset hash, baseline fingerprint/241 active chunks, logical chunk digest and
+pinned cached tokenizer. Latest cumulative quota history retained **15 requests /
+31,289 tokens** after rolling 86,400-second aging, leaving **985 local requests /
+168,711 tokens**, enough for the full **22-attempt / 128,000-token** allowance.
+Historical failed reservations **4,040 / 3,847 / 3,467** remained intact; no
+snapshots were added twice, midnight reset or known cooldown ignored. Historical
+same-key Free Plan evidence matched; current organization-wide balance/plan was
+not independently verified and no extra API quota probe was sent.
+
+### Separate quality review
+
+A separate Codex AI reviewer fixed criteria before generation and judgments before
+consulting workflow auditors or costs. It checked original PDF text plus fresh
+renders of physical pages 137 and 23, all **20 unique actually sent source objects**,
+claim entailment/applicability, every requested part, quote/document/page mapping
+and relevant warning preservation. The compatible claim/source labels and per-claim
+citation/warning notes are bound to exact answer/context hashes. Existing packet
+integrity and offline rescoring passed. This is **unblinded separate AI review,
+not independent human evaluation**; no physical vehicle validation occurred.
+
+| Question | Direct | Grounded | Agentic |
+| --- | --- | --- | --- |
+| Hood lever location | Complete, p137 | Same complete answer, p137 | Same complete answer, p137 |
+| Toolkit location and access | Complete, p23 | Complete, p23 | Incomplete; `context_budget_exhausted` |
+| Complete supported answers | **2/2** | **2/2** | **1/2** |
+| Supported claims / reviewed positive claims | **2/2** | **2/2** | **1/1** |
+| Supported citations / reviewed positive citations | **2/2** | **2/2** | **1/1** |
+
+All hood answer texts are identical and correctly locate the lever under the
+left-hand side of the instrument panel. Toolkit Direct/Grounded are semantically
+equivalent, specifying the lid/tailgate-mounted kit and wing-screw opening.
+Their original page **23** is a valid alternative to frozen gold page 150; those
+p150-only match flags remain false without invalidating the source-reviewed
+citations. Quotes match source wording/page after whitespace normalization;
+Grounded's toolkit quote is **not a byte-identical multiline substring**, recorded
+as a limitation rather than claimed exact-byte identity. No relevant location/
+access warning or applicability condition was omitted by the five positive answers.
+Three same-model audits agreed, but were consulted only after labels were fixed.
+
+### Actual retrieval and bounded stop
+
+Direct/Grounded initial entire HTTP bodies are identical for each question.
+Both use dense top-5; neither Grounded execution expanded retrieval:
+
+- Hood Direct/Grounded sent **137, 73, 66, 37, 68**. Agentic chose dense query
+  `lever that unlocks the hood location`, top-k 5, sent **137, 73, 66, 116, 37**,
+  then structured finalize, writer and audit. Page 137 was already available to
+  Grounded. There is no recovered fact or quality improvement.
+- Toolkit Direct/Grounded sent **23, 180, 85, 31, 100**, already sufficient.
+  Agentic chose dense `onboard tool kit location access vehicle manual`, top-k 5,
+  then sent **180, 182, 181, 8, 31** to its second planner: index pointers/general
+  material insufficient for the requested location/access facts.
+- Agentic's second toolkit decision was another dense search,
+  `BMW E39 onboard tool kit location access`, top-k 5. The search executed, but
+  the accumulated whole evidence could not fit the unchanged lossless context
+  guard. Execution stopped before committing/sending that new context or invoking
+  writer/auditor. **Rejected second-search raw hits were not saved** by the existing
+  evaluator; their exact contents/ranks are unknown and were not reconstructed
+  with another retrieval. No target-page recovery can be credited from that search.
+
+All Agentic searches were model-selected dense searches. Genuine BM25 remained
+available but was not chosen; no query equality fixture, gold injection or forced
+route was used. The toolkit refusal is a **local context-guard stop**, not a
+provider failure or raw model abstention. The legacy corpus-relative metric counts
+one false refusal because the corpus is answerable; that must not be interpreted
+as generator over-abstention. Its actually sent context was insufficient. The
+lossless guard preserved evidence rather than silently dropping possible warnings
+or conflicts. **No Agentic retrieval recovery or superiority was observed.**
+
+### Calls, tokens and timing
+
+| Case / mode | API / workflow searches | Held tokens | Reported input + completion = total | Paced workflow wall | Wire HTTP |
+| --- | ---: | ---: | --- | ---: | ---: |
+| Hood / Direct | 1 / 1 | 3,879 | 2,627 + 222 = **2,849** | 1.108 s | 1.014 s |
+| Hood / Grounded | 2 / 1 | 7,914 | 5,410 + 491 = **5,901** | 122.622 s | 2.496 s |
+| Hood / Agentic | 4 / 1 | 14,905 | 7,919 + 664 = **8,583** | 243.673 s | 2.984 s |
+| Toolkit / Direct | 1 / 1 | 3,225 | 1,973 + 422 = **2,395** | 62.778 s | 2.534 s |
+| Toolkit / Grounded | 2 / 1 | 6,636 | 4,132 + 608 = **4,740** | 120.677 s | 2.013 s |
+| Toolkit / Agentic | 2 / 2 | 7,052 | 2,786 + 189 = **2,975** | 121.606 s | 1.057 s |
+
+Totals: **12/22 API attempts, all HTTP 200; 43,611/128,000 held tokens** without
+session refunds. Actual usage is complete at **27,443 tokens = 24,847 input +
+2,596 completion**, including **1,854 reasoning tokens**. No current-call usage is
+missing. Seven workflow searches plus **one separately excluded local warmup**
+occurred. By mode: Direct **2 calls / 2 searches / 5,244 actual tokens**, Grounded
+**4 / 2 / 10,641**, Agentic **6 / 3 / 11,558**. Agentic toolkit's lower token total
+than Grounded reflects stopping without an answer, not an efficiency advantage.
+
+Actual HTTP starts were **61.075–61.095 s apart**. Whole execution was
+**676.203 s**, including **3.580 s** initialization before first HTTP, **659.448 s**
+execution-only pacing and **12.098 s** wire time. Known provider completion
+generation totaled **5.445 s**. Paced workflow times are dominated by the fixed
+serial schedule/inter-mode waits and do not establish intrinsic latency rankings.
+Wire time includes transport/queue work and is not pure inference. No billed USD
+total was measured. Saved cumulative history ends at **27 requests / 58,732
+local rolling tokens**, retaining all three historical unknown-usage failure
+reservations; known current usage does not refund the separate session guard.
+Response headers remain snapshots, not organization-wide/TPD guarantees.
+
+### Matched result and closure scope
+
+Existing `paired_summary` yields **two matched workflow triples and two matched
+comparisons for each mode pair**, including the recorded bounded refusal. This
+must not be described as two complete-positive Agentic answers. Hood ties across
+all modes; toolkit Direct/Grounded are complete while Agentic is incomplete.
+Direct/Grounded tie on both needs. Agentic spent more aggregate calls/tokens
+without improving source-reviewed quality. Two previously used selected needs,
+one trial and an unblinded AI review establish no significance, general ranking,
+multilingual parity, safety or broad reliability claim.
+
+**Phase 4B can close as a completed, reviewed comparison with these negative
+findings.** The previous missing-matrix/provider-error boundary was completed in
+this run: six recorded workflows, both strict planner continuations HTTP 200,
+full resource accounting and separate source review. Agentic toolkit answer
+success and a production-readiness claim remain unsupported. No requirement was
+relaxed to turn the safe stop into a positive answer, and no subsequent experiment
+or fix is proposed by this report. PR #5 remains unmerged; no Release.
+
+Private protocol, order events, raw requests/replies, captures, review packet,
+labels/notes, pairwise rescoring, resource verification, cumulative quota history
+and one-shot marker remain ignored under
+`output/private/phase4b-structured-final-b41dac9-20261027/`.
+**47 selected existing structured-planner/quota/reservation/pacing/pairing tests
+passed** before execution. Post-run verification checked fixed order, exact schema,
+local validation of all four planner decisions, absence of native provider calls,
+D/G request identity, context hashes, unchanged runtime source hashes, caps/spacing,
+complete usage and historical reservation retention. No full suite/build was rerun
+for this report-only update. No retries, fallback, resume, prompt/retrieval tuning,
+additional experiments, merge or Release occurred.
