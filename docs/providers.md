@@ -178,10 +178,15 @@ Phase 4A makes no OpenRouter live/quality comparison. Other workflows keep their
 provider defaults and existing JSON completion wire format.
 
 For `openai/gpt-oss-120b`, the agent sends only the predefined local function
-schemas with `tool_choice=auto` and `parallel_tool_calls=false`. Groq documents
+schemas with `tool_choice=required` and `parallel_tool_calls=false`. Both
+`finalize` and `refuse` are available alongside dense/BM25 searches, so required
+tool use does not require another search. The adapter rejects a required binding
+without both terminal actions; its existing low-level `auto` binding remains
+available. Groq documents
 [local tools but no parallel tool use](https://console.groq.com/docs/tool-use/overview)
 for this model. Assistant call IDs/JSON arguments and matching `role=tool` results
-are validated and serialized on the next request. `stop` carries a closed plain control response on retrieval turns;
+are validated and serialized on the next request. Every planner response must
+contain one validated native action; a plain `stop` response is invalid.
 `length`, malformed calls and API errors stop without repair or retry. The API
 never receives `browser_search`, `code_interpreter` or remote MCP definitions.
 

@@ -12,6 +12,197 @@ from test_workflow import audit, draft, hit
 from garage_rag.agentic import AgenticLimits, run_agentic
 
 
+@pytest.mark.parametrize("action", ["finalize", "refuse", "lexical_search"])
+def test_second_native_planner_action_after_real_tool_result(monkeypatch, action):
+    """Catch mixed text/tool control, forced extra searches and broken writer history."""
+    requests, searches = [], []
+
+    def transport(request):
+        payload = json.loads(request.content)
+        requests.append(payload)
+        if "tools" not in payload:
+            assert "tool_choice" not in payload
+            assert payload["response_format"] == {"type": "json_object"}
+            if "evidence auditor" in payload["messages"][0]["content"]:
+                return success(json.dumps(audit()))
+            # A terminal control is consumed locally; the writer keeps the last search pair.
+            assert payload["messages"][-2]["tool_calls"][0]["function"]["name"] in {
+                "dense_search",
+                "lexical_search",
+            }
+            assert (
+                payload["messages"][-2]["tool_calls"][0]["id"]
+                == payload["messages"][-1]["tool_call_id"]
+            )
+            return success(json.dumps(draft()))
+        assert payload["tool_choice"] == "required"
+        assert payload["parallel_tool_calls"] is False
+        assert "response_format" not in payload
+        assert {t["function"]["name"] for t in payload["tools"]} == {
+            "dense_search",
+            "lexical_search",
+            "finalize",
+            "refuse",
+        }
+        first = len(requests) == 1
+        if not first:
+            assert [m["role"] for m in payload["messages"]] == [
+                "system",
+                "user",
+                "assistant",
+                "tool",
+            ]
+            assert payload["messages"][-1]["tool_call_id"] == "p1"
+            assert json.loads(payload["messages"][-1]["content"])["sources"]
+        name = "dense_search" if first else action
+        args = (
+            {"query": "first query" if first else "evidence followup", "top_k": 1}
+            if name.endswith("search")
+            else {"reason": "conflicting_sources"}
+            if name == "refuse"
+            else {}
+        )
+        return httpx.Response(
+            200,
+            json={
+                "choices": [
+                    {
+                        "finish_reason": "tool_calls",
+                        "message": {
+                            "content": None,
+                            "tool_calls": [
+                                {
+                                    "id": f"p{len(requests)}",
+                                    "type": "function",
+                                    "function": {"name": name, "arguments": json.dumps(args)},
+                                }
+                            ],
+                        },
+                    }
+                ],
+                "usage": {"prompt_tokens": 100, "completion_tokens": 40},
+            },
+        )
+
+    def search(method, query, k):
+        searches.append((method, query, k))
+        return [hit()]
+
+    llm = model(monkeypatch, transport)
+    with llm.client:
+        result = run_agentic(
+            "When should I check pressure?",
+            search,
+            llm,
+            answer_language="en",
+            limits=AgenticLimits(max_searches=2),
+        )
+    assert result.error is None
+    assert result.answer.supported == (action != "refuse")
+    assert result.answer.reason == (
+        "conflicting_sources" if action == "refuse" else "audited_evidence"
+    )
+    assert len(requests) == result.trace.llm_calls == (2 if action == "refuse" else 4)
+    assert searches == (
+        [("dense", "first query", 1), ("bm25", "evidence followup", 1)]
+        if action == "lexical_search"
+        else [("dense", "first query", 1)]
+    )
+
+
+@pytest.mark.parametrize(
+    "name,args",
+    [
+        ("finalize", {"query": "must not run"}),
+        ("refuse", {"reason": "invented"}),
+        ("refuse", {"reason": "out_of_scope", "path": "/tmp/x"}),
+    ],
+)
+def test_invalid_native_terminal_actions_stop_without_search_or_writer(name, args):
+    response = AIMessage(content="", tool_calls=[{"id": "c1", "name": name, "args": args}])
+    result = run_agentic("Question", lambda *a: pytest.fail("unexpected search"), Model(response))
+    assert result.answer.reason == "invalid_tool_call"
+    assert result.trace.llm_calls == 1 and result.trace.search_calls == 0
+
+
+@pytest.mark.parametrize("text", ["FINALIZE", "REFUSE out_of_scope", "Need more detail."])
+def test_plain_text_is_not_a_planner_control(text):
+    result = run_agentic(
+        "Question", lambda *a: pytest.fail("unexpected search"), Model(AIMessage(content=text))
+    )
+    assert result.answer.reason == "invalid_planner_output"
+    assert result.trace.llm_calls == 1 and result.trace.search_calls == 0
+
+
+def test_native_finalize_without_context_does_not_spend_writer_calls():
+    response = AIMessage(content="", tool_calls=[{"id": "done", "name": "finalize", "args": {}}])
+    result = run_agentic("Question", lambda *a: pytest.fail("unexpected search"), Model(response))
+    assert result.answer.reason == "no_context"
+    assert result.trace.llm_calls == 1 and result.trace.search_calls == 0
+
+
+def test_score_filter_keeps_native_terminal_actions_available():
+    class Checked(Model):
+        def bind_tools(self, tools, **kwargs):
+            assert {t["function"]["name"] for t in tools} == {"dense_search", "finalize", "refuse"}
+            assert kwargs["tool_choice"] == "required"
+            return self
+
+    response = AIMessage(
+        content="",
+        tool_calls=[{"id": "stop", "name": "refuse", "args": {"reason": "out_of_scope"}}],
+    )
+    result = run_agentic(
+        "Question",
+        lambda *a: pytest.fail("unexpected search"),
+        Checked(response),
+        allow_lexical=False,
+    )
+    assert result.answer.reason == "out_of_scope"
+
+
+def test_native_control_cannot_reuse_a_search_call_id():
+    done = AIMessage(content="", tool_calls=[{"id": "c1", "name": "finalize", "args": {}}])
+    result = run_agentic("Question", lambda *a: [hit()], Model(tool(), done))
+    assert result.answer.reason == "invalid_tool_call"
+    assert result.trace.llm_calls == 2 and result.trace.search_calls == 1
+
+
+def test_mixed_plain_control_and_native_action_are_rejected():
+    mixed = AIMessage(content="FINALIZE", tool_calls=tool().tool_calls)
+    result = run_agentic("Question", lambda *a: pytest.fail("unexpected search"), Model(mixed))
+    assert result.answer.reason == "invalid_tool_call"
+    assert result.trace.llm_calls == 1 and result.trace.search_calls == 0
+
+
+def test_required_binding_cannot_force_search_without_terminal_actions(monkeypatch):
+    from garage_rag.generation import GenerationError
+    from garage_rag.local_tools import TOOLS
+
+    requests = []
+    llm = model(monkeypatch, lambda r: requests.append(r) or success())
+    with llm.client, pytest.raises(GenerationError, match="finalize and refuse"):
+        llm.bind_tools(TOOLS, tool_choice="required")
+    assert requests == []
+
+
+def test_required_action_missing_from_200_response_blocks_without_retry(monkeypatch):
+    from langchain_core.messages import HumanMessage
+
+    from garage_rag.generation import GenerationError
+    from garage_rag.local_tools import PLANNER_TOOLS
+
+    requests = []
+    llm = model(monkeypatch, lambda r: requests.append(r) or success("FINALIZE"))
+    with llm.client:
+        bound = llm.bind_tools(PLANNER_TOOLS, tool_choice="required")
+        with pytest.raises(GenerationError, match="invalid completion"):
+            bound.invoke([HumanMessage(content="Question")])
+        with pytest.raises(GenerationError, match="quota/error stop"):
+            bound.invoke([HumanMessage(content="Must not retry")])
+    assert len(requests) == 1
+
+
 def test_one_search_three_calls_separates_tool_and_json_wire_contracts(monkeypatch):
     requests = []
 
@@ -23,10 +214,12 @@ def test_one_search_three_calls_separates_tool_and_json_wire_contracts(monkeypat
             assert '"supported"' not in prompt and '"claims"' not in prompt
             assert "return JSON" not in prompt
             assert "response_format" not in payload
-            assert payload["tool_choice"] == "auto"
+            assert payload["tool_choice"] == "required"
             assert {t["function"]["name"] for t in payload["tools"]} == {
                 "dense_search",
                 "lexical_search",
+                "finalize",
+                "refuse",
             }
             return httpx.Response(
                 200,

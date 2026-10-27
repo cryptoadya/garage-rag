@@ -136,7 +136,7 @@ def test_agentic_provider_failure_after_tool_result_is_not_a_local_error(
                     "usage": {"prompt_tokens": 464, "completion_tokens": 48},
                 },
             )
-        assert body["tool_choice"] == "auto"
+        assert body["tool_choice"] == "required"
         assert "response_format" not in body and "reasoning_format" not in body
         assert body["messages"][-2]["tool_calls"][0]["id"] == "observed_call"
         assert body["messages"][-1]["tool_call_id"] == "observed_call"
@@ -652,7 +652,29 @@ def test_agentic_groq_native_loop_changes_strategy_from_tool_evidence(monkeypatc
         if "evidence auditor" in payload["messages"][0]["content"]:
             return success(json.dumps(audit()))
         if results and json.loads(results[-1]["content"])["sources"]:
-            return success("FINALIZE" if "tools" in payload else json.dumps(draft()))
+            if "tools" not in payload:
+                return success(json.dumps(draft()))
+            return httpx.Response(
+                200,
+                json={
+                    "choices": [
+                        {
+                            "finish_reason": "tool_calls",
+                            "message": {
+                                "content": None,
+                                "tool_calls": [
+                                    {
+                                        "id": "done",
+                                        "type": "function",
+                                        "function": {"name": "finalize", "arguments": "{}"},
+                                    }
+                                ],
+                            },
+                        }
+                    ],
+                    "usage": {"prompt_tokens": 20, "completion_tokens": 30},
+                },
+            )
         name = "lexical_search" if results else "dense_search"
         query = "cold tire pressure" if results else "Reifendruck prüfen"
         return httpx.Response(

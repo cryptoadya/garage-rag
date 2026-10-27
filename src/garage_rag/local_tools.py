@@ -2,6 +2,7 @@
 
 import json
 import re
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -12,6 +13,16 @@ class SearchArgs(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
     query: str = Field(min_length=1, max_length=500)
     top_k: int = Field(ge=1, le=5)
+
+
+class FinalizeArgs(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+
+class RefuseArgs(FinalizeArgs):
+    reason: Literal[
+        "insufficient_evidence", "ambiguous_question", "conflicting_sources", "out_of_scope"
+    ]
 
 
 TOOLS = [
@@ -32,10 +43,39 @@ TOOLS = [
     ]
 ]
 METHODS = {"dense_search": "dense", "lexical_search": "bm25"}
+CONTROL_TOOLS = [
+    {
+        "type": "function",
+        "function": {
+            "name": name,
+            "description": description,
+            "parameters": args.model_json_schema(),
+        },
+    }
+    for name, description, args in [
+        (
+            "finalize",
+            "Finish retrieval with existing evidence; separate writer and audit follow.",
+            FinalizeArgs,
+        ),
+        (
+            "refuse",
+            "Stop with a justified closed refusal reason, without another search.",
+            RefuseArgs,
+        ),
+    ]
+]
+PLANNER_TOOLS = [*TOOLS, *CONTROL_TOOLS]
+ARGUMENTS = {
+    "dense_search": SearchArgs,
+    "lexical_search": SearchArgs,
+    "finalize": FinalizeArgs,
+    "refuse": RefuseArgs,
+}
 
 
 def checked_tools(tools):
-    if not isinstance(tools, list) or not tools or any(t not in TOOLS for t in tools):
+    if not isinstance(tools, list) or not tools or any(t not in PLANNER_TOOLS for t in tools):
         raise GenerationError("Only predefined local retrieval tools are allowed")
     names = [t["function"]["name"] for t in tools]
     if len(names) != len(set(names)):
@@ -51,8 +91,8 @@ def checked_call(call, tools=TOOLS):
             r"[\w-]{1,128}", call["id"], re.ASCII
         ):
             raise ValueError
-        args = SearchArgs.model_validate(call["args"])
-        if not args.query.strip():
+        args = ARGUMENTS[call["name"]].model_validate(call["args"])
+        if isinstance(args, SearchArgs) and not args.query.strip():
             raise ValueError
         return args
     except (KeyError, TypeError, ValueError):

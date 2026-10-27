@@ -104,15 +104,15 @@ prompts, limits and frozen evaluation datasets/metrics remain unchanged.
 
 ```mermaid
 flowchart TD
-    M[Retrieval planner: no answer schema] --> C{Native search or plain control?}
+    M[Retrieval planner: no answer schema] --> C{Native search or terminal action?}
     C -- dense_search or lexical_search --> G{Allowlist, schema and budgets}
     G -- valid --> L[Local active Qdrant or BM25 search]
     L --> E[Accumulate whole evidence and native call/result pair]
     E --> B{Another planning turn fits?}
     B -- yes --> M
     B -- search/call ceiling --> D[Structured writer: no active tools]
-    C -- FINALIZE --> D
-    C -- REFUSE reason --> F[Refusal]
+    C -- finalize --> D
+    C -- refuse reason --> F[Refusal]
     D --> V[Existing citation/language and numeric gates]
     V --> A[Separate applicability/completeness audit]
     A -- accept --> O[Locally formatted cited answer]
@@ -122,11 +122,13 @@ flowchart TD
     A -- reject --> F
 ```
 
-Retrieval turns contain no answer/refusal JSON schema. The model chooses native
-search calls, a plain `FINALIZE`, or `REFUSE` followed by a closed reason code.
+Retrieval turns contain no answer JSON schema. The model chooses native
+search calls, `finalize` with an empty argument object, or `refuse` with a closed
+`reason` code. All planner turns use serial `tool_choice=required`; terminal
+actions allow stopping without another search. Plain text controls are rejected.
 The initial empty context is not grounds to declare documentation out of scope.
 Malformed controls and invented function names refuse without repair or retry.
-`FINALIZE` without evidence refuses without spending writer/audit calls.
+`finalize` without evidence refuses without spending writer/audit calls.
 
 The model still chooses tools and rewrites queries from returned evidence; no
 translation dictionary or fixed search order is prescribed. A separate writer
@@ -141,8 +143,13 @@ gates and mandatory audit. No additional search follows a failed final audit.
 `lexical_search`, each taking only a 1–500-character nonblank query and integer
 `top_k` 1–5. The CLI's `--top-k` further caps each call. Dense delegates to
 `Index.search`; BM25 reuses `Retriever` over active Qdrant generations. Each tool
-executes exactly one search. With `--min-score`, only dense is exposed so the
-cosine threshold cannot be silently discarded. No model-supplied filters, paths,
+executes exactly one search. The two additional native actions, `finalize` and
+`refuse`, are local graph transitions and consume no search slot. Their strict
+schemas reject extra arguments and unknown refusal reasons; they cannot return
+an answer or bypass the writer/audit. They are consumed locally and never replace
+the writer's last search/result pair. With `--min-score`, only dense search
+plus both terminal actions are exposed so the cosine threshold cannot be silently
+discarded. No model-supplied filters, paths,
 URLs, executable names, function registries or remote tools are accepted.
 
 Tool call IDs and results round-trip through native assistant/tool messages;
@@ -162,7 +169,7 @@ independent safety net. `--max-llm-calls`/`--max-searches` can lower these limit
 Two calls are reserved for separate writing and auditing, leaving at most four
 retrieval/control turns. With one search allowed (or only two calls remaining),
 retrieval routes straight to writing: one search + writer + audit still takes
-three calls. With the default free search budget, an early `FINALIZE` uses a
+three calls. With the default free search budget, an early `finalize` uses a
 separate control turn: one search + control + writer + audit takes four. Four
 searches + writer + audit take six. Budgets below three calls refuse before any
 LLM attempt. No unaudited supported answer is emitted.

@@ -176,7 +176,9 @@ class ScriptedScenarioLLM:
             ):
                 name, query, call_id = "lexical_search", self.scenario["followup"], "followup"
             else:
-                return AIMessage(content="FINALIZE")
+                return AIMessage(
+                    content="", tool_calls=[{"id": "finalize", "name": "finalize", "args": {}}]
+                )
             return AIMessage(
                 content="",
                 tool_calls=[{"id": call_id, "name": name, "args": {"query": query, "top_k": 5}}],

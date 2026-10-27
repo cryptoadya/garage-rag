@@ -23,6 +23,18 @@ def reply(value):
 
 
 def control(text="FINALIZE"):
+    if text == "FINALIZE" or text.startswith("REFUSE "):
+        return AIMessage(
+            content="",
+            tool_calls=[
+                {
+                    "id": "control",
+                    "name": "finalize" if text == "FINALIZE" else "refuse",
+                    "args": {} if text == "FINALIZE" else {"reason": text[7:]},
+                }
+            ],
+            response_metadata={"finish_reason": "tool_calls"},
+        )
     return AIMessage(content=text, response_metadata={"finish_reason": "stop"})
 
 

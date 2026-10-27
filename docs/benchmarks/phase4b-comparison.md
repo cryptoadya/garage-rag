@@ -394,3 +394,85 @@ execution; packet integrity, bounds/spacing, preserved failed reservations and
 unchanged runtime-source hashes were checked afterward. No full suite/package
 build was rerun for this report-only update. **Phase 4B remains open because the
 real three-mode comparison is incomplete.**
+
+## Planner protocol correction — offline only
+
+The two preserved live captures fail at the same boundary: the second Agentic
+planner request contains a valid first native search/result pair, then Groq
+returns HTTP 400 / `output_parse_failed` with free-form generated prose. Both
+requests advertised only search functions with `tool_choice=auto`, while the
+prompt also allowed plain-text `FINALIZE` / `REFUSE`. This establishes a repeated
+format failure, not a proven internal Groq parser cause. No retry, new model,
+reasoning-setting change or new live inference was used to diagnose this change.
+
+The minimal selected correction keeps the two existing search functions and adds
+strict native **`finalize({})` / `refuse({reason})`** actions. The planner now uses
+`tool_choice=required` with serial calls and no plain-text control path. Groq's
+[local tool documentation](https://console.groq.com/docs/tool-use/local-tool-calling#controlling-tool-use-behavior)
+specifies that required mode requests tool use; it can still return HTTP 400 if
+the model emits no tool. This is a protocol correction, not proof that Groq can
+no longer fail.
+
+Prompt-only changes with `auto` retain two output grammars. Required search-only
+tools prevent a clean early stop; that option was rejected. Replacing native
+retrieval with JSON planner output would require a different execution protocol.
+Native terminal actions keep one planner grammar while preserving autonomous
+method/query/top-k choice and completion/refusal without an extra search.
+
+Terminal actions are consumed locally: they do not execute retrieval, create
+sources, emit an answer or bypass the separate JSON writer and mandatory audit.
+The writer receives the last validated search/result pair with all accumulated
+evidence, excluding the terminal call. No-context finalize refuses. Unknown/
+extra arguments, batched actions, reused call IDs, mixed text/actions, repeated
+searches and provider failures stop without repair/retry. The score-filtered
+path removes BM25 but keeps both terminal actions. Existing call/search/token/
+step, context, numeric, citation, applicability and quota/session guards remain.
+Direct/Grounded prompts and wire formats, frozen datasets and historical reports
+are unchanged. The existing scripted evaluator emits a native finalize action
+for the new protocol; that remains fixture contract data, not quality evidence.
+
+Offline regressions exercise the actual graph and Groq adapter through
+`httpx.MockTransport`: a successful second planner turn after a local fixture
+result may search again, finalize or refuse. Finalize/refuse consume no extra
+search; writer/audit keep JSON mode without active tools. The preserved HTTP 400
+class still stops immediately, retaining failed reservations and missing usage.
+Transport fixtures cannot establish provider inference reliability.
+
+The toolkit result remains complete on original physical PDF page **23**, already
+sent to Grounded. The correction does not turn that case into an Agentic
+retrieval advantage or alter its frozen gold labels. Phase 4B remains open.
+
+Offline acceptance for this correction: **399 tests passed** with both provider
+keys blank and model downloads disabled; `ruff check .`, diff whitespace checks
+and sdist/wheel builds passed. The focused new tests first failed on the missing
+native-control behavior, then passed with the implementation. Zero new live API
+attempts; offline acceptance does not certify Groq's server-side parser fix.
+
+### Single proposed live smoke — NOT authorized or executed
+
+After offline acceptance, propose **one protocol-only two-request smoke**, not a
+new benchmark or quality comparison. Use the existing exact EN `hood_release`
+question, original BMW E39 PDF/index and baseline local retrieval; Groq
+`openai/gpt-oss-120b`, temperature zero, unchanged reasoning settings, pinned local
+tokenizer and **1,024 completion tokens including reasoning per request**.
+Hard ceilings: **2 API attempts / 16,000 held input+output tokens / 1 local
+search**, actual HTTP starts at least **61 seconds apart**. Require fresh binding,
+rolling cumulative quota/cooldown and full-budget checks from the latest real-run
+checkpoint (including both historical failed reservations); no overlapping
+snapshot addition, retries, fallback, resume, writer or auditor calls.
+
+A bounded execution-only probe would use the production planner prompt, closed
+native schemas, request reservation and call/result validation. First call starts
+empty; the model freely chooses its search method/query/top-k. Execute that one
+validated real local search and deliver its exact accumulated result under its
+actual call ID to the second planner call, with the same native action protocol.
+**Success requires an HTTP 200 second response containing exactly one valid
+native search/finalize/refuse action after consuming that real tool result.**
+Stop there; a proposed second search is recorded but not executed. This measures
+the previously failing continuation boundary, not answer quality or a completed
+Agentic workflow. If the first response is terminal, no sources are obtained,
+any guard/error occurs, or the second response is invalid, stop and preserve
+partial data; no extra request to obtain the desired path. Record raw request/
+response hashes, call IDs, sent sources, reservations, reported/missing usage
+and HTTP spacing. **No API request, live runner or scheduled launch is installed
+by this proposal.**

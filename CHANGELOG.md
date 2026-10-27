@@ -19,6 +19,11 @@ is available in [Git commits](https://github.com/cryptoadya/garage-rag/commits/m
 
 ### Fixed
 
+- Agentic planner uses serial required native search/finalize/refuse actions instead
+  of mixed tool calls and plain-text controls. Completion/refusal adds no search;
+  existing budgets, evidence gates and mandatory writer/audit remain unchanged.
+  Offline regressions cover the second planner turn after a native tool result;
+  provider-side reliability still requires a separately authorized live smoke.
 - Classify Agentic provider failures from structured HTTP/transport observations
   when the workflow returns a safe generic error; keep failures and their token
   reservations visible without changing generation, auditing or retry behavior.
