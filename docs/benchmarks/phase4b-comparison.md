@@ -3,6 +3,8 @@
 **Phase 4B remains open.** The authorized real-corpus run below stopped on a
 provider error after four attempts. One complete Grounded answer received a
 separate AI source review; no successful quality pair/triple or human review exists.
+A later two-request native planner smoke passed the continuation check only;
+it does not complete the three-mode comparison.
 
 Offline software acceptance, 2026-10-26, based on `main` / `v0.4.0` (`da4b3cc`).
 The earlier authorized Aurora attempt on 2026-10-27 stopped on a provider error
@@ -395,7 +397,7 @@ unchanged runtime-source hashes were checked afterward. No full suite/package
 build was rerun for this report-only update. **Phase 4B remains open because the
 real three-mode comparison is incomplete.**
 
-## Planner protocol correction — offline only
+## Planner protocol correction — offline acceptance
 
 The two preserved live captures fail at the same boundary: the second Agentic
 planner request contains a valid first native search/result pair, then Groq
@@ -448,7 +450,7 @@ and sdist/wheel builds passed. The focused new tests first failed on the missing
 native-control behavior, then passed with the implementation. Zero new live API
 attempts; offline acceptance does not certify Groq's server-side parser fix.
 
-### Single proposed live smoke — NOT authorized or executed
+### Preregistered smoke specification — subsequently authorized below
 
 After offline acceptance, propose **one protocol-only two-request smoke**, not a
 new benchmark or quality comparison. Use the existing exact EN `hood_release`
@@ -476,3 +478,86 @@ partial data; no extra request to obtain the desired path. Record raw request/
 response hashes, call IDs, sent sources, reservations, reported/missing usage
 and HTTP spacing. **No API request, live runner or scheduled launch is installed
 by this proposal.**
+
+
+## Authorized native planner smoke — continuation passed
+
+On **2026-10-27 18:21:30–18:22:32 UTC / 19:21:30–19:22:32 Europe/Berlin**, at
+**`e7626c8`**, the one explicitly authorized diagnostic ran the existing EN
+`hood_release` question against the original BMW E39 PDF and real local index.
+It used an ignored isolated runner with the production `AGENT_PROMPT`, closed
+native schemas, `_Budgeted` planner adapter, shared attempt/token/pacing guard,
+`LocalSearch`, context builder and native call/result validators. It did **not**
+invoke the full workflow. Production code, prompts, model/reasoning settings and
+benchmark data were not changed for execution.
+
+Preflight verified clean pinned code, PDF SHA256/186 pages, canonical dataset
+hash, baseline index fingerprint/241 active chunks, logical chunk digest and
+cached pinned tokenizer. The latest cumulative checkpoint was restored, not
+combined with overlapping snapshots. Rolling 86,400-second aging retained
+**15 requests / 23,316 tokens**, including both historical failed reservations
+(**4,040 and 3,847**), leaving **985 requests / 176,684 tokens** locally. The full
+**2-attempt / 16,000-token** allowance fit and no known cooldown remained.
+Historical same-key Free Plan attestation matched; current organization-wide
+balance/plan was not independently verified. No extra API quota probe was sent.
+
+The first planner freely selected `dense_search`, query
+`lever that unlocks the hood location`, top-k **5**. Exactly one real Qdrant/E5
+search returned physical PDF pages **137, 73, 66, 116, 37**. No warmup, BM25 call,
+fixed-query override, gold injection or ingestion occurred. BM25 remained
+available through the production native tool schema but was not selected.
+The complete actual source set was sent in a native tool result with the first
+assistant call's unchanged ID. Production prompt bounds reflected this probe:
+searches remaining **1**, then **0**, top-k cap **5**.
+
+**The second planner returned HTTP 200, `finish_reason=tool_calls`, and exactly
+one valid native `finalize({})` with a fresh call ID and no mixed text.** The
+request contained `system/user/assistant/tool` messages, the matching first
+call/result ID, the exact saved five-source set and unchanged native schemas.
+Both calls used Groq `openai/gpt-oss-120b`, temperature zero,
+`tool_choice=required`, `parallel_tool_calls=false`, existing reasoning settings
+and **1,024 completion tokens including reasoning**. The diagnostic stopped
+immediately after validating that response: **no second search, writer or audit**.
+
+| Resource | First planner | Second planner | Total / limit |
+| --- | ---: | ---: | ---: |
+| HTTP status | 200 | 200 | 2 attempts / 2 |
+| Held input+output reservation | 1,745 | 3,954 | **5,699 / 16,000** |
+| Reported input tokens | 565 | 2,558 | **3,123** |
+| Reported completion tokens | 51 | 42 | **93** |
+| Reasoning tokens, included in completion | 9 | 24 | **33** |
+| Reported actual total tokens | 616 | 2,600 | **3,216** |
+| Wire HTTP time | 0.800 s | 0.707 s | **1.506 s** |
+
+Actual HTTP starts were **61.080 seconds apart**. The diagnostic body took
+**61.830 s**, including **57.454 s** of execution-only pacing and **2.739 s** for
+the one cold local search. Initialization/preflight before that body is excluded;
+there is no full-workflow latency measurement. Provider-reported completion
+generation totaled 0.197 s; wire time also includes transport/queue work.
+Both usage records are present, so `token_usage_complete=true`. Session held
+reservations stayed **5,699** without refunds; provider-local rolling history
+records known actual usage, totaling **26,532 tokens**, while preserving both
+historical unknown-usage failure reservations. Final response headers reported
+RPD 998/1,000 and TPM 5,391/8,000 remaining; these snapshots do not verify TPD or
+organization-wide balance. No billed USD amount was measured.
+
+**Result: the preregistered continuation criterion passed once.** This is live
+evidence that this revised planner consumed a real tool result and returned a
+valid native completion action on its second request. It is not a complete
+answer/workflow, independent source review, statistical reliability estimate,
+proof of the old backend cause, or guarantee against future parser failures.
+Phase 4B's three-mode quality comparison remains incomplete. Grounded's toolkit
+answer remains supported by its already-sent page 23; this smoke establishes no
+Agentic retrieval-quality advantage.
+
+Exactly two API attempts and one local search occurred. There were no errors,
+retries, fallback, automatic resume or subsequent experiments. A durable one-shot
+marker prevents rerunning this authorization. The partial/final checkpoints,
+raw wire replies, first/second planner actions, actual sent sources, quota state
+and hash-bound verification remain ignored under
+`output/private/phase4b-native-smoke-e7626c8-20261027/`.
+**40 existing selected offline quota/reservation/pacing/native-protocol tests
+passed** before execution. Post-run checks verified the two HTTP 200s, closed
+action schemas, native pairing, source-set identity, spacing, limits, unchanged
+runtime-source hashes and retained historical failed reservations. No full suite
+or package build was rerun for this report-only update. No merge, tag or Release.
