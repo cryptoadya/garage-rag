@@ -19,6 +19,10 @@ is available in [Git commits](https://github.com/cryptoadya/garage-rag/commits/m
 
 ### Fixed
 
+- Groq Agentic planner uses strict Structured Outputs decisions with local search
+  dispatch, without combining native tools and structured output. Schema overhead
+  stays inside shared token/quota guards; Direct/Grounded and writer/auditor keep
+  their existing behavior. Historical 400s are replayed offline, not retried live.
 - Agentic planner uses serial required native search/finalize/refuse actions instead
   of mixed tool calls and plain-text controls. Completion/refusal adds no search;
   existing budgets, evidence gates and mandatory writer/audit remain unchanged.

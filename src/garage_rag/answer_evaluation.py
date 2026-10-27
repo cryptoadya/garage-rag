@@ -71,6 +71,11 @@ class BudgetedPacedLLM:
     def invoke(self, messages):
         return self._invoke(messages, self.llm)
 
+    def bind_planner(self):
+        from .planner import PLANNER_FORMAT
+
+        return EvaluationBinding(self, self.llm.bind_planner(), PLANNER_FORMAT)
+
     def bind_tools(self, tools, **kwargs):
         return EvaluationBinding(self, self.llm.bind_tools(tools, **kwargs), tools)
 

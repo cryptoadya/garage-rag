@@ -702,3 +702,54 @@ run. Packet integrity, fixed actual order, full-request D/G identity, unchanged
 runtime source hashes, resource caps/spacing and failed-reservation retention
 were verified afterward. No full suite/build was rerun for this report-only
 update. There was no additional experiment, production change, merge or Release.
+
+
+## Structured planner revision — offline acceptance, live not authorized
+
+The latest preserved failure emitted text `{"action":"finalize"}` under required
+native tools. Groq planner now uses a **single strict JSON decision schema**,
+without tools/tool_choice in those requests. `search` chooses dense/BM25, query
+and top-k; finalize/refuse have no search side effect. All five schema fields
+are required; unused fields must be null. Local validation rejects incompatible
+combinations, unknown/extra arguments and invalid searches. The old captured
+minimal JSON is rejected for missing required fields, not silently repaired.
+
+Local search history becomes ordinary assistant/user JSON for the planner.
+The last locally generated search/result correlation pair supplies the existing
+writer path, preserving accumulated sources and warning/conflict checks. It is
+not represented as a provider-generated native call. Writer/auditor, Direct/
+Grounded, search/context/step/call ceilings and shared quota/session guards stay
+in place. Schema overhead is reserved alongside messages and full completion
+allowance; exact response-format hashes are captured and verified in review
+packets. Groq never falls back to the retained optional non-Groq native path.
+No model answers, questions, corpus, retrieval rankings or BMW gold labels changed.
+
+Offline tests cover the actual graph and transport: adaptive local searches,
+second-planner finalize/refuse, schema incompatibilities, capture integrity,
+shared no-refund budget enforcement and preservation of errors/unknown usage.
+All three preserved private 400 responses are replayed exactly where locally
+available; portable error-class cases also run without private captures. These
+are contract regressions, not live inference or quality measurements. Earlier
+failed runs, successful diagnostic and page-23 toolkit finding remain intact.
+Phase 4B remains open pending a complete source-reviewed live comparison.
+
+Offline acceptance: **416 local tests passed**, including three exact private
+error-response replays; those three skip when private captures are absent, while
+portable error-class regressions still run. Ruff, diff checks and sdist/wheel
+builds passed. Zero live API requests were made for this revision. This does not
+certify Groq inference reliability or complete Phase 4B.
+
+Proposed **one final comparison, not authorized or launched here**: unchanged
+hood_release then toolkit_access; **Direct → Grounded → Agentic** per question,
+one trial, six planned outputs. Original PDF and frozen baseline Qdrant/BM25,
+Groq GPT-OSS 120B, 1,024 completion tokens including reasoning, maximum **22 API
+attempts / 128,000 held tokens**, actual starts **>=61 s** apart. Before any
+separately authorized execution, verify the exact new code/schema/tokenizer and
+corpus bindings, latest cumulative rolling quota history including every failed
+reservation, full worst-case headroom and cooldown. Use one shared guard/marker,
+stop the entire run on the first error; no retry/fallback/resume or tuning.
+Save all actual contexts and resources including schema/pacing/failures, then
+perform separate source-based AI review with explicit non-human provenance,
+existing hash-bound rescoring and matched pair/triple summaries. The prior
+native-protocol runner is incompatible and must not be reused unchanged; no
+launch or automation is installed by this proposal.

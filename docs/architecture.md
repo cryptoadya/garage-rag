@@ -104,7 +104,7 @@ prompts, limits and frozen evaluation datasets/metrics remain unchanged.
 
 ```mermaid
 flowchart TD
-    M[Retrieval planner: no answer schema] --> C{Native search or terminal action?}
+    M[Retrieval planner: no answer schema] --> C{Validated search or terminal decision?}
     C -- dense_search or lexical_search --> G{Allowlist, schema and budgets}
     G -- valid --> L[Local active Qdrant or BM25 search]
     L --> E[Accumulate whole evidence and native call/result pair]
@@ -122,10 +122,12 @@ flowchart TD
     A -- reject --> F
 ```
 
-Retrieval turns contain no answer JSON schema. The model chooses native
-search calls, `finalize` with an empty argument object, or `refuse` with a closed
-`reason` code. All planner turns use serial `tool_choice=required`; terminal
-actions allow stopping without another search. Plain text controls are rejected.
+Groq planner turns use a single strict structured JSON decision schema, with no
+native tools in those requests. `action` selects search/finalize/refuse; required
+nullable method/query/top_k/reason fields are checked locally for compatibility.
+Local search execution still uses the closed dense/BM25 allowlist and budgets.
+The optional non-Groq backend retains its serial native protocol. No protocol
+switch occurs as a fallback after errors. Terminal decisions require no search.
 The initial empty context is not grounds to declare documentation out of scope.
 Malformed controls and invented function names refuse without repair or retry.
 `finalize` without evidence refuses without spending writer/audit calls.
@@ -133,7 +135,9 @@ Malformed controls and invented function names refuse without repair or retry.
 The model still chooses tools and rewrites queries from returned evidence; no
 translation dictionary or fixed search order is prescribed. A separate writer
 receives fresh answer instructions and **no active tools**, with the last validated
-native assistant/tool pair containing all accumulated evidence. The original
+local assistant/tool correlation pair containing all accumulated evidence.
+For Groq this pair is generated locally after validated JSON search; planner
+history serializes it as ordinary assistant/user JSON, without provider tools. The original
 `tool_call_id` is returned even when the search/call cap routes directly to writing.
 Earlier planning prompts and control replies are omitted from the writer, reducing
 format ambiguity and token overhead. The writer's JSON passes the existing local
@@ -143,7 +147,8 @@ gates and mandatory audit. No additional search follows a failed final audit.
 `lexical_search`, each taking only a 1–500-character nonblank query and integer
 `top_k` 1–5. The CLI's `--top-k` further caps each call. Dense delegates to
 `Index.search`; BM25 reuses `Retriever` over active Qdrant generations. Each tool
-executes exactly one search. The two additional native actions, `finalize` and
+executes exactly one search. In the retained native backend the terminal actions are
+`finalize` and
 `refuse`, are local graph transitions and consume no search slot. Their strict
 schemas reject extra arguments and unknown refusal reasons; they cannot return
 an answer or bypass the writer/audit. They are consumed locally and never replace
@@ -152,13 +157,14 @@ plus both terminal actions are exposed so the cosine threshold cannot be silentl
 discarded. No model-supplied filters, paths,
 URLs, executable names, function registries or remote tools are accepted.
 
-Tool call IDs and results round-trip through native assistant/tool messages;
+The non-Groq backend round-trips native call IDs; Groq uses local correlation IDs.
+In both paths,
 malformed/unknown/batched calls, duplicate IDs and repeated tool/query/top-k tuples
 stop before execution. Search results return all accumulated whole evidence with
 stable `S1…S20` IDs. Deduplication uses document/page/text. The serialized source
 budget remains 12,000 characters; unlike baseline context packing, overflowing
 any accumulated evidence refuses rather than dropping a warning or conflict.
-Earlier tool messages remain in the bounded retrieval history. At most 20 passages can
+Earlier search results remain in the bounded retrieval history. At most 20 passages can
 be returned by four searches of five hits; tool and transcript overhead consumes
 the separate token budget. There is no checkpoint, persistent agent memory or
 agent-controlled filesystem mutation.
@@ -175,7 +181,7 @@ searches + writer + audit take six. Budgets below three calls refuse before any
 LLM attempt. No unaudited supported answer is emitted.
 
 `--max-total-tokens` defaults to 24,000, accepts 1–48,000 and bounds the sum of
-conservative request reservations: full input/history, tool schemas and the full
+conservative request reservations: full input/history, decision/tool schemas and the full
 per-call completion allowance including reasoning. Reservations are never refunded
 within a question, even for failed calls or missing usage. Observed usage remains
 separately reported. A request that cannot fit is stopped before invocation; no

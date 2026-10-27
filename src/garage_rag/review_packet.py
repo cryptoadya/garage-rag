@@ -27,6 +27,7 @@ def write_packet(report, captures, directory):
                 raise ValueError("Mismatched private capture sources")
             for private_key, public_key in (
                 ("tools", "tools_sha256"),
+                ("response_format", "response_format_sha256"),
                 ("response_tool_calls", "response_tool_calls_sha256"),
             ):
                 if (private_key in call) != (public_key in public) or (

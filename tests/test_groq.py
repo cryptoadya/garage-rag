@@ -106,41 +106,19 @@ def test_agentic_provider_failure_after_tool_result_is_not_a_local_error(
 
     monkeypatch.setenv("GROQ_MAX_TOKENS", "1024")
     requests = []
-    arguments = json.dumps({"query": "Aurora manual tailgate release location", "top_k": 5})
 
     def transport(request):
         body = json.loads(request.content)
         requests.append(body)
+        from test_structured_planner import decision
+
+        assert body["response_format"]["type"] == "json_schema"
+        assert "tools" not in body and "tool_choice" not in body
         if len(requests) == 1:
-            return httpx.Response(
-                200,
-                json={
-                    "choices": [
-                        {
-                            "message": {
-                                "role": "assistant",
-                                "tool_calls": [
-                                    {
-                                        "id": "observed_call",
-                                        "type": "function",
-                                        "function": {
-                                            "name": "dense_search",
-                                            "arguments": arguments,
-                                        },
-                                    }
-                                ],
-                            },
-                            "finish_reason": "tool_calls",
-                        }
-                    ],
-                    "usage": {"prompt_tokens": 464, "completion_tokens": 48},
-                },
+            return success(
+                decision("search", method="dense", query="Aurora release location", top_k=5)
             )
-        assert body["tool_choice"] == "required"
-        assert "response_format" not in body and "reasoning_format" not in body
-        assert body["messages"][-2]["tool_calls"][0]["id"] == "observed_call"
-        assert body["messages"][-1]["tool_call_id"] == "observed_call"
-        assert body["messages"][-1]["role"] == "tool"
+        assert json.loads(body["messages"][-1]["content"])["sources"]
         return httpx.Response(
             status,
             json={
@@ -638,7 +616,9 @@ def test_tool_response_with_multiple_calls_cannot_trigger_parallel_search(monkey
 
 
 @pytest.mark.parametrize("initial_empty", [False, True])
-def test_agentic_groq_native_loop_changes_strategy_from_tool_evidence(monkeypatch, initial_empty):
+def test_agentic_groq_structured_loop_changes_strategy_from_local_evidence(
+    monkeypatch, initial_empty
+):
     from test_workflow import audit, draft, hit
 
     from garage_rag.agentic import AgenticLimits, run_agentic
@@ -648,58 +628,28 @@ def test_agentic_groq_native_loop_changes_strategy_from_tool_evidence(monkeypatc
     def transport(request):
         payload = json.loads(request.content)
         requests.append(payload)
-        results = [m for m in payload["messages"] if m["role"] == "tool"]
+        from test_structured_planner import decision
+
+        # User sources for structured planner; native local pair for unchanged writer.
+        results = [
+            m
+            for m in payload["messages"]
+            if m["role"] in {"user", "tool"} and "sources" in json.loads(m["content"])
+        ]
         if "evidence auditor" in payload["messages"][0]["content"]:
             return success(json.dumps(audit()))
+        if payload["response_format"]["type"] != "json_schema":
+            return success(json.dumps(draft()))
+        assert "tools" not in payload
         if results and json.loads(results[-1]["content"])["sources"]:
-            if "tools" not in payload:
-                return success(json.dumps(draft()))
-            return httpx.Response(
-                200,
-                json={
-                    "choices": [
-                        {
-                            "finish_reason": "tool_calls",
-                            "message": {
-                                "content": None,
-                                "tool_calls": [
-                                    {
-                                        "id": "done",
-                                        "type": "function",
-                                        "function": {"name": "finalize", "arguments": "{}"},
-                                    }
-                                ],
-                            },
-                        }
-                    ],
-                    "usage": {"prompt_tokens": 20, "completion_tokens": 30},
-                },
+            return success(decision("finalize"))
+        return success(
+            decision(
+                "search",
+                method="bm25" if results else "dense",
+                query="cold tire pressure" if results else "Reifendruck prüfen",
+                top_k=1,
             )
-        name = "lexical_search" if results else "dense_search"
-        query = "cold tire pressure" if results else "Reifendruck prüfen"
-        return httpx.Response(
-            200,
-            json={
-                "choices": [
-                    {
-                        "finish_reason": "tool_calls",
-                        "message": {
-                            "content": None,
-                            "tool_calls": [
-                                {
-                                    "id": f"c{len(requests)}",
-                                    "type": "function",
-                                    "function": {
-                                        "name": name,
-                                        "arguments": json.dumps({"query": query, "top_k": 1}),
-                                    },
-                                }
-                            ],
-                        },
-                    }
-                ],
-                "usage": {"prompt_tokens": 100, "completion_tokens": 50},
-            },
         )
 
     def search(method, query, k):
@@ -725,7 +675,7 @@ def test_agentic_groq_native_loop_changes_strategy_from_tool_evidence(monkeypatc
         )
     assert result.answer.supported
     assert len(requests) == result.trace.llm_calls == (5 if initial_empty else 3)
-    assert result.trace.input_tokens == (260 if initial_empty else 140)
+    assert result.trace.input_tokens == (100 if initial_empty else 60)
     assert searches == (
         [("dense", "Reifendruck prüfen"), ("bm25", "cold tire pressure")]
         if initial_empty

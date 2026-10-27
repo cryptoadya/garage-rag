@@ -177,37 +177,28 @@ Agentic defaults to Groq even when `GARAGE_RAG_PROVIDER=openrouter`. An explicit
 Phase 4A makes no OpenRouter live/quality comparison. Other workflows keep their
 provider defaults and existing JSON completion wire format.
 
-For `openai/gpt-oss-120b`, the agent sends only the predefined local function
-schemas with `tool_choice=required` and `parallel_tool_calls=false`. Both
-`finalize` and `refuse` are available alongside dense/BM25 searches, so required
-tool use does not require another search. The adapter rejects a required binding
-without both terminal actions; its existing low-level `auto` binding remains
-available. Groq documents
-[local tools but no parallel tool use](https://console.groq.com/docs/tool-use/overview)
-for this model. Assistant call IDs/JSON arguments and matching `role=tool` results
-are validated and serialized on the next request. Every planner response must
-contain one validated native action; a plain `stop` response is invalid.
-`length`, malformed calls and API errors stop without repair or retry. The API
-never receives `browser_search`, `code_interpreter` or remote MCP definitions.
+Groq Agentic planner now uses [Structured Outputs](https://console.groq.com/docs/structured-outputs)
+with `response_format.type=json_schema` and `strict=true`, supported for GPT-OSS
+120B. It sends no native tools, tool choice or parallel-tool options. One closed
+object requires action/method/query/top_k/reason; unused fields are explicitly
+null. Local strict validation rejects incompatible arguments, unknown methods/
+reasons, blank queries, invalid top-k and extra fields before local dispatch.
+The model still chooses dense/BM25, query and top-k. Results/history are ordinary
+JSON chat data. A locally generated search correlation pair supplies the unchanged
+writer path; it is not a native call returned by the provider. The legacy native
+planner remains for the optional non-Groq backend; it is not a fallback after a
+Groq error.
 
-Retrieval turns omit `response_format` and the answer JSON instructions. A separate
-writer uses the JSON-object completion path with no active tools, followed by the
-mandatory audit. Its last historical assistant/tool pair still has to pass the
-closed allowlist and ID pairing checks; historical calls never enable new tool
-execution. Byte reservation includes their arguments/IDs and results even when
-no tools are advertised. Final JSON is validated locally. Groq's
-[Structured Outputs](https://console.groq.com/docs/structured-outputs) do not support
-tool use. Tool turns set `reasoning_effort=low` and
-`include_reasoning=false`; GPT-OSS does **not** accept `reasoning_format`, per the
-[reasoning documentation](https://console.groq.com/docs/reasoning). Suppressed
-reasoning still consumes the completion/token allowance; it is never replayed or
-stored in telemetry. There is no streaming or parallel execution.
+Writer/auditor retain JSON-object completions and existing evidence/semantic gates.
+Structured planner requests retain `reasoning_effort=low`, `include_reasoning=false`
+and the full completion allowance including hidden reasoning. Schema bytes plus
+a framing margin are reserved in addition to full message/output accounting,
+including with the pinned tokenizer. The same per-question/shared-session and
+RPM/TPM/RPD/TPD guards apply to bound planner requests. Captures bind the exact
+response format and sent source sets for offline review. No retry, schema repair,
+paid/model fallback or automatic resume is introduced. Offline transport tests
+cannot establish server-side inference reliability.
 
-The same Groq client/history and RPM/TPM/RPD/TPD guards protect tool and audit
-requests. Byte accounting includes tool schemas, serialized native calls, results
-and framing; the pinned offline tokenizer receives both messages and `tools`
-through its Harmony template, plus the existing 256-token framing margin.
-Reservations are conservative estimates, not proof of identical server framing.
 Different `ask` processes do not share quota history, and other clients' usage is
 unknown until headers/errors; run one experiment sequentially and verify available
 organization quota first. API-reported RPD/TPM reductions are enforced. Neither

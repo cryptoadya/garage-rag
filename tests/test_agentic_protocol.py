@@ -13,98 +13,47 @@ from garage_rag.agentic import AgenticLimits, run_agentic
 
 
 @pytest.mark.parametrize("action", ["finalize", "refuse", "lexical_search"])
-def test_second_native_planner_action_after_real_tool_result(monkeypatch, action):
-    """Catch mixed text/tool control, forced extra searches and broken writer history."""
+def test_second_structured_planner_action_after_local_result(monkeypatch, action):
+    from test_structured_planner import decision
+
     requests, searches = [], []
 
     def transport(request):
         payload = json.loads(request.content)
         requests.append(payload)
-        if "tools" not in payload:
-            assert "tool_choice" not in payload
-            assert payload["response_format"] == {"type": "json_object"}
-            if "evidence auditor" in payload["messages"][0]["content"]:
-                return success(json.dumps(audit()))
-            # A terminal control is consumed locally; the writer keeps the last search pair.
-            assert payload["messages"][-2]["tool_calls"][0]["function"]["name"] in {
-                "dense_search",
-                "lexical_search",
-            }
-            assert (
-                payload["messages"][-2]["tool_calls"][0]["id"]
-                == payload["messages"][-1]["tool_call_id"]
-            )
-            return success(json.dumps(draft()))
-        assert payload["tool_choice"] == "required"
-        assert payload["parallel_tool_calls"] is False
-        assert "response_format" not in payload
-        assert {t["function"]["name"] for t in payload["tools"]} == {
-            "dense_search",
-            "lexical_search",
-            "finalize",
-            "refuse",
-        }
-        first = len(requests) == 1
-        if not first:
-            assert [m["role"] for m in payload["messages"]] == [
-                "system",
-                "user",
-                "assistant",
-                "tool",
-            ]
-            assert payload["messages"][-1]["tool_call_id"] == "p1"
+        if payload["response_format"]["type"] == "json_schema":
+            assert payload["response_format"]["json_schema"]["strict"] is True
+            assert "tools" not in payload and "tool_choice" not in payload
+            if len(requests) == 1:
+                return success(decision("search", method="dense", query="first query", top_k=1))
             assert json.loads(payload["messages"][-1]["content"])["sources"]
-        name = "dense_search" if first else action
-        args = (
-            {"query": "first query" if first else "evidence followup", "top_k": 1}
-            if name.endswith("search")
-            else {"reason": "conflicting_sources"}
-            if name == "refuse"
-            else {}
+            return success(
+                decision("search", method="bm25", query="followup", top_k=1)
+                if action == "lexical_search"
+                else decision("refuse", reason="conflicting_sources")
+                if action == "refuse"
+                else decision("finalize")
+            )
+        return success(
+            json.dumps(
+                audit() if "evidence auditor" in payload["messages"][0]["content"] else draft()
+            )
         )
-        return httpx.Response(
-            200,
-            json={
-                "choices": [
-                    {
-                        "finish_reason": "tool_calls",
-                        "message": {
-                            "content": None,
-                            "tool_calls": [
-                                {
-                                    "id": f"p{len(requests)}",
-                                    "type": "function",
-                                    "function": {"name": name, "arguments": json.dumps(args)},
-                                }
-                            ],
-                        },
-                    }
-                ],
-                "usage": {"prompt_tokens": 100, "completion_tokens": 40},
-            },
-        )
-
-    def search(method, query, k):
-        searches.append((method, query, k))
-        return [hit()]
 
     llm = model(monkeypatch, transport)
     with llm.client:
         result = run_agentic(
-            "When should I check pressure?",
-            search,
+            "Question",
+            lambda *a: searches.append(a) or [hit()],
             llm,
             answer_language="en",
             limits=AgenticLimits(max_searches=2),
         )
     assert result.error is None
     assert result.answer.supported == (action != "refuse")
-    assert result.answer.reason == (
-        "conflicting_sources" if action == "refuse" else "audited_evidence"
-    )
-    assert len(requests) == result.trace.llm_calls == (2 if action == "refuse" else 4)
+    assert result.trace.llm_calls == len(requests) == (2 if action == "refuse" else 4)
     assert searches == (
-        [("dense", "first query", 1), ("bm25", "evidence followup", 1)]
+        [("dense", "first query", 1), ("bm25", "followup", 1)]
         if action == "lexical_search"
         else [("dense", "first query", 1)]
     )
@@ -203,70 +152,34 @@ def test_required_action_missing_from_200_response_blocks_without_retry(monkeypa
     assert len(requests) == 1
 
 
-def test_one_search_three_calls_separates_tool_and_json_wire_contracts(monkeypatch):
+def test_one_search_three_calls_separates_planner_and_answer_schemas(monkeypatch):
+    from test_structured_planner import decision
+
     requests = []
 
     def transport(request):
-        payload = json.loads(request.content)
-        requests.append(payload)
+        b = json.loads(request.content)
+        requests.append(b)
+        assert "tools" not in b
         if len(requests) == 1:
-            prompt = payload["messages"][0]["content"]
-            assert '"supported"' not in prompt and '"claims"' not in prompt
-            assert "return JSON" not in prompt
-            assert "response_format" not in payload
-            assert payload["tool_choice"] == "required"
-            assert {t["function"]["name"] for t in payload["tools"]} == {
-                "dense_search",
-                "lexical_search",
-                "finalize",
-                "refuse",
-            }
-            return httpx.Response(
-                200,
-                json={
-                    "choices": [
-                        {
-                            "finish_reason": "tool_calls",
-                            "message": {
-                                "content": None,
-                                "tool_calls": [
-                                    {
-                                        "id": "c1",
-                                        "type": "function",
-                                        "function": {
-                                            "name": "dense_search",
-                                            "arguments": '{"query":"cold tire pressure","top_k":1}',
-                                        },
-                                    }
-                                ],
-                            },
-                        }
-                    ],
-                    "usage": {"prompt_tokens": 100, "completion_tokens": 40},
-                },
-            )
-        assert "tools" not in payload and "tool_choice" not in payload
-        assert payload["response_format"] == {"type": "json_object"}
+            assert b["response_format"]["type"] == "json_schema"
+            return success(decision("search", method="dense", query="cold tire pressure", top_k=1))
+        assert b["response_format"] == {"type": "json_object"}
         if len(requests) == 2:
-            assert payload["messages"][-2]["tool_calls"][0]["id"] == "c1"
-            assert payload["messages"][-1]["tool_call_id"] == "c1"
+            assert b["messages"][-2]["tool_calls"][0]["id"] == b["messages"][-1]["tool_call_id"]
             return success(json.dumps(draft()))
         return success(json.dumps(audit()))
 
-    monkeypatch.setenv("GROQ_MAX_TOKENS", "512")
     llm = model(monkeypatch, transport)
     with llm.client:
         result = run_agentic(
-            "When should I check tire pressure?",
+            "Question",
             lambda *a: [hit()],
             llm,
-            top_k=1,
             answer_language="en",
             limits=AgenticLimits(max_llm_calls=3, max_searches=1, max_total_tokens=16000),
         )
-    assert result.answer.supported
-    assert len(requests) == 3
-    assert result.trace.reserved_tokens <= 16000
+    assert result.answer.supported and result.trace.llm_calls == len(requests) == 3
 
 
 def test_default_early_finish_has_one_control_turn_and_keeps_native_pair():

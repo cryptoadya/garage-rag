@@ -70,6 +70,7 @@ def quota_headers(headers):
 
 class GroqLLM:
     provider = "groq"
+    structured_planner_supported = True
     temperature = 0
 
     def __init__(self, model=None, api_key=None):
@@ -119,6 +120,9 @@ class GroqLLM:
         self._resume_after = 0.0
         self.quota_observer = None
 
+    def bind_planner(self):
+        return _PlannerLLM(self)
+
     def bind_tools(self, tools, *, tool_choice="auto", parallel_tool_calls=False):
         tools = checked_tools(tools)
         if tool_choice not in ("auto", "required") or parallel_tool_calls is not False:
@@ -128,6 +132,15 @@ class GroqLLM:
         return _ToolLLM(self, tools, tool_choice)
 
     def request_reservation(self, messages, tools=None):
+        from .planner import PLANNER_FORMAT
+
+        if isinstance(tools, dict):
+            if tools != PLANNER_FORMAT:
+                raise GenerationError("Only the closed planner schema is allowed")
+            payload = wire_messages(messages)
+            if any(m["role"] == "tool" or m.get("tool_calls") for m in payload):
+                raise GenerationError("Structured planner cannot use native tools")
+            return self.reserve_tokens(payload) + len(json.dumps(tools).encode()) + 256
         return self.reserve_tokens(wire_messages(messages, tools), tools)
 
     def reserve_tokens(self, payload, tools=None):
@@ -178,11 +191,13 @@ class GroqLLM:
     def invoke(self, messages):
         return self._invoke(messages)
 
-    def _invoke(self, messages, tools=None, tool_choice="auto"):
+    def _invoke(self, messages, tools=None, tool_choice="auto", response_format=None):
         payload = wire_messages(messages, tools)
         # UTF-8 bytes bound byte-level tokenizer text tokens conservatively. Include
         # chat framing and reserve the full completion budget, including reasoning.
-        reserve = self.reserve_tokens(payload, tools)
+        if response_format and tools:
+            raise GenerationError("Structured outputs cannot be combined with native tools")
+        reserve = self.request_reservation(messages, response_format or tools)
         now = time.monotonic()
         self._history = [entry for entry in self._history if now - entry[0] < 86400]
         if self._blocked or time.time() < self._resume_after:
@@ -226,7 +241,14 @@ class GroqLLM:
                             "include_reasoning": False,
                         }
                         if tools
-                        else {"response_format": {"type": "json_object"}}
+                        else {
+                            "response_format": response_format or {"type": "json_object"},
+                            **(
+                                {"reasoning_effort": "low", "include_reasoning": False}
+                                if response_format
+                                else {}
+                            ),
+                        }
                     ),
                 },
             )
@@ -336,3 +358,16 @@ class _ToolLLM:
 
     def invoke(self, messages):
         return self.llm._invoke(messages, self.tools, self.tool_choice)
+
+
+class _PlannerLLM:
+    def __init__(self, llm):
+        self.llm = llm
+
+    def __getattr__(self, name):
+        return getattr(self.llm, name)
+
+    def invoke(self, messages):
+        from .planner import PLANNER_FORMAT
+
+        return self.llm._invoke(messages, response_format=PLANNER_FORMAT)

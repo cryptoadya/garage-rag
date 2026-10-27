@@ -72,6 +72,11 @@ class ObservedEvaluationLLM:
     def invoke(self, messages):
         return self._invoke(messages, self.llm)
 
+    def bind_planner(self):
+        from .planner import PLANNER_FORMAT
+
+        return EvaluationBinding(self, self.llm.bind_planner(), PLANNER_FORMAT)
+
     def bind_tools(self, tools, **kwargs):
         return EvaluationBinding(self, self.llm.bind_tools(tools, **kwargs), tools)
 
@@ -90,8 +95,9 @@ class ObservedEvaluationLLM:
         }
         private = {"messages": captured}
         if tools:
-            private["tools"] = deepcopy(tools)
-            public["tools_sha256"] = digest(tools)
+            field = "response_format" if isinstance(tools, dict) else "tools"
+            private[field] = deepcopy(tools)
+            public[field + "_sha256"] = digest(tools)
         self.calls.append(private)
         self.public_calls.append(public)
         started = time.perf_counter()
