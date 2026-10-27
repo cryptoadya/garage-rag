@@ -1,10 +1,13 @@
 # Phase 4B: direct / grounded / agentic
 
-**Phase 4B remains open.** The authorized real-corpus run below stopped on a
-provider error after four attempts. One complete Grounded answer received a
-separate AI source review; no successful quality pair/triple or human review exists.
-A later two-request native planner smoke passed the continuation check only;
-it does not complete the three-mode comparison.
+**Phase 4B is NOT READY for closure.** The latest authorized six-output comparison
+stopped on attempt five: Agentic's second planner emitted text JSON instead of a
+required native action, producing HTTP 400 / `tool_use_failed`. Direct/Grounded
+hood answers form one complete, source-supported tie; Agentic has no completed
+answer and all toolkit modes are missing. The earlier successful diagnostic
+smoke remains valid but did not establish full-workflow reliability. See the
+[final comparison result](#final-authorized-comparison--partial-not-ready-for-closure).
+All source assessments are explicitly AI-based, not independent human review.
 
 Offline software acceptance, 2026-10-26, based on `main` / `v0.4.0` (`da4b3cc`).
 The earlier authorized Aurora attempt on 2026-10-27 stopped on a provider error
@@ -561,3 +564,141 @@ passed** before execution. Post-run checks verified the two HTTP 200s, closed
 action schemas, native pairing, source-set identity, spacing, limits, unchanged
 runtime-source hashes and retained historical failed reservations. No full suite
 or package build was rerun for this report-only update. No merge, tag or Release.
+
+
+## Final authorized comparison — partial, not ready for closure
+
+The user authorized one further full comparison after the native smoke, with
+**`hood_release`, then `toolkit_access`; Direct → Grounded → Agentic for each**.
+This explicitly changes the original randomized schedule to preserve a usable
+Direct/Grounded comparison if Agentic fails. The six-row order and reason were
+saved in a timestamped/hash-bound private protocol amendment **before generation**.
+An execution-only scheduling reference orders the existing evaluator; no
+production workflow, prompt, question, retrieval rule or frozen benchmark changed.
+Seed `20261027` is retained as metadata, **not a randomized-order claim**. The
+original frozen protocol and earlier measurements remain preserved.
+
+The run used PR code **`65da46f`** (native runtime from `e7626c8`) on
+**2026-10-27 18:28:46–18:32:51 UTC / 19:28:46–19:32:51 Europe/Berlin**.
+Groq `openai/gpt-oss-120b`, temperature zero, existing reasoning settings and
+**1,024 completion tokens including reasoning** were unchanged. Hard session
+caps were **22 attempts / 128,000 no-refund reserved input+output tokens**, with
+actual HTTP starts at least **61 seconds apart**, no retry/fallback/resume and
+stop on the first error.
+
+### Preflight and actual stop
+
+Original PDF SHA256/186 pages, canonical dataset hash, baseline index fingerprint,
+241 active chunks, frozen logical chunk digest, local pinned tokenizer and clean
+code bindings matched. Latest cumulative history came from the successful native
+smoke, including historical failed reservations **4,040 and 3,847**. Rolling
+86,400-second aging retained **17 requests / 26,532 tokens** and left
+**983 local requests / 173,468 tokens**, enough for the full session ceiling.
+No overlapping histories were added or midnight reset applied; no known cooldown
+remained. The same historically verified Free Plan key matched. Current
+organization-wide balance/plan was not independently verified, and no extra API
+quota probe was sent. Both provider/local guards and a one-shot marker remained.
+
+The order actually reached was **hood Direct → Grounded → Agentic**. Attempts
+1–4 returned HTTP 200. Attempt **5** returned **HTTP 400**, error type
+`invalid_request_error`, code **`tool_use_failed`**, message that required tool
+choice was unmet. Saved failed generation was **`{"action":"finalize"}`** as
+plain JSON text, not a native `tool_calls` object. The experiment stopped
+immediately, exit status 2. **All three toolkit modes were not run.** Failed
+usage is unknown; its full **3,467-token reservation** remains held.
+This error differs from the earlier `output_parse_failed` responses but occurs
+at the same second-planner-after-tool-result boundary. No local repair, retry,
+conversion of that JSON into a tool call, or further live diagnosis was attempted.
+
+### Source quality and actual retrieval
+
+Direct and Grounded each used the original dense top-5: physical PDF pages
+**137, 73, 66, 37, 68**. Their initial **entire HTTP request bodies**, sent source
+hashes, drafts, final answer text and cited quote are identical. The sole claim
+correctly locates the lever under the left-hand side of the instrument panel,
+with a valid exact quote/document/physical-page-137 mapping. Grounded performed
+its audit without retrieval expansion.
+
+A separate Codex AI reviewer fixed source judgments before reading auditor
+verdicts or costs, inspecting the original PDF, a fresh page-137 render and all
+**15 sent chunk/page checks**. For **each** of the two non-error answers:
+**1/1 supported claims, complete_answer=true, 1/1 supported citations**, preserved
+applicability and no relevant warning omission for the location-only question.
+Answer hashes differ because the workflow reason metadata differs. Grounded's
+same-model `accept`/`complete=true` agrees here, but did not supply the labels.
+Review is **unblinded separate AI assessment, not independent human evaluation**.
+Hash-bound claim/source labels and per-claim citation/warning notes were saved
+and the existing offline rescoring path succeeded.
+
+Agentic autonomously selected **`lexical_search` (real BM25)**, query
+`lever that unlocks the hood`, top-k **5**, returning/sending pages
+**137, 33, 6, 73, 102**. Its actual planner context already contained sufficient
+page-137 evidence. The following request preserved the native search/result ID
+and advertised all four required serial actions, but produced the provider error
+above before writer/audit. Its generic user-facing refusal is **not a scored
+semantic false refusal**. It obtained no necessary fact absent from Grounded;
+**no retrieval recovery or quality advantage was observed**.
+
+The previous diagnostic smoke used one remaining search then zero and dense
+results; the full workflow used its unchanged normal remaining-search budget
+(four then three) and model-selected BM25 results. The continuation inputs were
+therefore different. The smoke's valid native finalize remains a real single
+success; it did not demonstrate reliable native termination under the normal
+full workflow. This run demonstrates a remaining output-contract failure, without
+proving the provider's internal cause or warranting a speculative production fix.
+
+Toolkit was not measured in this run. Its earlier complete Grounded result on
+already-sent **page 23** remains intact; it cannot be counted as a matched row
+here or described as evidence of an Agentic retrieval advantage.
+
+### Resources and matched comparison
+
+| Hood mode | Outcome | API / searches | Held tokens | Reported input + completion | Paced workflow wall | Wire HTTP, including failure |
+| --- | --- | ---: | ---: | --- | ---: | ---: |
+| Direct | Complete, source-supported | 1 / 1 | 3,879 | 2,627 + 222 = **2,849** | 0.937 s | 0.850 s |
+| Grounded | Same complete answer | 2 / 1 | 7,914 | 5,410 + 492 = **5,902** | 122.154 s | 1.460 s |
+| Agentic | Provider error before writer/audit | 2 / 1 | 5,212 | 565 + 55 = **620**, plus unknown failed usage | 121.586 s | 1.066 s |
+| Toolkit, all modes | Not run after stop | 0 / 0 | 0 | Not run | — | — |
+
+Total: **5/22 API attempts**, **17,005/128,000 held tokens**, **9,371 reported
+actual tokens plus unknown failed-call usage** (8,602 input + 769 completion,
+including **548 reasoning tokens**). Overall usage is incomplete, not zero for
+the failed request. Three workflow searches plus **one separately excluded local
+warmup** occurred. Actual HTTP intervals were **61.082 / 61.087 / 61.078 / 61.087 s**.
+
+Whole execution was **248.383 s**, including **3.730 s** initialization before
+first HTTP. Wire time totaled **3.376 s** including failure; execution-only pacing
+was **240.955 s**, also including the wait before the failure (0 / 120.584 /
+120.371 s by Direct/Grounded/Agentic). These paced, serial-order workflow wall
+times do not measure intrinsic latency differences. Known successful provider
+completion generation totaled **1.611 s**; failed inference time is unknown.
+No billed USD total was verified. Latest cumulative quota checkpoint retains
+all historical unknown-usage reservations plus the new failed 3,467 reservation;
+response-time remaining headers do not establish organization-wide/TPD balance.
+
+Using existing `paired_summary` separately for each pair gives **1 matched
+Direct/Grounded pair, 0 Direct/Agentic pairs, 0 Grounded/Agentic pairs and 0 full
+triples**. The source-reviewed D/G pair is a quality tie. Grounded used one extra
+audit call and **5,902 versus 2,849** reported tokens for the same answer; that
+single easy, preselected case does not establish a general mode ranking. Agentic
+failed with incomplete cost data and no quality-scored final answer; no quality
+pair or efficiency superiority can be inferred from it. Missing/error rows are
+not promoted to semantic refusals, and historical runs are not pooled into a
+completed six-row comparison.
+
+**Closure decision: NOT READY.** Only two of six planned answers completed;
+there is no successful full-workflow Agentic answer or matched three-mode
+comparison. Native termination remains unreliable in the observed full-workflow
+continuation despite offline acceptance and one passed smoke. The bounded stop
+and preservation of the Direct/Grounded pair worked; they do not satisfy the
+remaining live acceptance boundary. No representative, statistical, multilingual
+or vehicle-safety conclusion follows from this small selected sample.
+
+Private amendment/order events, requests/replies, captures, reviews, pairwise
+rescoring, resource verification, cumulative quota state and one-shot marker are
+ignored under `output/private/phase4b-final-live-65da46f-20261027/`.
+**41 selected existing offline guard/protocol/pairing tests passed** before the
+run. Packet integrity, fixed actual order, full-request D/G identity, unchanged
+runtime source hashes, resource caps/spacing and failed-reservation retention
+were verified afterward. No full suite/build was rerun for this report-only
+update. There was no additional experiment, production change, merge or Release.
