@@ -1,10 +1,11 @@
 # Phase 4B: direct / grounded / agentic
 
-**Phase 4B remains open.** Offline checks and the interrupted Aurora run do not
-replace the required real-corpus three-mode comparison and separate source review.
+**Phase 4B remains open.** The authorized real-corpus run below stopped on a
+provider error after four attempts. One complete Grounded answer received a
+separate AI source review; no successful quality pair/triple or human review exists.
 
 Offline software acceptance, 2026-10-26, based on `main` / `v0.4.0` (`da4b3cc`).
-A single authorized live attempt on 2026-10-27 stopped on a provider error
+The earlier authorized Aurora attempt on 2026-10-27 stopped on a provider error
 (see below); no independent human review was performed. **The offline results
 do not measure LLM quality or establish Agentic superiority.** The existing
 answer evaluator, captures and review packet are extended; historical Phase 2/3
@@ -264,8 +265,9 @@ completion tokens including reasoning and actual HTTP spacing of at least
 path, not a new evaluation framework. Gold passages, questions, independent
 source-review criteria and resource ceilings are fixed before future generation.
 Local real-index contract replies are controlled refusals, not model-quality
-results. **Only offline diagnosis/preparation occurred in this task; the next
-live run requires explicit user permission. Phase 4B remains open.**
+results. **At preparation commit `a6fbe15`, only offline diagnosis/preparation had
+occurred. The subsequent user-authorized real run is recorded below; the frozen
+protocol is retained unchanged. Phase 4B remains open.**
 
 Preparation validation: **384 tests passed** with model downloads disabled and
 both API keys blank; Ruff and diff whitespace checks passed. The pinned-tokenizer
@@ -274,3 +276,121 @@ triples with controlled refusals, checked identical initial Direct/Grounded
 contexts and generated an integrity-checked review packet. It made zero API
 calls and does not establish live answer quality. No package build was needed
 for the reporting-only runtime correction.
+
+## Authorized real-corpus run — partial, stopped on first error
+
+On **2026-10-27 17:59:52–18:02:56 UTC / 18:59:52–19:02:56 Europe/Berlin**, the
+user-authorized one-shot experiment ran exactly at `a6fbe15`, using the frozen
+[real-corpus protocol](phase4b-real-live-protocol.md). Two unchanged EN needs,
+`hood_release` and `toolkit_access`, one trial per Direct/Grounded/Agentic mode,
+were planned. Groq `openai/gpt-oss-120b`, temperature zero, completion cap 1,024
+including reasoning, existing prompts/reasoning settings and serial native tools
+were unchanged. Seed `20261027` scheduled toolkit Grounded → Agentic → Direct,
+then hood Grounded → Agentic → Direct. There was no retry, fallback, resume,
+additional experiment, production change, merge, tag or Release.
+
+### Integrity, quotas and execution controls
+
+Immediately before execution, original PDF SHA256, 186 pages, canonical dataset
+SHA256, baseline index fingerprint, 241 active chunks, logical chunk digest,
+frozen protocol hash, clean code commit and locally cached pinned tokenizer
+revision all matched the protocol. The latest cumulative quota checkpoint was
+selected after scanning saved checkpoints; its historical failed 4,040-token
+reservation was preserved. Aging the rolling 86,400-second window retained
+**11 requests / 14,188 reserved tokens**, leaving **185,812 tokens / 989 local
+requests**: sufficient for the full **128,000-token / 22-attempt** ceiling.
+No calendar-midnight reset or overlapping snapshot addition was used; no known
+cooldown remained. The same historically verified Free Plan key matched.
+Current organization-wide balance and billing plan were not independently
+verified; stale headers were not represented as a current balance.
+
+The adapted, ignored execution-only runner restored that history, retained the
+existing shared no-refund guard across all modes/tool bindings, checked the
+actual request model/cap and used a durable one-shot marker. Actual HTTP start
+intervals were **61.091 / 61.074 / 61.083 seconds**. Provider/local quota guards
+remained active. The final response headers reported RPD 996/1,000 remaining
+and TPM 5,363/8,000 remaining; these are response-time snapshots, not TPD or
+organization-wide guarantees. The failed 3,847-token reservation remains held.
+
+### Observed outcomes and retrieval
+
+| Case / mode | Outcome | API attempts / workflow searches | Held tokens | Reported input + completion | Workflow wall time | Wire HTTP time, including failure |
+| --- | --- | ---: | ---: | --- | ---: | ---: |
+| Toolkit / Grounded | Complete, source-supported answer | 2 / 1 | 6,636 | 4,132 + 632 = 4,764 | 62.440 s | 2.278 s |
+| Toolkit / Agentic | HTTP 400 before writer/audit | 2 / 1 | 5,513 | 468 + 49 = 517; failed-call usage unknown | 121.373 s | 0.908 s |
+| Toolkit / Direct | Not run after stop | 0 / 0 | 0 | Not run | — | — |
+| Hood / all three modes | Not run after stop | 0 / 0 | 0 | Not run | — | — |
+
+Total: **4/22 attempts**, **12,149/128,000 held tokens**, **5,281 reported actual
+tokens plus unknown failed-call usage**: 4,600 input and 681 completion tokens,
+including 496 reported reasoning tokens. Missing usage is not zero. There were
+three HTTP 200 replies; attempt four returned HTTP 400,
+`invalid_request_error` / `output_parse_failed`. Its failed generation expressed
+an intention to search further, rather than a valid native tool call. Execution
+stopped immediately with exit status 2. This repeats the provider parsing failure
+class seen in Aurora; its backend cause remains unproven. No live diagnosis or
+repair was attempted. Agentic's generic user-facing refusal is a provider failure,
+not a scored semantic refusal or corpus-relative false refusal.
+
+Grounded used genuine dense top-5 pages **23, 180, 85, 31, 100**. Page 23 already
+states the tool kit's location on the inside of the luggage compartment
+lid/tailgate and the wing-screw opening procedure. Both requested facts were
+present in the actual sent context. It produced a complete answer citing that
+page and its matching quote, then received same-model auditor acceptance.
+There was no top-20 expansion. **Preparation's inference that absent gold page
+150 meant missing necessary evidence was incorrect.** Page 150 is a valid source,
+but page 23 independently supplies equivalent facts. Frozen gold-page/chunk
+match flags are false for this answer; they are an incomplete gold-set measure,
+not evidence that its citation is invalid. Frozen labels were not changed.
+
+Agentic started without context and chose one native `dense_search`, query
+`onboard tool kit access location vehicle manual`, top-k 5. Actual sent pages
+were **180, 182, 181, 8, 31**: index pointers/manual notes, insufficient for both
+requested facts. Its next planner call failed before another search, writing or
+auditing. **No BM25 call or retrieval recovery occurred.** Grounded already had
+the necessary evidence, so merely retrieving page 150 would not have established
+recovery beyond Grounded. Genuine BM25 remained available through unchanged
+local tools; the model did not select it before the failure.
+
+### Separate source assessment and limits
+
+A **separate Codex AI source-review agent**, distinct from the execution agent
+and workflow generator/auditor, fixed judgments before consulting auditor
+verdicts or costs. It inspected original physical pages 137/150 and freshly
+rendered cited page 23, checked all ten sent source/page entries against
+the original text, and saved answer/context-hash-bound labels plus per-claim
+citation/applicability/warning notes. The sole non-error answer has **1/1 supported
+claims, complete_answer=true, 1/1 supported citations**, correct quote/document/
+physical-page mapping and no omitted warning relevant to the stated location/
+access claim. It volunteers no servicing/closing instructions or specifications.
+The same-model auditor agrees here; its verdict was not an evaluation label.
+The earlier Aurora false completeness acceptance remains a measured weakness.
+
+Offline rescoring through the existing evaluator succeeded. Agentic's error row
+remains unscored; missing modes remain missing. There are **zero successful
+matched pairs/triples** (`paired_summary` has zero matched pairs), so there is
+no quality ranking or evidence of Agentic superiority. Review was **AI-based,
+unblinded and not independent human evaluation**. Two preselected, previously
+used EN needs, with only one usable final answer, establish no multilingual,
+representative, statistical or vehicle-safety conclusion.
+
+Whole execution was **187.615 s**, including **3.636 s before first HTTP** for
+initialization/local warmup. Exactly **one local warmup search** is excluded from
+the two metered workflow searches. Total wire HTTP time including failure was
+**3.187 s**; workflow non-HTTP time was **180.627 s**, mostly pacing plus local
+retrieval/tokenization/orchestration. Successful-call telemetry records 119.758 s
+of limiter wait; failed-call pacing metadata is missing, so it is not a complete
+wait total. Provider-reported successful completion generation totaled 1.435 s;
+failed inference duration is unknown. Wire time includes transport/queue work
+and is not pure inference. No billed USD total was verified; historical Free
+Plan attestation is not an invoice measurement.
+
+All raw requests/replies, partial captures, cumulative quota state, one-shot
+marker, review packet, separate AI reviews, rescored report and hash-bound
+resource verification remain ignored under
+`output/private/phase4b-real-live-executed-20261027/`. **35 existing selected
+offline quota/reservation/tool-binding/pacing/tokenizer tests passed** before
+execution; packet integrity, bounds/spacing, preserved failed reservations and
+unchanged runtime-source hashes were checked afterward. No full suite/package
+build was rerun for this report-only update. **Phase 4B remains open because the
+real three-mode comparison is incomplete.**
