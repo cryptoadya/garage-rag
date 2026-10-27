@@ -1,6 +1,7 @@
 # Phase 4B: direct / grounded / agentic
 
 Offline software acceptance, 2026-10-26, based on `main` / `v0.4.0` (`da4b3cc`).
+The authorized live preflight on 2026-10-27 stopped before generation (see below).
 No live generation or independent human review was performed. **These results
 do not measure LLM quality or establish Agentic superiority.** The existing
 answer evaluator, captures and review packet are extended; historical Phase 2/3
@@ -122,38 +123,60 @@ or cross-document retrieval only when independent review confirms enough recover
 complete answers to justify its additional calls, tokens and latency. No such
 general model-quality or production-cost advantage is established offline.
 
-## One bounded live proposal — not executed
+## Authorized live preflight — blocked before execution
 
-After offline acceptance, the single proposed run selects `simple` and
-`follow_reference`, EN/DE/RU, one trial: six matched triples / eighteen outputs,
-one Groq `openai/gpt-oss-120b` model, temperature zero, 1,024 completion tokens per
-call, byte reservation accounting and 6 RPM. This tests ordinary overhead and a
-targeted-retrieval opportunity; it does not cover every safety category live.
+Checked **2026-10-27 08:51 UTC / 09:51 Europe/Berlin** at PR head `f9bbd87`.
+This supersedes the earlier 18-output proposal. The only authorized experiment
+was `follow_reference`, EN, Direct/Grounded/Agentic, one trial each, Groq
+`openai/gpt-oss-120b`, temperature zero, `max_completion_tokens=1024` including
+reasoning; at most **11 API attempts**, **64,000 reserved input+output tokens**,
+and **61 seconds between HTTP starts**. No retries, fallback, automatic restart,
+additional experiment, merge or Release.
 
-Maximum **66 API attempts** = 6 × (1 Direct + 4 Grounded + 6 Agentic).
-Maximum reserved input+output **384,000 tokens** = 6 × (8,000 Direct +
-4 × 8,000 Grounded + 24,000 Agentic): the existing Groq per-request TPM preflight
-caps a request at 8,000 and Agentic reserves at most 24,000 per question. The
-session guard additionally enforces that total without refunds, including failed
-attempts and reasoning. Completion tokens are at most **67,584** = 66 × 1,024,
-already included in the total. Existing account quotas can stop the run earlier;
-neither allowance nor a complete matrix is promised.
+| Local 24-hour quota check | Result |
+| --- | ---: |
+| Requests retained / local RPD cap | 87 / 1,000 |
+| Tokens retained / local TPD cap | 162,873 / 200,000 |
+| Available local token headroom | 37,127 |
+| Required full-run reservation | 64,000 |
+| Reservation shortfall | 26,873 |
+| New API attempts / actual tokens / reserved tokens | 0 / 0 / 0 |
 
-Only after separate explicit permission and current Free Plan confirmation:
+The latest persisted cumulative quota state was saved on 2026-10-26 at
+18:37:27 UTC. Its SHA256 is
+`804e191fe97b162cb4cce86fc8217e6ebe93d92d2e51fbcf4e3f591d900dd085`.
+Each history entry was aged by elapsed wall time exactly as `restore_quota`
+requires; entries expire after 86,400 seconds. **Calendar midnight does not clear
+this rolling history.** Older snapshots overlap and were not added again. The
+140,300-token historical aggregate remains active until approximately
+2026-10-27 15:45:59 UTC / 16:45:59 Europe/Berlin under this conservative local
+accounting; this is not confirmation of the provider's reset or future balance.
+The earlier unknown-usage failure remains charged conservatively. Stale RPD/TPM
+headers and an elapsed cooldown do not prove available TPD. No browser, Console
+or API quota probe was used; current organization-wide usage was not verified.
 
-```bash
-GROQ_MAX_TOKENS=1024 GROQ_TOKEN_ACCOUNTING=bytes \
-  python -m garage_rag.answer_evaluation --live --provider groq \
-  --model openai/gpt-oss-120b --dataset benchmarks/aurora-comparative.v1.json \
-  --modes direct grounded agentic --cases simple follow_reference \
-  --languages en de ru --trials 1 --seed 20261026 \
-  --max-api-calls 66 --max-total-tokens 384000 --requests-per-minute 6 \
-  --output output/benchmarks/phase4b-live.json \
-  --private-captures output/private/phase4b-live.json
-```
+Source inspection confirms the existing session guard shares attempt/token
+counts across all modes and native tool bindings, reserves before invocation,
+keeps failed-call reservations and never refunds the session total on success.
+All four local RPM/RPD/TPM/TPD guards remain applicable. The CLI's slowest built-in pacing
+is 60.01 seconds, so an execution-only HTTP-start guard would be required to meet
+61 seconds; none was installed or exercised because preflight failed. Production
+logic, prompts, workflows, benchmark inputs and quota history were not changed.
+The private preflight is retained under ignored
+`output/private/phase4b-live-20261027/preflight.json`.
 
-Stop on the first provider/session-budget error. No retries, fallback, model
-switch, automatic resume or additional experiment is proposed. A partial matrix
-stays partial. If authorized, review the exact evidence and append the outcome
-to this report once. Phase 4B offline acceptance ends with passing checks/CI and
-the reviewable PR; this optional run does not block it. No merge, tag or Release.
+**Decision: do not launch.** The full authorized reservation does not fit the
+available local budget. No mode ran, no local retrieval was executed, and no
+automatic later run was scheduled. Actual answers, completeness, citation
+entailment, Agentic evidence recovery, per-mode tokens, calls, searches and
+latencies therefore remain **unmeasured**, not zero-quality results. There are
+no new same-model auditor decisions or separate source-review judgments; the
+controlled offline reference-following result above remains fixture evidence.
+
+This is a real quota blocker for the requested live comparison, with no new
+production defect established by the preflight. Existing offline software
+acceptance remains intact: [CI for `f9bbd87` passed](https://github.com/cryptoadya/garage-rag/actions/runs/40385567263).
+Tests were not rerun for this report-only update. Phase 4B meets its previously
+stated offline completion boundary, but the requested live evaluation is
+**blocked and incomplete**; no live-quality or Agentic-superiority conclusion is
+supported. No merge, tag or Release was performed.
