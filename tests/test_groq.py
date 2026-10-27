@@ -91,6 +91,102 @@ def test_free_plan_requires_explicit_confirmation(monkeypatch):
         make_llm(provider="groq", api_key="private-test-key")
 
 
+@pytest.mark.parametrize(
+    "status, category",
+    [(400, "provider_or_network_error"), (401, "authentication"), (429, "rate_limit")],
+)
+def test_agentic_provider_failure_after_tool_result_is_not_a_local_error(
+    monkeypatch, status, category
+):
+    from langchain_core.documents import Document
+
+    from garage_rag.agentic import run_agentic
+    from garage_rag.answer_evaluation import _row
+    from garage_rag.index import SearchHit
+
+    monkeypatch.setenv("GROQ_MAX_TOKENS", "1024")
+    requests = []
+    arguments = json.dumps({"query": "Aurora manual tailgate release location", "top_k": 5})
+
+    def transport(request):
+        body = json.loads(request.content)
+        requests.append(body)
+        if len(requests) == 1:
+            return httpx.Response(
+                200,
+                json={
+                    "choices": [
+                        {
+                            "message": {
+                                "role": "assistant",
+                                "tool_calls": [
+                                    {
+                                        "id": "observed_call",
+                                        "type": "function",
+                                        "function": {
+                                            "name": "dense_search",
+                                            "arguments": arguments,
+                                        },
+                                    }
+                                ],
+                            },
+                            "finish_reason": "tool_calls",
+                        }
+                    ],
+                    "usage": {"prompt_tokens": 464, "completion_tokens": 48},
+                },
+            )
+        assert body["tool_choice"] == "auto"
+        assert "response_format" not in body and "reasoning_format" not in body
+        assert body["messages"][-2]["tool_calls"][0]["id"] == "observed_call"
+        assert body["messages"][-1]["tool_call_id"] == "observed_call"
+        assert body["messages"][-1]["role"] == "tool"
+        return httpx.Response(
+            status,
+            json={
+                "error": {
+                    "type": "invalid_request_error",
+                    "code": "output_parse_failed",
+                    "message": "Parsing failed.",
+                    "failed_generation": "Need more detail.",
+                }
+            },
+        )
+
+    llm = model(monkeypatch, transport)
+    hits = [
+        SearchHit(
+            Document(
+                page_content=(
+                    "For the Aurora manual tailgate release, "
+                    "see the emergency release instructions."
+                ),
+                metadata={"document": "aurora-synthetic.pdf", "pdf_page": 1},
+            ),
+            1.0,
+        )
+    ]
+    with llm.client:
+        result = run_agentic(
+            "Where is the Aurora manual tailgate release?",
+            lambda *args: hits,
+            llm,
+            answer_language="en",
+        )
+        with pytest.raises(GenerationError):
+            llm.invoke([HumanMessage(content="Must not retry")])
+    assert len(requests) == result.trace.llm_calls == 2
+    assert result.trace.search_calls == 1
+    assert result.trace.provider_errors[-1]["http_status"] == status
+    assert not result.trace.public_dict()["token_usage_complete"]
+    assert llm._history[-1][1] > 1024  # Unknown failed usage keeps the full reservation.
+    assert "Need more detail" not in result.error
+    row = _row(
+        result, {"id": "observed_failure", "expected": "answer"}, "en", "agentic", 1, scripted=False
+    )
+    assert row["error"] and row["error_category"] == category
+
+
 def test_observed_groq_timeout_keeps_provider_identity_and_safe_trace(monkeypatch):
     from garage_rag.source_evaluation import ObservedEvaluationLLM
 

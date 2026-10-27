@@ -300,7 +300,7 @@ def _row(result, case, language, mode, trial, *, scripted):
         "supported": result.answer.supported,
         "reason": result.answer.reason,
         "error": result.error is not None,
-        "error_category": _error_category(result.error),
+        "error_category": _error_category(result.error, result.trace.provider_errors),
         "expected_answerable": answerable,
         "returned_claims": len(claims),
         "claim_support": support,
@@ -444,9 +444,21 @@ def _refresh_summaries(report):
             }
 
 
-def _error_category(message):
+def _error_category(message, provider_errors=None):
     if not message:
         return None
+    # Workflows deliberately replace provider details with a safe generic message.
+    # Prefer the structured observation rather than misclassifying that message.
+    for error in reversed(provider_errors or []):
+        status = error.get("http_status")
+        if status == 429:
+            return "rate_limit"
+        if status in (401, 403):
+            return "authentication"
+        if status == 404:
+            return "free_model_unavailable"
+        if status is not None or error.get("category") in {"timeout", "transport_error"}:
+            return "provider_or_network_error"
     if "rate limit" in message or message.startswith(("Groq local", "Groq reported", "Groq quota")):
         return "rate_limit"
     if "authentication" in message:
@@ -623,7 +635,7 @@ def _evaluate(
                 print(
                     f"{case['id']}/{language}/{mode}: {result.answer.reason}; "
                     f"{result.trace.llm_calls} calls"
-                    + (f"; {_error_category(result.error)}" if result.error else ""),
+                    + (f"; {row['error_category']}" if result.error else ""),
                     file=sys.stderr,
                     flush=True,
                 )

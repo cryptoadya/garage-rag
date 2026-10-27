@@ -17,6 +17,12 @@ is available in [Git commits](https://github.com/cryptoadya/garage-rag/commits/m
   Comparative live runs require explicit caps and private captures; no live calls
   are part of offline acceptance. Package version prepares the upcoming 0.5.0.
 
+### Fixed
+
+- Classify Agentic provider failures from structured HTTP/transport observations
+  when the workflow returns a safe generic error; keep failures and their token
+  reservations visible without changing generation, auditing or retry behavior.
+
 ## [0.4.0] - 2026-10-26
 
 ### Added

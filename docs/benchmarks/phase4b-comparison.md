@@ -1,5 +1,8 @@
 # Phase 4B: direct / grounded / agentic
 
+**Phase 4B remains open.** Offline checks and the interrupted Aurora run do not
+replace the required real-corpus three-mode comparison and separate source review.
+
 Offline software acceptance, 2026-10-26, based on `main` / `v0.4.0` (`da4b3cc`).
 A single authorized live attempt on 2026-10-27 stopped on a provider error
 (see below); no independent human review was performed. **The offline results
@@ -211,6 +214,63 @@ The software's existing offline acceptance remains intact. This live experiment
 exposed **two real blockers to successful live acceptance**: provider output
 parsing stopped Agentic, and the same-model auditor accepted an incomplete
 Grounded answer. One case does not establish their frequency or a general model
-advantage. Phase 4B's offline boundary is met, but a successful three-mode live
-comparison is **not complete**. No production tuning, extra live run, merge, tag
-or Release was performed.
+advantage. The offline checks are not a Phase 4B completion decision: the required
+real-corpus three-mode comparison is **not complete** and Phase 4B remains open.
+No production tuning, extra live run, merge, tag or Release was performed.
+
+## Offline diagnosis and real-corpus preparation, 2026-10-27
+
+The preserved failed request is a native planner continuation, not an answer-JSON
+request. Its assistant call has the permitted function and valid JSON arguments;
+its following tool result uses the same call ID. `tool_choice=auto`, serial tools,
+`reasoning_effort=low`, `include_reasoning=false`, and absent `response_format` /
+`reasoning_format` match the local protocol and documented Groq options. Earlier
+successful local traces use the same continuation structure. See Groq's
+[local tool-calling protocol](https://console.groq.com/docs/tool-use/local-tool-calling)
+and [reasoning parameters](https://console.groq.com/docs/reasoning). No confirmed
+malformed-request or call-pairing defect was found; no production prompt,
+reasoning option or auditor behavior was changed to improve the benchmark.
+
+Offline replay used `httpx.MockTransport`, with **both serialized request bodies
+exactly equal to the saved Agentic requests**. Replaying the recorded first 200
+and then the 400 reproduces the safe two-attempt stop, one search, retained
+unknown-usage reservation and no retry. Returning the same `Need more detail.`
+text as a hypothetical 200 instead produces `invalid_planner_output`: it is not
+one of the allowed planner commands. This is a local response-handling test,
+**not reproduction of Groq inference or its server parser**. A model/parser
+formatting failure is plausible; a transient backend issue cannot be excluded.
+There is no usage/finish metadata proving completion-cap truncation. Root cause
+and provider-side reproducibility remain unproven; no speculative fix or new
+live request was made.
+
+One separate defect **was confirmed and fixed**: the report categorized the
+Agentic safe generic error as `local_or_workflow_error` despite a structured
+HTTP 400 in its trace. New regression cases first failed for 400/401/429, then
+passed when classification used the structured provider observation; console
+progress now uses the same row category. Stop/retry/reservation and answer/audit
+behavior are unchanged. The historical raw report remains intact, including
+its original category; it is not silently rewritten after the fact.
+
+The measured Grounded `accept` / `complete=true` on the incomplete documentary
+pointer remains unchanged in this report and the preserved hash-bound review.
+Its genuine quote is not reinterpreted as evidence of the missing location.
+
+The next proposal is preregistered in
+[the real-corpus protocol](phase4b-real-live-protocol.md): two fixed existing EN
+questions, the original BMW E39 PDF and existing baseline Qdrant/E5/BM25 index,
+six planned outputs, at most **22 attempts / 128,000 held tokens**, 1,024
+completion tokens including reasoning and actual HTTP spacing of at least
+61 seconds. It uses the existing evaluator, capture/review packet and rescoring
+path, not a new evaluation framework. Gold passages, questions, independent
+source-review criteria and resource ceilings are fixed before future generation.
+Local real-index contract replies are controlled refusals, not model-quality
+results. **Only offline diagnosis/preparation occurred in this task; the next
+live run requires explicit user permission. Phase 4B remains open.**
+
+Preparation validation: **384 tests passed** with model downloads disabled and
+both API keys blank; Ruff and diff whitespace checks passed. The pinned-tokenizer
+real-index contract completed six local workflow executions / two matched
+triples with controlled refusals, checked identical initial Direct/Grounded
+contexts and generated an integrity-checked review packet. It made zero API
+calls and does not establish live answer quality. No package build was needed
+for the reporting-only runtime correction.
