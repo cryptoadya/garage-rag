@@ -1,8 +1,8 @@
 # Phase 4B: direct / grounded / agentic
 
 Offline software acceptance, 2026-10-26, based on `main` / `v0.4.0` (`da4b3cc`).
-The authorized live preflight on 2026-10-27 stopped before generation (see below).
-No live generation or independent human review was performed. **These results
+A single authorized live attempt on 2026-10-27 stopped on a provider error
+(see below); no independent human review was performed. **The offline results
 do not measure LLM quality or establish Agentic superiority.** The existing
 answer evaluator, captures and review packet are extended; historical Phase 2/3
 datasets, baselines and direct/grounded runtime behavior are unchanged.
@@ -123,60 +123,94 @@ or cross-document retrieval only when independent review confirms enough recover
 complete answers to justify its additional calls, tokens and latency. No such
 general model-quality or production-cost advantage is established offline.
 
-## Authorized live preflight — blocked before execution
+## One authorized live run — partial, stopped on provider error
 
-Checked **2026-10-27 08:51 UTC / 09:51 Europe/Berlin** at PR head `f9bbd87`.
-This supersedes the earlier 18-output proposal. The only authorized experiment
-was `follow_reference`, EN, Direct/Grounded/Agentic, one trial each, Groq
-`openai/gpt-oss-120b`, temperature zero, `max_completion_tokens=1024` including
-reasoning; at most **11 API attempts**, **64,000 reserved input+output tokens**,
-and **61 seconds between HTTP starts**. No retries, fallback, automatic restart,
-additional experiment, merge or Release.
+On **2026-10-27 16:51–16:54 UTC / 17:51–17:54 Europe/Berlin**, at PR head
+`30f6307`, the existing evaluator selected `follow_reference`, EN, one planned trial per mode,
+Groq `openai/gpt-oss-120b`, temperature zero, 1,024 completion tokens **including
+reasoning**. Hard ceilings were 11 API attempts and 64,000 reserved input+output
+tokens, with at least 61 seconds between actual HTTP starts. Seed `20261026`
+selected the order **Grounded → Agentic → Direct**. Workflows, prompts, dataset,
+retrieval fixtures and production guards were unchanged.
 
-| Local 24-hour quota check | Result |
-| --- | ---: |
-| Requests retained / local RPD cap | 87 / 1,000 |
-| Tokens retained / local TPD cap | 162,873 / 200,000 |
-| Available local token headroom | 37,127 |
-| Required full-run reservation | 64,000 |
-| Reservation shortfall | 26,873 |
-| New API attempts / actual tokens / reserved tokens | 0 / 0 / 0 |
+The morning preflight had correctly refused to start with only 37,127 local
+tokens available. On this second, explicitly requested check, the latest
+cumulative quota state retained **16 requests / 18,156 tokens** in the rolling
+24-hour window, leaving **181,844 tokens**: enough for the full reservation.
+Entries were aged, not cleared at midnight; overlapping older states were not
+added again. Historical Free Plan evidence matched the same key. Current account
+plan/organization-wide balance was not independently verified; no browser,
+Console or extra API probe was used. Provider quota guards remained active.
 
-The latest persisted cumulative quota state was saved on 2026-10-26 at
-18:37:27 UTC. Its SHA256 is
-`804e191fe97b162cb4cce86fc8217e6ebe93d92d2e51fbcf4e3f591d900dd085`.
-Each history entry was aged by elapsed wall time exactly as `restore_quota`
-requires; entries expire after 86,400 seconds. **Calendar midnight does not clear
-this rolling history.** Older snapshots overlap and were not added again. The
-140,300-token historical aggregate remains active until approximately
-2026-10-27 15:45:59 UTC / 16:45:59 Europe/Berlin under this conservative local
-accounting; this is not confirmation of the provider's reset or future balance.
-The earlier unknown-usage failure remains charged conservatively. Stale RPD/TPM
-headers and an elapsed cooldown do not prove available TPD. No browser, Console
-or API quota probe was used; current organization-wide usage was not verified.
+An ignored one-shot runner restored that history and retained the evaluator's
+shared no-refund attempt/token guard across every mode and native tool binding.
+It added execution-only HTTP spacing and a durable start marker preventing
+reruns. All four attempts used the specified model/token cap; starts were
+**61.063 / 61.068 / 61.066 seconds apart**. There were no retries, fallback,
+automatic resume or subsequent experiment.
 
-Source inspection confirms the existing session guard shares attempt/token
-counts across all modes and native tool bindings, reserves before invocation,
-keeps failed-call reservations and never refunds the session total on success.
-All four local RPM/RPD/TPM/TPD guards remain applicable. The CLI's slowest built-in pacing
-is 60.01 seconds, so an execution-only HTTP-start guard would be required to meet
-61 seconds; none was installed or exercised because preflight failed. Production
-logic, prompts, workflows, benchmark inputs and quota history were not changed.
-The private preflight is retained under ignored
-`output/private/phase4b-live-20261027/preflight.json`.
+| Observed resource / outcome | Direct | Grounded | Agentic |
+| --- | --- | --- | --- |
+| Outcome | Not run after stop | Positive but incomplete answer | Provider error before writer/audit |
+| API attempts / local fixture searches | 0 / 0 | 2 / 1 | 2 / 1 |
+| Held reservations | 0 | 6,390 | 7,422 |
+| Reported input + completion tokens | Not run | 1,078 + 477 = 1,555 | 464 + 48 = 512; failed-call usage unknown |
+| Workflow elapsed, including pacing | Not run | 61.873 s | 121.982 s |
+| Wire HTTP time, including failed requests | Not run | 1.785 s | 1.149 s |
 
-**Decision: do not launch.** The full authorized reservation does not fit the
-available local budget. No mode ran, no local retrieval was executed, and no
-automatic later run was scheduled. Actual answers, completeness, citation
-entailment, Agentic evidence recovery, per-mode tokens, calls, searches and
-latencies therefore remain **unmeasured**, not zero-quality results. There are
-no new same-model auditor decisions or separate source-review judgments; the
-controlled offline reference-following result above remains fixture evidence.
+Total: **4/11 attempts**, **13,812/64,000 held tokens**, **2,067 reported actual
+tokens plus unknown failed-call usage**, two searches and three HTTP 200 replies.
+The fourth response was **HTTP 400**, `invalid_request_error` /
+`output_parse_failed`, with failed generation `Need more detail.` The run stopped
+immediately, exit status 2; Direct remained unexecuted and there are **zero
+successful matched pairs/triples**. The failed attempt keeps its full 4,040-token
+reservation. Actual usage is incomplete, not zero for that attempt. Completion
+usage includes reported reasoning; HTTP error alone does not establish truncation.
+Wire timing includes the failed call; normal successful-response telemetry omits
+that call's HTTP/pacing fields, so it is not a complete failure-cost measurement.
 
-This is a real quota blocker for the requested live comparison, with no new
-production defect established by the preflight. Existing offline software
-acceptance remains intact: [CI for `f9bbd87` passed](https://github.com/cryptoadya/garage-rag/actions/runs/40385567263).
-Tests were not rerun for this report-only update. Phase 4B meets its previously
-stated offline completion boundary, but the requested live evaluation is
-**blocked and incomplete**; no live-quality or Agentic-superiority conclusion is
-supported. No merge, tag or Release was performed.
+### Separate source check versus same-model auditor
+
+The original source here is the fictional JSON benchmark, not a real vehicle
+manual. Its target/reference says the release is **under the rear seat**. The
+initial source merely directs the reader to emergency release instructions.
+Grounded returned: “The Aurora manual tailgate release is found in the emergency
+release instructions.” Its quote exactly matches that initial source and its
+`aurora-synthetic.pdf`, page 1 mapping is correct **fixture metadata**, not an
+independently inspected physical PDF page. The claim/citation are supported only
+as a documentary pointer; they do not provide the requested physical location.
+The supplied context is insufficient and the answer is **incomplete**. There are
+no case-required warnings to score. Grounded did not expand its retrieval.
+
+The **same-model auditor** nevertheless returned `accept`, `complete=true`, all
+claim checks true. A separate post-run implementation-assistant source check
+assigned pointer claim/citation support but `complete_answer=false` and source
+`sufficiency=insufficient`, bound to the exact answer/context hashes. These are
+**not independent human judgments** and were not copied from the auditor.
+Grounded thus has 0/1 complete answers despite locally valid citations.
+
+Agentic made one dense-tool query for the tailgate release location and received
+the same reference pointer. Its next planner call failed at the provider. It did
+not issue the follow-reference lexical query, retrieve the target, reach the
+writer or invoke its auditor. The generic user-facing refusal represents a
+provider failure, not a reviewed semantic refusal. **No Agentic recovery of
+information beyond Grounded was observed.** This establishes no quality ranking:
+Agentic failed and Direct is missing.
+
+Retrieval remains controlled: the target is returned only for the benchmark's
+exact BM25 follow-up query. The run tests live model behavior on this fixture,
+not natural Qdrant/BM25 retrieval quality, multilingual parity or vehicle safety.
+Private requests, raw replies (including the 400), cumulative quota state, review
+packet, hash-bound labels and verification remain under ignored
+`output/private/phase4b-live-executed-20261027/`. Dataset/source hashes match the
+unmodified inputs and runtime; packet integrity and resource limits were checked.
+**24 existing offline quota/reservation/tool-binding/pacing tests passed** before
+the run. No full test suite or package build was rerun for this report-only update.
+
+The software's existing offline acceptance remains intact. This live experiment
+exposed **two real blockers to successful live acceptance**: provider output
+parsing stopped Agentic, and the same-model auditor accepted an incomplete
+Grounded answer. One case does not establish their frequency or a general model
+advantage. Phase 4B's offline boundary is met, but a successful three-mode live
+comparison is **not complete**. No production tuning, extra live run, merge, tag
+or Release was performed.
