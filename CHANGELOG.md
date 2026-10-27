@@ -19,6 +19,12 @@ is available in [Git commits](https://github.com/cryptoadya/garage-rag/commits/m
 
 ### Fixed
 
+- Agentic separates navigation references from substantive evidence, filters generic
+  query matches, and attaches conditions through procedure-page or explicit scope
+  links. Bare conditional words and adjacent pages no longer protect every hit;
+  explicit warnings with unknown scope remain protected. Navigation-only completion
+  refuses before writing. Offline captures distinguish corrected packing from a
+  controlled three-search workflow; historical live outcomes remain unchanged.
 - Agentic keeps a private evidence store separate from its bounded model context.
   Deterministic whole-passage selection can omit low-relevance overflow while
   preserving stable citations, topical evidence, semantic leads, safety cues and

@@ -177,21 +177,35 @@ or agent-controlled filesystem mutation.
    applicability remain distinct. Every occurrence retains its search/rank origin.
    Stable discovery-order `S1…S20` IDs are never reassigned after exclusion or re-entry.
 2. **Context Selector** reconsiders the entire store after every search, independently
-   of the preceding selected context. If everything fits, discovery order is kept.
-   On overflow it protects all question/query term matches, the first semantic hit
-   of every search, recognized safety/condition cues (EN/DE/RU), explicit
-   warning/condition/layout metadata, suspect extraction, and retrieved same/adjacent
-   pages in the same document revision. Page protection is non-transitive.
+   of the preceding selected context. General request/document words and vehicle
+   qualifiers from metadata do not establish a procedure topic. Compound topics
+   need at least two focus terms within a 160-character window; single-term topics
+   need that term. EN/DE/RU queries can supply source-language anchors. Retrieval
+   rank breaks ties, rather than automatically protecting each first hit. With no
+   usable topic/navigation anchor, semantic leads remain protected as unassessed.
+   Structural page-reference lists are navigation, never sufficient answer evidence.
+   All topical substantive passages remain protected, including conflicting sources.
+   Conditions stay inside intact passages, attach to retrieved chunks on the same
+   procedure page, or follow explicit `procedure_id` / `section_id` / `applies_to`
+   links within a document revision. There is no blanket adjacent-page protection.
+   Bare `if/not/only/before/after` do not globally protect unrelated prose. Explicit
+   warning/applicability markers with unknown scope, safety/layout metadata and
+   suspect extraction remain protected. Excluding a warning by `applies_to` requires
+   complete explicit scope information for the primary procedures in that revision;
+   missing/malformed scope, cross-revision matches or `global_warning` do not prove
+   irrelevance. These optional metadata fields are not inferred by ingestion.
    All protected passages must fit **together**; otherwise `context_budget_exhausted`
    stops before planner/writer delivery, with no partial candidate context. This
    preserves both positive and negative topical results without deciding which
    source is correct. With no topical anchors and overflow, selection stops with
    `context_relevance_uncertain` instead of guessing across languages/paraphrases.
 3. **LLM Context** contains at most 20 whole passages / 12,000 serialized characters.
-   Remaining slots are packed by question overlap, then query overlap, then summed
-   reciprocal retrieval rank (`1/(60+rank)`), with discovery order breaking ties.
-   Raw dense/BM25 scores are never compared. Only lower-ranked, cue-free nonmatches
-   outside protected pages may be excluded for budget. Text is never cut or
+   Protected evidence fits first. Useful navigation is optional, ranked by question
+   focus, source-language focus and reciprocal retrieval rank (`1/(60+rank)`).
+   Repeated navigation targets within a document revision are deduplicated; printed
+   reference labels remain opaque, never assumed equal to PDF page numbers. Off-topic
+   prose is excluded even when it would fit. Raw dense/BM25 scores are never compared.
+   Discovery order keeps displayed IDs stable after selection. Text is never cut or
    summarized. Full applicability metadata travels with selected text; only the
    display URL and a duplicate page label are omitted from the wire metadata.
    Original documents, URLs and pages remain in the local source map.
@@ -202,9 +216,14 @@ The writer receives the same final selected context and the current pair; existi
 citation/language/numeric checks and auditor logic are unchanged. A source remaining
 only in the store is unavailable for citation. `new_sources` counts newly selected
 IDs, so eviction cannot produce a negative count.
+`has_substantive_evidence=false` prevents a navigation-only finalize/search ceiling
+from invoking writer/auditor and returns `insufficient_evidence`. This flag only
+detects the absence of substantive candidates; true does not certify sufficient
+evidence, applicability or safety. Existing local gates and mandatory audit still run.
 
 `context_selections` reports cumulative found/stored/duplicate counts, selected and
 excluded counts/IDs, protection and exclusion reasons, blocked IDs, serialized size,
+protected size/count, evidence roles, overlap counts, dependency source IDs,
 unchanged bounds and a hash of the private store. `context_deliveries` records each
 attempted planner/writer/auditor input after reservation succeeds (IDs, source hash,
 call and selection number). A rejected token reservation has no delivery record;
@@ -220,6 +239,10 @@ continuations, or make a same-model audit independent. It deliberately refuses
 large protected sets, including some unrelated warnings. Whole selected passages,
 explicit exclusions and private originals make this limitation inspectable; no
 universal safety or sufficient-evidence guarantee is claimed.
+For stronger continuation guarantees the smallest extension is ingestion-supplied,
+reviewable procedure/section and warning-scope links plus a bounded local reader
+for missing referenced/continuation passages. Selection alone cannot recover
+procedures absent from all searches or infer their warning scope reliably.
 
 Hard ceilings are six LLM attempts (including the final audit), four attempted
 searches and twelve executed graph nodes; a recursion limit of sixteen is an

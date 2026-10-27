@@ -350,6 +350,8 @@ def run_agentic(
             return stop("llm_budget_exhausted")
         if not state["context"].sources:
             return stop("no_context")
+        if not trace.context_selections[-1]["has_substantive_evidence"]:
+            return stop("insufficient_evidence")
         # Fresh answer instructions, no retrieval instructions or active tools.
         # The last native call/result pair carries the selected complete sources and
         # returns the result with its actual ID even at the search/call ceiling.

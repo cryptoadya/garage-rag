@@ -1027,3 +1027,129 @@ reached. A model-selected route repeating the offline protected overflow must
 remain a clearly diagnosed refusal; it is not a successful toolkit recovery.
 Only an intact, supported, audited answer would establish recovery for this single
 case. Either outcome is new evidence, separate from the frozen Phase 4B scores.
+
+
+## Scoped context diagnosis after 1790e58 — offline only
+
+This follow-up reuses the immutable two-search private capture from the preceding
+change. No live model API, ingestion, model/index change, merge, tag or Release.
+Historical Phase 4B remains **Direct 2/2, Grounded 2/2, Agentic 1/2**. The prior
+1790e58 findings above describe that implementation and are not relabeled.
+
+### Every formerly protected passage
+
+Sizes below are text / compact JSON object characters, including original metadata
+in the second number. `1:4;2:5` means search 1 rank 4 and search 2 rank 5. Topic
+classifications come from inspection of the complete private text; no PDF excerpts
+are published. Protection codes are the exact old diagnostic reasons:
+T=`topic_match`, L=`semantic_lead`, W=`safety_or_condition`, P=`page_companion`.
+
+| ID | PDF page | Text / JSON chars | Search:rank | Relevance to toolkit access | All old reasons | New treatment |
+| --- | ---: | ---: | --- | --- | --- | --- |
+| S1 | 180 | 1474 / 2018 | 1:1 | Useful index pointer, no procedure | T,L,P | Optional navigation, selected after two searches |
+| S2 | 182 | 1425 / 1966 | 1:2 | Other index entries; scattered shared modifiers | T,W,P | Off-topic navigation, excluded |
+| S3 | 181 | 771 / 1274 | 1:3 | Other index entries; shared modifier only | T,W,P | Off-topic navigation, excluded |
+| S4 | 8 | 1635 / 2163 | 1:4;2:5 | Manual introduction / symbol precautions | T,W,P | Unknown-scope precautions retained |
+| S6 | 10 | 1370 / 1871 | 2:1 | General accessory/parts safety, no access procedure | T,L,W,P | Unknown-scope warning retained |
+| S7 | 9 | 1348 / 1846 | 2:2 | General model/equipment and publication notes | T,W,P | Off-topic prose, excluded |
+| S8 | 146 | 1255 / 1741 | 2:3 | OBD procedure, different subject | T,W,P | Explicit warning scope not proven unrelated; retained conservatively |
+| S9 | 6 | 616 / 1111 | 2:4 | Contents pointer to the same destination as S1 | T,W,P | Duplicate navigation excluded after two searches |
+
+S5 (page 31, 147 / 604 characters, rank 1:5) was never protected and is a section
+separator with no procedure. Total nine-object context: **14,604 characters**.
+The eight protected objects plus JSON framing require **13,999**, exceeding
+12,000 by **1,999**. The old greedy diagnostic lists S6/S7 as blocked; they are
+packing-order casualties, not the sole semantic cause of overflow.
+
+### Rule attribution and correction
+
+- Broad query words (manual/vehicle and the manufacturer qualifier) promoted
+  S4/S6/S7 despite zero substantive question overlap. A single shared modifier
+  promoted unrelated index material and OBD. General request/document words and
+  model qualifiers are now removed from topic scoring; compound topics require
+  a local pair of substantive terms. This uses no BMW/page-specific rules.
+- The old global safety regex matched `after` in S3 and warning-related words in
+  index titles, as well as `if/not/only` and other generic language in boilerplate.
+  `before` was not a trigger in this particular capture; synthetic cases exercise
+  it. Recognized reference lists are navigation, so a warning title plus page
+  label is not mistaken for the actual warning. Real warning prose next to an
+  index prevents that demotion. Text inside selected chunks is never removed.
+- In the baseline, P adds **zero** new passages: all eight already have another
+  reason, including self-page matches. Ablations removing query promotion alone
+  or the global safety regex alone both still protect eight and overflow. Jointly
+  removing them lets packing proceed but drops S4's unknown-scope precautions.
+  Scoped selection instead retains S4/S6/S8 while dropping unrelated weak matches.
+  Blanket adjacency is replaced by same-procedure-page and explicit dependency
+  links, with unknown-scope explicit warnings still protected.
+- Useful navigation is optional and deduplicated by document revision plus opaque
+  destination label. It cannot displace mandatory evidence or make an answer
+  sufficient. `has_substantive_evidence=false` stops writer/auditor with
+  `insufficient_evidence`; planner/schema and answer/auditor logic are unchanged.
+
+### Measured before/after, with explicit workflow provenance
+
+First two searches replay exactly the saved raw hits. A **separate new local BM25**
+search for the toolkit topic supplies the third batch; this was an offline,
+implementation-selected diagnostic continuation, not an autonomous model decision.
+It naturally returned four substantive candidates and a previously seen pointer.
+The complete candidate set includes the access procedure, body-style applicability,
+related operations and intact warnings/conditions. No gold passage was injected
+or forced into retrieval, and the index manifest is unchanged.
+
+| Observation | Found / unique | Protected | Protected JSON chars | Selected / excluded | Final context chars | Controlled graph outcome |
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
+| Before, saved two searches | 10 / 9 | 8 | 13999 | 0 / 9 | 2 (empty array, not sent) | context_budget_exhausted; 2 planner calls |
+| After, identical two searches | 10 / 9 | 3 | 5779 | 4 / 5 | 7798 | insufficient_evidence at the same two-search ceiling; no writer/auditor |
+| After, separately added local third search | 15 / 13 | 7 | 10350 | 8 / 5 | 11462 | audited_evidence in controlled offline graph; 3 planner + writer + audit |
+
+After two searches selected IDs are **S1,S4,S6,S8**; excluded are S2,S3,S5,S7
+(off-topic) and S9 (redundant pointer). All three unknown-scope warning passages
+remain intact. At three searches selected IDs are **S4,S6,S8,S9,S10,S11,S12,S13**;
+S1 becomes redundant after repeated retrieval improves S9's rank priority, and
+S2,S3,S5,S7 remain off-topic. Existing IDs never change. All seven protected
+passages are retained in full; navigation fills the remaining optional slot.
+Before the old overflow, the last actually delivered planner context was the
+first five sources (8,031 characters); the empty rejected second selection was
+never sent. After two searches at the same search ceiling, the 7,798-character
+selection is retained locally but writing is blocked because it has no procedure.
+
+The graph replay uses strict-schema **fixed local planner replies**, fixed writer
+and audit fixtures, and the pinned GPT-OSS Harmony tokenizer with the existing
+production reservation functions. Both before/after two-search replays use the
+same lowered search ceiling of two; the extended diagnostic uses three (below
+the unchanged ceiling of four). The default **24,000** token cap, six-call maximum
+and 1,024 completion-token allowance remain unchanged. Reservations are
+7,784 before, 6,750 after two, and **23,312 / 24,000** for the five-call extended
+path. These are conservative held tokens, not measured provider usage. There are
+zero model HTTP requests. The accepted fixture proves orchestration and local
+citation/gate contracts, **not independent semantic or live toolkit recovery**.
+
+Private diagnostics, ablations, exact raw hits and graph captures are stored under
+`output/private/agentic-context-scoped-20261027/`; the original capture is unchanged.
+The tests cover generic-query/top-rank overprotection, weak unrelated conditionals,
+linked distant conditions, unknown-scope warnings, reference-title pitfalls,
+navigation-only refusal, late evidence, full graph conflict refusal, and complete
+private three-search context retention. The original Direct/Grounded and planner/
+auditor implementation files and benchmark datasets remain unchanged.
+
+Final local acceptance: **460 pytest tests passed**, including 21 new scope cases;
+Ruff passed. EN/DE/RU regressions distinguish unrelated bare condition words from
+unscoped explicit prohibitions/applicability clauses; both linked and ambiguous
+mandatory conditions retain fail-closed budget behavior. Wheel/sdist build results
+and delivered-commit CI are recorded in PR #5. Private-capture tests are skipped
+when their ignored local inputs are absent from a public checkout.
+
+### Remaining boundary and smallest architectural extension
+
+The original two searches contain no toolkit access procedure; no selector can
+safely manufacture an answer from their index entries and general warnings. A
+further retrieval is necessary, and its autonomous model selection remains
+unvalidated. Scope heuristics cannot prove that every unmarked cross-page clause
+is irrelevant. When mandatory or unknown-scope explicit warnings exceed the
+budget, selection still refuses instead of silently discarding them.
+
+The smallest stronger mechanism is reviewable ingestion metadata for procedure/
+section and warning applicability, plus bounded local retrieval of referenced or
+missing continuation passages. The selector already honors explicit scope links;
+this change does not invent them for the BMW corpus or add an unbounded reader,
+new reranker, larger budget, or alternate model. No live test is part of this work.

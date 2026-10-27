@@ -283,7 +283,7 @@ def test_evaluation_captures_include_store_without_publishing_passages():
     assert "Aurora jack" not in json.dumps(report)
 
 
-def test_private_bmw_e39_offline_hits_remain_available_after_protected_overflow():
+def test_private_bmw_e39_offline_hits_remain_available_without_mistaking_pointers_for_evidence():
     from pathlib import Path
 
     from langchain_core.documents import Document
@@ -307,8 +307,11 @@ def test_private_bmw_e39_offline_hits_remain_available_after_protected_overflow(
     selection = select_context(
         store, "Where is the onboard tool kit located and how do I access it?"
     )
-    assert selection.reason == "context_budget_exhausted"
+    assert selection.reason is None
     assert selection.diagnostics["found"] == 10
     assert selection.diagnostics["stored"] == 9
-    assert selection.diagnostics["blocked"]
+    assert not selection.diagnostics["blocked"]
+    assert not selection.diagnostics["has_substantive_evidence"]
+    assert selection.diagnostics["roles"]["S1"] == "navigation"
+    assert selection.diagnostics["roles"]["S9"] == "navigation"
     assert sum(len(s["hits"]) for s in store.capture()["searches"]) == 10
