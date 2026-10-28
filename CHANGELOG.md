@@ -14,6 +14,10 @@ is available in [Git commits](https://github.com/cryptoadya/garage-rag/commits/m
 
 ### Added
 
+- Phase 5C structured HTTP citations: final supported claims expose document,
+  physical PDF page and exact quote from existing verified evidence. The UI
+  groups citations by claim without parsing answer text; refusals expose no
+  rejected draft evidence. Existing answer text, CLI and workflow behavior remain unchanged.
 - Phase 5B local React/TypeScript/Vite UI: question submission to the existing
   FastAPI, Direct/Grounded and answer-language selection, source-reference links,
   loading/refusal/error states and responsive layout. Local dev/preview proxy,

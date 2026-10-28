@@ -1,36 +1,30 @@
-import { Fragment } from 'react';
+import type { Claim } from './api';
 
-export function AnswerText({ text }: { text: string }) {
-  // /ask embeds verified references in plain text; it does not expose PDF URLs.
-  // Add only local anchors. Keep the complete answer and quotes as inert text.
-  const references = [...text.matchAll(/^\[(.+), PDF page (\d+)\](?= ")/gm)];
-  const sources = [...new Map(references.map((match) => [match[0], {
-    reference: match[0], document: match[1], page: match[2],
-  }])).values()];
-  let position = 0;
+export function AnswerText({ text, claims }: { text: string; claims: Claim[] }) {
   return (
     <>
-      <div className="answer-text">
-        {references.map((match) => {
-          const preceding = text.slice(position, match.index);
-          position = match.index + match[0].length;
-          const number = sources.findIndex((source) => source.reference === match[0]) + 1;
-          return <Fragment key={match.index}>{preceding}<a href={`#source-${number}`}>{match[0]}</a></Fragment>;
-        })}
-        {text.slice(position)}
-      </div>
-      {sources.length ? (
+      <div className="answer-text">{text}</div>
+      {claims.length ? (
         <section className="sources" aria-labelledby="sources-heading">
-          <h3 id="sources-heading">Sources <span>{sources.length}</span></h3>
+          <h3 id="sources-heading">Sources by claim <span>{claims.length}</span></h3>
           <ol>
-            {sources.map((source, index) => (
-              <li id={`source-${index + 1}`} key={source.reference} tabIndex={-1}>
+            {claims.map((claim, index) => (
+              <li key={index}>
                 <span className="source-number">{String(index + 1).padStart(2, '0')}</span>
-                <div><p>{source.document}</p><span>PDF page {source.page}</span></div>
+                <div>
+                  <p>{claim.text}</p>
+                  {claim.citations.map((citation, citationIndex) => (
+                    <div className="citation" key={citationIndex}>
+                      <p>{citation.document}</p>
+                      <span>PDF page {citation.pdf_page}</span>
+                      <blockquote>{citation.quote}</blockquote>
+                    </div>
+                  ))}
+                </div>
               </li>
             ))}
           </ol>
-          <p className="source-note">Page references from the answer. Open your own PDF to read the full passage.</p>
+          <p className="source-note">Physical PDF pages, counted from 1. Open your own PDF to read the full passage.</p>
         </section>
       ) : null}
     </>

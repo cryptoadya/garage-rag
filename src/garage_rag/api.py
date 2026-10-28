@@ -17,7 +17,7 @@ from .embeddings import E5Embeddings
 from .generation import make_llm
 from .index import Index
 from .profiles import profile_config
-from .workflow import run_direct, run_workflow
+from .workflow import WorkflowResult, run_direct, run_workflow
 
 
 class AskRequest(BaseModel):
@@ -35,12 +35,54 @@ class AskRequest(BaseModel):
         return value  # Preserve the exact question sent by the CLI.
 
 
+class CitationResponse(BaseModel):
+    source_id: str
+    document: str
+    pdf_page: int = Field(ge=1, description="Physical PDF page, starting at 1; not a page label.")
+    quote: str
+
+
+class ClaimResponse(BaseModel):
+    text: str
+    citations: list[CitationResponse]
+
+
 class AskResponse(BaseModel):
     supported: bool
     text: str
     reason: str
     language: Literal["en", "de", "ru"]
     workflow: dict
+    claims: list[ClaimResponse]
+
+
+def structured_claims(run: WorkflowResult) -> list[ClaimResponse]:
+    """Project only the final supported candidate; never publish rejected drafts."""
+    candidate = run.candidate
+    if (
+        not run.answer.supported
+        or candidate is None
+        or not candidate.answer.supported
+        or candidate.answer.text != run.answer.text
+        or candidate.draft is None
+        or run.context is None
+    ):
+        return []
+    return [
+        ClaimResponse(
+            text=claim.text,
+            citations=[
+                CitationResponse(
+                    source_id=evidence.source_id,
+                    document=run.context.sources[evidence.source_id].metadata["document"],
+                    pdf_page=run.context.sources[evidence.source_id].metadata["pdf_page"],
+                    quote=evidence.quote,
+                )
+                for evidence in claim.evidence
+            ],
+        )
+        for claim in candidate.draft.claims
+    ]
 
 
 def create_app(*, index_dir: Path | None = None, config: IndexConfig | None = None):
@@ -125,6 +167,7 @@ def create_app(*, index_dir: Path | None = None, config: IndexConfig | None = No
                     answer_language=request.language,
                 )
                 result = run.public_dict()
+                result["claims"] = structured_claims(run)
             except Exception:
                 raise HTTPException(500, "Local operation failed.") from None
             if run.error:
