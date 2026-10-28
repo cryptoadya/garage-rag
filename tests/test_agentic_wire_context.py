@@ -54,7 +54,7 @@ def test_full_diagnostics_stay_in_trace_without_inflating_each_model_turn():
     assert result.trace.context_selections[-1]["evidence_sha256"]
 
 
-def test_private_default_route_refuses_without_unaudited_answer_when_audit_cannot_fit():
+def test_private_default_route_hands_off_before_finalize_and_keeps_mandatory_audit():
     from transformers import AutoTokenizer
 
     from garage_rag.groq import MODEL, TOKENIZER_REVISION, GroqLLM
@@ -85,15 +85,20 @@ def test_private_default_route_refuses_without_unaudited_answer_when_audit_canno
 
         def __init__(self):
             self.tokenizer = tokenizer
-            self.replies = iter(replies)
+            self.planner_replies = iter(replies[:4])
+            self.writer_reply, self.audit_reply = replies[4:]
 
         def bind_planner(self):
             return self
 
         def invoke(self, messages):
-            return AIMessage(
-                content=next(self.replies), response_metadata={"finish_reason": "stop"}
-            )
+            if messages[0].content.startswith("You control local retrieval"):
+                content = next(self.planner_replies)
+            elif messages[0].content.startswith("You are the evidence auditor"):
+                content = self.audit_reply
+            else:
+                content = self.writer_reply
+            return AIMessage(content=content, response_metadata={"finish_reason": "stop"})
 
     batches = iter(capture["evidence_store"]["searches"])
 
@@ -113,9 +118,9 @@ def test_private_default_route_refuses_without_unaudited_answer_when_audit_canno
         Fixture(),
         answer_language="en",
     )
-    assert result.answer.reason == "token_budget_exhausted"
-    assert not result.answer.supported
-    assert result.candidate is not None  # Writer ran; mandatory audit was not bypassed.
+    assert result.answer.reason == "audited_evidence"
+    assert result.answer.supported
+    assert result.candidate is not None
     assert result.trace.llm_calls == 5
     assert result.trace.search_calls == 3
     assert result.trace.reserved_tokens <= result.trace.token_budget == 24000
@@ -123,6 +128,7 @@ def test_private_default_route_refuses_without_unaudited_answer_when_audit_canno
         "planner",
         "planner",
         "planner",
-        "planner",
         "writer",
+        "auditor",
     ]
+    assert result.trace.handoffs[-1]["decision"] == "handoff"

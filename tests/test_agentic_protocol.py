@@ -170,6 +170,9 @@ def test_one_search_three_calls_separates_planner_and_answer_schemas(monkeypatch
             return success(json.dumps(draft()))
         return success(json.dumps(audit()))
 
+    # Keep the protocol fixture within a conservative terminal envelope at its
+    # existing 16k cap; the tiny fixed JSON replies need no 2048-token completion.
+    monkeypatch.setenv("GROQ_MAX_TOKENS", "512")
     llm = model(monkeypatch, transport)
     with llm.client:
         result = run_agentic(

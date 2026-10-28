@@ -11,6 +11,7 @@ from langgraph.graph import END, START, StateGraph
 from langsmith import tracing_context
 from pydantic import ValidationError
 
+from .agentic_budget import terminal_budget
 from .agentic_context import EvidenceStore, select_context
 from .config import digest
 from .generation import (
@@ -109,6 +110,8 @@ class AgenticTrace(RunTrace):
     step_limit: int = 12
     context_selections: list[dict] = field(default_factory=list)
     context_deliveries: list[dict] = field(default_factory=list)
+    handoffs: list[dict] = field(default_factory=list)
+    terminal_budget: dict = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -146,13 +149,13 @@ class _Budgeted:
             self.tools = PLANNER_FORMAT
             self.target = llm.bind_planner()
         self.metered = MeteredLLM(self.target, trace)
+        self.request_limit = None
 
     def __getattr__(self, name):
         return getattr(self.llm, name)
 
-    def invoke(self, messages):
-        if self.trace.llm_calls >= self.trace.llm_call_limit:
-            raise GenerationError("llm_budget_exhausted")
+    def estimate(self, messages):
+        """Pure reservation quote: no invocation, ledger charge or quota mutation."""
         if getattr(self.llm, "provider", None) == "groq":
             reserve_fn = getattr(self.llm, "request_reservation", None)
         else:
@@ -166,6 +169,14 @@ class _Budgeted:
             reserve = byte_reservation(wire_messages(messages, self.tools), max_tokens, self.tools)
         if type(reserve) is not int or reserve <= 0:
             raise GenerationError("Invalid token reservation")
+        return reserve
+
+    def invoke(self, messages):
+        if self.trace.llm_calls >= self.trace.llm_call_limit:
+            raise GenerationError("llm_budget_exhausted")
+        reserve = self.estimate(messages)
+        if self.request_limit is not None and reserve > self.request_limit:
+            raise GenerationError("token_budget_exhausted")
         if self.trace.reserved_tokens + reserve > self.trace.token_budget:
             raise GenerationError("token_budget_exhausted")
         self.trace.reserved_tokens += reserve  # Include failed calls and invisible reasoning.
@@ -251,6 +262,20 @@ def run_agentic(
             return stop(reason)
         return stop("generation_error", "Agentic provider stopped; no retry or fallback.")
 
+    def writer_messages(state):
+        return [
+            SystemMessage(
+                content=SYSTEM_PROMPT
+                + "\nThe final tool result contains the complete selected sources array."
+                + f"\nWrite every claim in {LANGUAGES[language]}."
+            ),
+            state["messages"][0],
+            *state["messages"][-2:],
+        ]
+
+    def budget_for(state):
+        return terminal_budget(question, state["context"], writer_messages(state), writer, auditor)
+
     def agent(state):
         # Keep two calls for the separate structured writer and mandatory audit.
         if trace.llm_calls >= limits.max_llm_calls - 2:
@@ -271,6 +296,36 @@ def run_agentic(
                 + ("BM25 is unavailable; use dense only." if not allow_lexical else "")
             )
         try:
+            if trace.search_calls:
+                envelope = budget_for(state)
+                planner_tokens = planner.estimate(messages)
+                remaining_tokens = trace.token_budget - trace.reserved_tokens
+                substantive = trace.context_selections[-1]["has_substantive_evidence"]
+                decision = (
+                    "continue"
+                    if envelope.total + planner_tokens <= remaining_tokens
+                    else "handoff"
+                    if envelope.total <= remaining_tokens and substantive
+                    else "refuse"
+                )
+                trace.handoffs.append(
+                    {
+                        **envelope.public_dict(),
+                        "planner_tokens": planner_tokens,
+                        "spent": trace.reserved_tokens,
+                        "remaining": remaining_tokens,
+                        "searches": trace.search_calls,
+                        "source_count": len(state["context"].sources),
+                        "has_substantive_evidence": substantive,
+                        "decision": decision,
+                    }
+                )
+                if decision == "refuse":
+                    return stop(
+                        "token_budget_exhausted" if substantive else "insufficient_evidence"
+                    )
+                if decision == "handoff":
+                    return {"route": "draft", "reason": "token_aware_handoff"}
             response = invoke_model(planner, messages)
         except GenerationError as exc:
             return model_error(exc)
@@ -355,16 +410,19 @@ def run_agentic(
         # Fresh answer instructions, no retrieval instructions or active tools.
         # The last native call/result pair carries the selected complete sources and
         # returns the result with its actual ID even at the search/call ceiling.
-        messages = [
-            SystemMessage(
-                content=SYSTEM_PROMPT
-                + "\nThe final tool result contains the complete selected sources array."
-                + f"\nWrite every claim in {LANGUAGES[language]}."
-            ),
-            state["messages"][0],
-            *state["messages"][-2:],
-        ]
+        messages = writer_messages(state)
         try:
+            envelope = budget_for(state)
+            trace.terminal_budget = {**envelope.public_dict(), "spent": trace.reserved_tokens}
+            if trace.reserved_tokens + envelope.total > trace.token_budget:
+                return stop("token_budget_exhausted")
+            # Retrieval is over: all capacity left after the exact writer quote
+            # belongs to audit. Forecasts are not debits, and spare capacity need
+            # not be wasted if a normalized draft exceeds its growth allowance.
+            auditor.request_limit = (
+                trace.token_budget - trace.reserved_tokens - envelope.writer_tokens
+            )
+            trace.terminal_budget["audit_capacity"] = auditor.request_limit
             response = invoke_model(writer, messages)
         except GenerationError as exc:
             return model_error(exc)
@@ -493,7 +551,7 @@ def run_agentic(
     try:
         with tracing_context(enabled=False):
             planner = _Budgeted(llm, trace, tools)
-            writer = auditor = _Budgeted(llm, trace)
+            writer, auditor = _Budgeted(llm, trace), _Budgeted(llm, trace)
             graph = StateGraph(_State)
             for name, fn in [
                 ("agent", agent),

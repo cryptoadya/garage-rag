@@ -416,7 +416,7 @@ def test_budget_includes_final_audit_and_does_not_refund_missing_usage():
         limits=AgenticLimits(max_llm_calls=3, max_searches=1, max_total_tokens=cap),
     )
     assert result.answer.reason == "token_budget_exhausted"
-    assert result.trace.llm_calls == 2
+    assert result.trace.llm_calls == 1  # Pair preflight refuses before spending the writer.
     assert result.trace.reserved_tokens <= cap
 
 

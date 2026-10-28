@@ -19,10 +19,17 @@ is available in [Git commits](https://github.com/cryptoadya/garage-rag/commits/m
 
 ### Fixed
 
+- Agentic checks unspent writer/auditor token headroom before another planning
+  turn and hands off substantive evidence when that turn would displace audit.
+  Forecasts include complete request/schema/output costs and draft framing/growth;
+  they are never charged as requests. Actual normalized audit inputs are checked
+  again, failed calls retain their reservations, and no unaudited positive answer
+  can escape. Offline BMW replay now completes five calls at the ordinary limits;
+  this is orchestration validation, not a live quality result.
 - Agentic model inputs omit known index bookkeeping and carry compact diagnostics;
   full provenance and diagnostic maps remain in private evidence/trace captures.
-  Default-route offline replay still refuses when its mandatory audit cannot fit
-  the unchanged token budget; this is not relabeled as answer recovery.
+  Exact audit preflight refuses remaining overruns without treating an unaudited
+  draft as answer recovery.
 - Agentic separates navigation references from substantive evidence, filters generic
   query matches, and attaches conditions through procedure-page or explicit scope
   links. Bare conditional words and adjacent pages no longer protect every hit;

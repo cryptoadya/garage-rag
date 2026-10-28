@@ -8,7 +8,7 @@ The implementation lives in [`src/garage_rag`](../src/garage_rag):
 | `ingestion`, `embeddings`, `config`, `profiles` | Page extraction, token bounds and pinned model settings |
 | `index`, `retrieval` | Persistent dense search; agentic/offline BM25, offline fusion and reranking |
 | `generation`, `language`, `groq` | Context, schemas, language selection and provider transport |
-| `workflow`, `agentic`, `agentic_context`, `local_tools`, `grounding`, `telemetry` | Bounded LangGraph, evidence storage/selection, local numeric gate, audit and safe observations |
+| `workflow`, `agentic`, `agentic_context`, `agentic_budget`, `local_tools`, `grounding`, `telemetry` | Bounded LangGraph, evidence storage/selection, terminal token headroom, local numeric gate, audit and safe observations |
 | `evaluation`, `optimization` | Frozen retrieval evaluation and profile comparisons |
 | `answer_evaluation`, `source_evaluation`, `review_packet` | Paired answer evaluation and private hash-bound review |
 | `cli` | `index`, `stats`, `search` and `ask` commands |
@@ -255,10 +255,10 @@ procedures absent from all searches or infer their warning scope reliably.
 Hard ceilings are six LLM attempts (including the final audit), four attempted
 searches and twelve executed graph nodes; a recursion limit of sixteen is an
 independent safety net. `--max-llm-calls`/`--max-searches` can lower these limits.
-Two calls are reserved for separate writing and auditing, leaving at most four
+Two call slots are reserved for separate writing and auditing, leaving at most four
 retrieval/control turns. With one search allowed (or only two calls remaining),
 retrieval routes straight to writing: one search + writer + audit still takes
-three calls. With the default free search budget, an early `finalize` uses a
+three calls. When token headroom permits a control turn, an early `finalize` uses a
 separate control turn: one search + control + writer + audit takes four. Four
 searches + writer + audit take six. Budgets below three calls refuse before any
 LLM attempt. No unaudited supported answer is emitted.
@@ -272,6 +272,45 @@ implicit smaller output, removed source or substitute provider is used. The defa
 token budget can stop earlier than the six-call ceiling. Groq additionally checks
 all four rate windows before every request; normal usage may hit 8,000 TPM well
 before the question's total cap. There is no automatic wait/retry/resume.
+
+### Token-aware terminal handoff
+
+`agentic_budget` separates unspent terminal headroom from the monotonic request
+ledger. After a search, before any additional planner request, `estimate` quotes
+the complete planner input/history/schema and completion/reasoning allowance using
+the existing provider reservation function. It also quotes the exact unchanged
+writer request and the fixed audit input (prompt, question, full selected sources,
+empty draft and the auditor's complete output allowance). Audit sizing mirrors the
+frozen auditor serializer; a contract test checks the actual auditor's request.
+
+The audit growth allocation adds the writer's entire completion allowance plus
+the UTF-8 byte length of the largest JSON frame permitted by the draft schema
+(six claims, four evidence items per claim, bounded source IDs). No English
+characters-per-token ratio or observed small draft is assumed. This is a capacity
+policy, not a universal upper bound on arbitrary normalized JSON: large drafts
+must still pass the exact request preflight below.
+
+With spent reservations S, next planner P, exact writer W, audit input/output base
+A and draft growth allocation D, the required pair is W+A+D. If it cannot fit,
+refuse before writing (or report insufficient evidence if no substantive candidates
+exist). If the pair fits but P would displace it, route substantive context directly
+to the existing writer/auditor path; navigation-only/empty context refuses. Otherwise
+keep autonomous planning and search choices. New search results may change the
+required pair, so it is recomputed after retrieval and before writing. The original
+call/search ceilings remain independent additional guards.
+
+Before writer invocation, all remaining capacity after its exact quote is protected
+for audit. The real validated draft is passed to the unchanged auditor; its full
+normalized request must fit the protected capacity and global cap before invocation.
+It can use spare capacity if larger than the growth allocation. Excessive drafts
+refuse without an audit call or retry. Only the existing mandatory audit can accept.
+
+Forecasts, protected capacity and unused headroom never enter `reserved_tokens`.
+Each actual attempted model request is charged once, including failures and missing
+usage. No spent reservation is refunded. `handoffs` records continue/handoff/refuse
+decisions with quoted costs, spent/remaining tokens, searches and source count;
+`terminal_budget` records the writer/audit projection and protected audit capacity.
+These diagnostics contain no prompts, source text or rewritten queries.
 
 Agentic traces add token budget/reservations and step counts to the existing safe
 telemetry, without exposing rewritten queries, tool arguments, source text or

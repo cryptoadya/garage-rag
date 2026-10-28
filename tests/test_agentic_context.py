@@ -248,7 +248,7 @@ def test_dropped_source_id_cannot_be_cited_and_failed_selection_is_captured():
     assert result.trace.context_selections[-1]["blocked"] == ["S2"]
 
 
-def test_multibyte_request_budget_stops_before_audit_without_refunding():
+def test_multibyte_terminal_preflight_stops_before_writer_without_refunding():
     from test_agentic import run
 
     passage = hit(TEXT + " Шины холодные." * 100)
@@ -262,7 +262,7 @@ def test_multibyte_request_budget_stops_before_audit_without_refunding():
     )
     assert result.answer.reason == "token_budget_exhausted"
     assert result.trace.reserved_tokens <= cap
-    assert result.trace.llm_calls == 2
+    assert result.trace.llm_calls == 1
 
 
 def test_evaluation_captures_include_store_without_publishing_passages():

@@ -1217,3 +1217,131 @@ New exact default-route/wire captures are under ignored
 `output/private/agentic-context-wire-20261027/`; earlier captures and all historical
 Phase 4B outcomes remain unchanged. PR #5 stays open, with no merge/tag/Release
 and no live API experiment.
+
+
+## Token-aware handoff after e7a533e — offline only, 2026-10-28
+
+This pass changes only Agentic budget lookahead/routing and its diagnostics.
+Context Selector, Groq Structured Outputs protocol/schema, Direct/Grounded,
+writer instructions, citation/language/numeric gates and auditor logic remain
+unchanged. All preceding observations remain historical text, including the
+original Phase 4B **Direct 2/2, Grounded 2/2, Agentic 1/2**. No live model/API call,
+merge, tag or Release occurred.
+
+### Budget policy and accounting
+
+Two reserved call slots do not reserve tokens. Before an additional planner turn,
+the controller now quotes its complete input/schema/output cost, the exact writer
+request and the fixed audit request (question, full sources, prompt and full audit
+completion/reasoning). The audit growth allocation includes the writer's entire
+completion allowance plus the UTF-8 byte cost of the maximum draft JSON frame
+allowed by the unchanged schema: six claims / four evidence entries per claim.
+At this replay's 1,024-token writer cap the growth allocation is **2,184**: 1,024
+plus **1,160** framing bytes. No English character/token ratio is used.
+
+If the terminal pair fits but another planner would displace it, substantive
+context routes directly to writer/auditor. Empty/navigation-only context instead
+refuses. If the pair itself cannot fit, refuse before spending writer capacity.
+Planning/search methods and queries remain model-selected while the budget allows.
+Changed retrieval context is re-estimated before writing; no source is discarded
+or budget raised to force completion.
+
+This is an explicit resource-capacity allocation, not a claim that every valid
+future JSON representation is bounded by the growth estimate. Once retrieval ends,
+all remaining capacity after the exact writer quote belongs to audit. The actual
+normalized request containing the validated draft must pass the existing exact
+reservation and the protected-capacity check before invocation. It may use spare
+capacity above the growth allocation; an excessive draft still causes safe refusal
+without audit/retry. No positive answer can bypass the unchanged audit.
+
+Forecasts/protected headroom are not charged to the request ledger. Actual calls
+are charged exactly once; failures and absent usage retain their reservations.
+Unused projected capacity was never spent and is not a refund. Public handoff
+records contain costs/counts/decisions only; full private request captures retain
+actual source delivery and the exact reused fixture replies.
+
+### Replay at ordinary Agentic limits
+
+Replay uses the previously saved three raw search batches and the same recorded
+planner, writer and auditor response strings as controlled offline fixtures.
+The unused finalize response remains available to the fixture but is never asked
+for. All three search methods/queries remain identical to the saved route.
+There is no new retrieval, injected gold evidence, reduced search/call ceiling,
+changed source selection or actual HTTP request.
+
+Ordinary limits: four searches, six LLM calls, 24,000 held tokens, twelve graph
+steps; same GPT-OSS pinned tokenizer and 1,024 completion tokens including reasoning.
+At the first two searches handoff diagnostics say **continue**. After search three:
+
+| Reservation item | Tokens |
+| --- | ---: |
+| Already spent on three planner requests | 10844 |
+| Remaining | 13156 |
+| Exact writer request | 4681 |
+| Fixed audit request including completion | 4301 |
+| Draft growth/frame allocation | 2184 |
+| Projected writer + audit pair | 11166 |
+| Optional next planner/finalize | 5298 |
+
+The pair fits (10,844 + 11,166 = 22,010); adding another planner would require
+**27,308**, above 24,000. The controller hands off before that invocation.
+Writer costs 4,681; the actual audit costs 4,373, within the protected **8,475**.
+Total actual reservations are **19,898**, leaving 4,102 unspent. Forecasts are not
+added to this total. Provider usage remains unavailable in this fixture.
+
+| Observation | e7a533e default route | Token-aware default route |
+| --- | --- | --- |
+| Searches | 3 | 3 |
+| Maximum searches / calls / tokens | 4 / 6 / 24000 | 4 / 6 / 24000 |
+| Actual call roles | 4 planner + writer | 3 planner + writer + audit |
+| Calls actually invoked | 5 | 5 |
+| Held tokens | 20823 | 19898 |
+| Audit | rejected before invocation | invoked, fixture accepts |
+| End reason | token_budget_exhausted | audited_evidence (controlled fixture) |
+| Source hits / unique / selected | 15 / 13 / 8 | 15 / 13 / 8 |
+| Selected context characters | 9660 | 9660 |
+
+Selected IDs remain **S4,S6,S8,S9,S10,S11,S12,S13**. Entire original evidence store,
+text, applicability/warnings, source IDs and provenance compare equal to the saved
+inputs. Unknown-scope warnings remain intact. Exact new captures live under ignored
+`output/private/agentic-handoff-offline-20261028/`; no PDF excerpts are published.
+The accepted fixed writer/auditor replies establish orchestration/contracts only,
+not a new live model answer, independent semantic review or benchmark score.
+
+### Offline acceptance and limitations
+
+Tests cover handoff and continued autonomy, empty/navigation-only refusal, a pair
+that cannot fit, a newly retrieved warning increasing the pair cost, invalid source
+IDs, conflict/applicability/support audit refusal, large valid drafts and actual
+audit overruns, spare headroom, failed-call no-refund accounting, pure schema-aware
+quotes with zero shared-quota mutation, and audit-serializer agreement for Unicode.
+The saved BMW default-limit replay reaches mandatory audit without consuming the
+fourth planner/finalize turn. Tight-budget regression expectations now assert the
+earlier pre-writer refusal. The 16k protocol-format fixture uses a bounded 512-token
+completion instead of 2,048; its existing total cap and all schema/correlation
+assertions stay in place. No production limit is changed.
+
+Conservative headroom can refuse work that a hindsight-small response would have
+fit. Invalid/oversized drafts, increased evidence, step limits, provider or shared
+session quotas can still stop safely. Handoff does not certify substantive-evidence
+sufficiency or solve ambiguous warning scope; all answer gates and audit remain
+mandatory. This is the minimal budget change, not a claim of universal completion.
+
+Local acceptance: **481 pytest tests passed**, Ruff and `pip check` passed;
+wheel/sdist builds and package privacy/content checks passed. An isolated wheel
+installation imported the budget module and passed CLI/module `--help` checks
+with the existing local dependency environment. Delivered-commit CI is recorded
+in PR #5. Context Selector, provider/planner, generation/audit and Direct/Grounded
+source files, benchmark datasets and the entire earlier report prefix compare
+unchanged against e7a533e.
+
+### One proposed Agentic-only live check — not executed
+
+After separate authorization, use only the original E39 toolkit question in English,
+one trial, same GPT-OSS model/tokenizer and 1,024 completion-token allowance.
+Keep ordinary four-search/six-call/24,000-token limits, top-k <=5, Free Plan
+preflight, at least 61 seconds between HTTP starts, a shared six-attempt/24,000-token
+session guard and fresh private captures. No forced query sequence, retry, fallback,
+resume or other workflow mode. Inspect handoff arithmetic, exact actual requests,
+all warnings/conditions/citations against the original PDF, and mandatory audit.
+A supported result would be new single-case evidence, separate from frozen Phase 4B.
