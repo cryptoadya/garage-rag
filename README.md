@@ -17,7 +17,8 @@ auditing remains unproven. It does not replace professional diagnosis.
 - Persistent Qdrant Local indexes with atomic revision activation and batch reuse.
 - Pinned E5 Small, E5 Base and BGE-M3 embedding profiles with isolated indexes.
 - Direct generation or bounded draft/audit answering with one optional local expansion.
-- Opt-in agentic retrieval: model-selected dense/BM25 searches and multilingual query rewrites.
+- Experimental, opt-in agentic retrieval: model-selected dense/BM25 searches
+  and multilingual query rewrites.
 - OpenRouter free-only routing and an optional Groq transport with Free Plan attestation.
 - Offline synthetic tests, frozen retrieval baselines and hash-bound answer/source review.
 
@@ -104,12 +105,9 @@ control turn. Budgets/quotas can stop earlier. `--top-k` caps each search at 1â€
 Only predefined local read-only tools are exposed. No web/code/file-writing tool,
 API retry, paid fallback or automatic provider switch exists. OpenRouter remains
 an explicitly selected compatibility alternative (`--provider openrouter`),
-with its existing free-only controls. Real Groq synthetic acceptance confirms
-native tool/result delivery, adaptive query/tool/language changes, cited writing
-and mandatory audit. A bounded RU comparison also completed Grounded successfully;
-it established no quality or overall resource advantage for Agentic. General
-superiority remains unproven. See [live acceptance and limits](docs/providers.md#phase-4a-live-acceptance).
-See [agent architecture](docs/architecture.md#agentic-retrieval-phase-4a).
+with its existing free-only controls. Direct/Grounded remain the primary modes.
+See [current architecture](docs/architecture.md#agentic-retrieval-phase-4a) and the
+[comparison results and limits](docs/benchmarks/phase4b-comparison.md).
 
 ## Limitations and privacy
 
@@ -144,7 +142,7 @@ python -m build
 | [Testing](docs/testing.md) | Offline checks, packaging and release validation |
 | [Phase 2A](docs/benchmarks/phase2a-retrieval.md) / [Phase 2B](docs/benchmarks/phase2b-retrieval.md) | Frozen retrieval methodology, results and reproduction |
 | [Answer evaluation](docs/benchmarks/grounded-answering.md) | Scripted/live comparisons, costs and unresolved quality limits |
-| [Three-mode comparison](docs/benchmarks/phase4b-comparison.md) | Reproducible offline benchmark, evidence review and bounded live proposal |
+| [Three-mode comparison](docs/benchmarks/phase4b-comparison.md) | Consolidated offline/live results, evidence review and limitations |
 | [Changelog](CHANGELOG.md) | Versioned user-facing changes |
 
 ## License

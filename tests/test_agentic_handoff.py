@@ -3,7 +3,7 @@
 import json
 
 import pytest
-from test_agentic import Model, control, reply, tool
+from conftest import Model, control, reply, tool
 from test_workflow import TEXT, audit, draft, hit
 
 from garage_rag.agentic import AgenticLimits, run_agentic
@@ -55,7 +55,7 @@ def test_planner_keeps_autonomy_when_extra_turn_and_terminal_pair_fit():
 
 
 def test_structured_planner_handoff_preserves_local_pair_and_citation_validation():
-    from test_structured_planner import decision
+    from conftest import decision
 
     class Structured(PricedModel):
         structured_planner_supported = True

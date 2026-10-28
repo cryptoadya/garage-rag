@@ -359,7 +359,7 @@ def run_agentic(
         finish = getattr(response, "response_metadata", {}).get("finish_reason")
         if finish == "length":
             return stop("output_token_limit")
-        if planner.structured and finish != "length":
+        if planner.structured:
             try:
                 if (
                     response.tool_calls

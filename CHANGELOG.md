@@ -7,58 +7,30 @@ is available in [Git commits](https://github.com/cryptoadya/garage-rag/commits/m
 
 ### Added
 
-- Phase 4B comparison of direct, grounded and agentic using the existing answer
-  evaluator: a fixed fictional EN/DE/RU suite, matched and pairwise summaries,
-  completeness, claim/citation support, warning omissions and resource accounting.
-- Hash-bound native tool captures and external review packets; same-model audit
-  decisions remain observations, never quality labels. Live quality stays unscored
-  until explicit review; scripted results measure software contracts only.
-- Shared live call/pacing/token guards across tool-bound and ordinary requests.
-  Comparative live runs require explicit caps and private captures; no live calls
-  are part of offline acceptance. Package version prepares the upcoming 0.5.0.
+- Three-mode answer evaluation: fixed fictional EN/DE/RU cases, matched/pairwise
+  summaries, completeness, citation/warning review and resource accounting.
+- Hash-bound tool/schema captures and external review packets; same-model audits
+  remain observations. Shared live call/pacing/token guards cover every binding.
+  Comparative live runs require explicit caps and private captures.
 
 ### Fixed
 
-- Agentic explains semantic Dense versus exact-term BM25 search and supplies
-  compact, source-bound navigation hints only to Planner. Reference labels remain
-  opaque; no page tool, forced search sequence or answer-gate change is introduced.
-  Updated planner inputs stay inside the existing token-aware budget checks.
-- Agentic checks unspent writer/auditor token headroom before another planning
-  turn and hands off substantive evidence when that turn would displace audit.
-  Forecasts include complete request/schema/output costs and draft framing/growth;
-  they are never charged as requests. Actual normalized audit inputs are checked
-  again, failed calls retain their reservations, and no unaudited positive answer
-  can escape. Offline BMW replay now completes five calls at the ordinary limits;
-  this is orchestration validation, not a live quality result.
-- Agentic model inputs omit known index bookkeeping and carry compact diagnostics;
-  full provenance and diagnostic maps remain in private evidence/trace captures.
-  Exact audit preflight refuses remaining overruns without treating an unaudited
-  draft as answer recovery.
-- Agentic separates navigation references from substantive evidence, filters generic
-  query matches, and attaches conditions through procedure-page or explicit scope
-  links. Bare conditional words and adjacent pages no longer protect every hit;
-  explicit warnings with unknown scope remain protected. Navigation-only completion
-  refuses before writing. Offline captures distinguish corrected packing from a
-  controlled three-search workflow; historical live outcomes remain unchanged.
-- Agentic keeps a private evidence store separate from its bounded model context.
-  Deterministic whole-passage selection can omit low-relevance overflow while
-  preserving stable citations, topical evidence, semantic leads, safety cues and
-  page companions. Protected overflow and uncertain relevance stop explicitly.
-  Sanitized selection/delivery diagnostics and private raw search captures expose
-  exclusions; planner history carries one current context instead of stale copies.
-  This is offline software validation, separate from historical Phase 4B results.
-- Groq Agentic planner uses strict Structured Outputs decisions with local search
-  dispatch, without combining native tools and structured output. Schema overhead
-  stays inside shared token/quota guards; Direct/Grounded and writer/auditor keep
-  their existing behavior. Historical 400s are replayed offline, not retried live.
-- Agentic planner uses serial required native search/finalize/refuse actions instead
-  of mixed tool calls and plain-text controls. Completion/refusal adds no search;
-  existing budgets, evidence gates and mandatory writer/audit remain unchanged.
-  Offline regressions cover the second planner turn after a native tool result;
-  provider-side reliability still requires a separately authorized live smoke.
-- Classify Agentic provider failures from structured HTTP/transport observations
-  when the workflow returns a safe generic error; keep failures and their token
-  reservations visible without changing generation, auditing or retry behavior.
+- Groq Agentic uses strict structured planner decisions with local search dispatch;
+  the optional native backend uses serial search/finalize/refuse actions.
+- Agentic separates private evidence storage from bounded whole-passage context,
+  preserves stable source IDs and safety dependencies, distinguishes navigation
+  from procedure evidence, and sends compact history/diagnostics. Protected
+  overflow and uncertain relevance refuse explicitly.
+- Token-aware handoff protects writer/auditor capacity before extra planning.
+  Actual audit requests are checked again; failed requests retain reservations.
+- Planner-only bounded navigation hints explain dense/BM25 choices without
+  guessing PDF pages, forcing a search sequence or changing answer gates.
+- Evaluation classifies provider failures from structured observations even when
+  the workflow returns a sanitized generic error.
+
+Agentic remains experimental; Direct/Grounded are primary. See the
+[consolidated comparison](docs/benchmarks/phase4b-comparison.md) for results and
+limitations. These changes prepare 0.5.0; no release is published here.
 
 ## [0.4.0] - 2026-10-26
 

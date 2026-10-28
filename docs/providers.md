@@ -170,34 +170,23 @@ observers and sleeps. An experiment can proactively wait for token-window
 headroom **before** invoking the provider; that wait must be reported separately
 as `quota_wait_ms`. No automatic retry follows a local/provider error.
 
-## Phase 4A native local tool calling
+## Agentic planner transport
 
 Agentic defaults to Groq even when `GARAGE_RAG_PROVIDER=openrouter`. An explicit
 `--provider openrouter` remains compatible, with zero-price limits and no fallback;
 Phase 4A makes no OpenRouter live/quality comparison. Other workflows keep their
 provider defaults and existing JSON completion wire format.
 
-Groq Agentic planner now uses [Structured Outputs](https://console.groq.com/docs/structured-outputs)
-with `response_format.type=json_schema` and `strict=true`, supported for GPT-OSS
-120B. It sends no native tools, tool choice or parallel-tool options. One closed
-object requires action/method/query/top_k/reason; unused fields are explicitly
-null. Local strict validation rejects incompatible arguments, unknown methods/
-reasons, blank queries, invalid top-k and extra fields before local dispatch.
-The model still chooses dense/BM25, query and top-k. Results/history are ordinary
-JSON chat data. A locally generated search correlation pair supplies the unchanged
-writer path; it is not a native call returned by the provider. The legacy native
-planner remains for the optional non-Groq backend; it is not a fallback after a
-Groq error.
-
-Writer/auditor retain JSON-object completions and existing evidence/semantic gates.
-Structured planner requests retain `reasoning_effort=low`, `include_reasoning=false`
-and the full completion allowance including hidden reasoning. Schema bytes plus
-a framing margin are reserved in addition to full message/output accounting,
-including with the pinned tokenizer. The same per-question/shared-session and
-RPM/TPM/RPD/TPD guards apply to bound planner requests. Captures bind the exact
-response format and sent source sets for offline review. No retry, schema repair,
-paid/model fallback or automatic resume is introduced. Offline transport tests
-cannot establish server-side inference reliability.
+The experimental Groq planner uses strict `json_schema` Structured Outputs,
+without native tools, tool choice or parallel-tool options. Writer/auditor retain
+JSON-object mode. Planner requests keep `reasoning_effort=low` and
+`include_reasoning=false`; hidden reasoning consumes the completion allowance.
+Full schemas plus framing are reserved alongside input/output, including in
+pinned-tokenizer mode. Bound requests share session and RPM/TPM/RPD/TPD guards.
+See [planner validation and dispatch](architecture.md#agentic-retrieval-phase-4a)
+for the closed contract and optional non-Groq native path. Neither protocol is a
+fallback for the other. Captures bind exact formats and sent sources; offline
+transport checks do not establish inference reliability.
 
 Different `ask` processes do not share quota history, and other clients' usage is
 unknown until headers/errors; run one experiment sequentially and verify available
@@ -206,44 +195,13 @@ mode can enforce a Free Plan if someone externally upgrades the account.
 
 ## Phase 4A live acceptance
 
-Separately authorized synthetic Aurora runs on October 26, 2026 confirmed real
-Groq native local tool calling, matching result IDs delivered to the tools-free
-writer, locally verified citations and a mandatory same-model audit. A three-call,
-one-search smoke completed the full cycle. The RU pair then demonstrated an
-actual evidence-driven change from RU dense retrieval to English BM25.
-
-An earlier 512-token pair was incomplete: Grounded found the missing source
-through its normal top-20 expansion, but the expanded draft failed Groq JSON
-validation at the completion cap. The bounded repeat changed the cap to **1024
-including reasoning**, preserving both production workflows, prompts, corpus,
-index, model, original RU question, answer language and initial top-k=1.
-
-| Mode | Observed route | API attempts / searches | Actual tokens | Held reservations |
-| --- | --- | --- | --- | --- |
-| Agentic | RU dense page 2 → EN BM25 page 1 → writer → audit | 4 / 2 | 4,177 | 17,287 |
-| Grounded | Original RU top-1 page 2 → insufficient draft → unchanged query top-20 pages 2/1/4 → draft → audit | 3 / 2 | 3,904 | 12,494 |
-
-Both modes answered the cold-tire and cooled-engine timing questions correctly;
-both audits returned `accept`, `complete=true`. Both explicitly cited pages 1
-and 2; Grounded also received page 4 in its context without citing it. Total:
-**7/8 HTTP attempts, 8,081 actual tokens, 29,781/40,000 held reservations**,
-two searches per mode, all HTTP 200, full usage reported and no retry/fallback.
-HTTP starts were at least 61 seconds apart. The shared experiment guard retained
-reservations independently of usage; the earlier failed request's unknown usage
-remained conservatively represented in persisted quota history. The experiment's
-proactive waits/shared guard are private runner controls, not automatic CLI pacing.
-
-Separate source review found that both answers' coolant quote covers waiting for
-cooldown, while stop/engine-off wording is supported elsewhere in the full cited
-passage. Neither reproduces the explicit hot-system warning. Quote existence and
-semantic acceptance therefore do not guarantee complete selected-quote coverage
-of compound claims or preservation of every warning. The reviewer was a separate
-assistant source check, not independent human acceptance; the same-model auditor
-is not independent ground truth.
-
-Agentic functionality and adaptive retrieval are confirmed for these cases.
-There was **no demonstrated quality or overall resource advantage** over Grounded:
-Agentic used one more API call and 273 more actual tokens in the completed pair.
-One synthetic comparison establishes no general superiority or vehicle safety.
-Raw requests, answers, quota state and detailed review remain private/ignored.
-Phase 4A acceptance is complete; further live experiments are not release checks.
+Historical October 26 synthetic Aurora runs confirmed native tool/result delivery,
+a RU dense → EN BM25 change, cited writing and mandatory audit. The completed
+RU pair used Agentic 4 calls / 4,177 actual tokens versus Grounded 3 / 3,904;
+both answered, both omitted the explicit hot-system warning. A prior 512-token
+Grounded attempt failed output validation; the completed pair used 1,024 tokens.
+This was AI source checking, not independent human or vehicle acceptance, and
+showed no Agentic quality/resource advantage. Full measurements remain in the
+[immutable Phase 4A record](https://github.com/cryptoadya/garage-rag/blob/de6a96577322feffcb2ea59c649070402f3ac1f1/docs/providers.md#phase-4a-live-acceptance).
+For subsequent real-corpus results and current experimental status, see the
+[Phase 4B comparison](benchmarks/phase4b-comparison.md).

@@ -5,7 +5,7 @@ from copy import deepcopy
 from dataclasses import replace
 
 import pytest
-from test_agentic import Model, control, reply, tool
+from conftest import Model, control, reply, tool
 from test_workflow import TEXT, audit, draft, hit
 
 from garage_rag.agentic import AgenticLimits, run_agentic

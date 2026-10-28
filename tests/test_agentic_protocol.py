@@ -4,8 +4,8 @@ import json
 
 import httpx
 import pytest
+from conftest import Model, control, reply, tool
 from langchain_core.messages import AIMessage
-from test_agentic import Model, control, reply, tool
 from test_groq import model, success
 from test_workflow import audit, draft, hit
 
@@ -14,7 +14,7 @@ from garage_rag.agentic import AgenticLimits, run_agentic
 
 @pytest.mark.parametrize("action", ["finalize", "refuse", "lexical_search"])
 def test_second_structured_planner_action_after_local_result(monkeypatch, action):
-    from test_structured_planner import decision
+    from conftest import decision
 
     requests, searches = [], []
 
@@ -153,7 +153,7 @@ def test_required_action_missing_from_200_response_blocks_without_retry(monkeypa
 
 
 def test_one_search_three_calls_separates_planner_and_answer_schemas(monkeypatch):
-    from test_structured_planner import decision
+    from conftest import decision
 
     requests = []
 
@@ -295,17 +295,6 @@ def test_budget_boundary_finalizes_without_an_extra_planning_call(calls, searche
     assert result.answer.supported
     assert result.trace.llm_calls == expected_calls
     assert result.trace.search_calls == 1
-
-
-def test_finalize_without_evidence_refuses_without_paying_for_writer_or_audit():
-    result = run_agentic(
-        "A question",
-        lambda *a: pytest.fail("unexpected search"),
-        Model(control()),
-        answer_language="en",
-    )
-    assert result.answer.reason == "no_context"
-    assert result.trace.llm_calls == 1
 
 
 @pytest.mark.parametrize("name", ["json", "shell", "browser_search"])

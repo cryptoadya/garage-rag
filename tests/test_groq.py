@@ -110,7 +110,7 @@ def test_agentic_provider_failure_after_tool_result_is_not_a_local_error(
     def transport(request):
         body = json.loads(request.content)
         requests.append(body)
-        from test_structured_planner import decision
+        from conftest import decision
 
         assert body["response_format"]["type"] == "json_schema"
         assert "tools" not in body and "tool_choice" not in body
@@ -628,7 +628,7 @@ def test_agentic_groq_structured_loop_changes_strategy_from_local_evidence(
     def transport(request):
         payload = json.loads(request.content)
         requests.append(payload)
-        from test_structured_planner import decision
+        from conftest import decision
 
         # User sources for structured planner; native local pair for unchanged writer.
         results = [

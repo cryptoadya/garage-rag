@@ -4,8 +4,8 @@ import json
 from pathlib import Path
 
 import pytest
+from conftest import Model, control, tool
 from langchain_core.messages import AIMessage
-from test_agentic import Model, control, tool
 from test_workflow import hit
 
 from garage_rag.agentic import run_agentic

@@ -3,7 +3,7 @@
 import json
 
 import pytest
-from test_agentic import Model, control, tool
+from conftest import Model, control, tool
 from test_workflow import hit
 
 from garage_rag.agentic import run_agentic
@@ -202,7 +202,7 @@ def test_unlinked_explicit_applicability_clause_with_unknown_scope_remains_prote
 
 
 def test_multi_search_graph_retains_linked_condition_and_refuses_real_topic_conflict():
-    from test_agentic import reply
+    from conftest import reply
     from test_workflow import audit, draft
 
     a = hit(PROCEDURE, 42)

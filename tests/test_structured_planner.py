@@ -5,18 +5,13 @@ from pathlib import Path
 
 import httpx
 import pytest
+from conftest import decision
 from test_groq import model, success
 from test_workflow import audit, draft, hit
 
 from garage_rag.agentic import run_agentic
 from garage_rag.answer_evaluation import BudgetedPacedLLM
 from garage_rag.source_evaluation import ObservedEvaluationLLM
-
-
-def decision(action, **kwargs):
-    return json.dumps(
-        dict(action=action, method=None, query=None, top_k=None, reason=None) | kwargs
-    )
 
 
 def test_structured_second_planner_keeps_session_capture_and_writer(monkeypatch, tmp_path):
@@ -200,8 +195,8 @@ def test_structured_binding_cannot_bypass_session_limit(monkeypatch):
 
 
 def test_structured_schema_reserved_and_native_history_rejected_before_http(monkeypatch):
+    from conftest import tool
     from langchain_core.messages import HumanMessage, ToolMessage
-    from test_agentic import tool
 
     from garage_rag.generation import GenerationError
     from garage_rag.planner import PLANNER_FORMAT

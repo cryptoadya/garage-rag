@@ -3,58 +3,12 @@
 import json
 
 import pytest
+from conftest import Model, control, reply, tool
 from langchain_core.messages import AIMessage
 from test_workflow import TEXT, audit, draft, hit
 
 from garage_rag.agentic import AgenticLimits
 from garage_rag.generation import GenerationError
-
-
-def tool(name="dense_search", query="cold tire pressure", top_k=3, call_id="c1"):
-    return AIMessage(
-        content="",
-        tool_calls=[{"id": call_id, "name": name, "args": {"query": query, "top_k": top_k}}],
-        response_metadata={"finish_reason": "tool_calls"},
-    )
-
-
-def reply(value):
-    return AIMessage(content=json.dumps(value), response_metadata={"finish_reason": "stop"})
-
-
-def control(text="FINALIZE"):
-    if text == "FINALIZE" or text.startswith("REFUSE "):
-        return AIMessage(
-            content="",
-            tool_calls=[
-                {
-                    "id": "control",
-                    "name": "finalize" if text == "FINALIZE" else "refuse",
-                    "args": {} if text == "FINALIZE" else {"reason": text[7:]},
-                }
-            ],
-            response_metadata={"finish_reason": "tool_calls"},
-        )
-    return AIMessage(content=text, response_metadata={"finish_reason": "stop"})
-
-
-class Model:
-    provider = "groq"
-    max_tokens = 512
-
-    def __init__(self, *responses):
-        self.responses = list(responses)
-        self.messages = []
-
-    def bind_tools(self, tools, **kwargs):
-        return self
-
-    def invoke(self, messages):
-        self.messages.append(messages)
-        response = self.responses.pop(0)
-        if isinstance(response, Exception):
-            raise response
-        return response
 
 
 def run(model, search=None, **kwargs):

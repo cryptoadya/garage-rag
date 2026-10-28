@@ -197,7 +197,7 @@ def test_agentic_cli_real_local_index(
 ):
     from contextlib import nullcontext
 
-    from test_agentic import Model, control, reply, tool
+    from conftest import Model, control, reply, tool
     from test_workflow import audit, draft
 
     from garage_rag.index import Index
