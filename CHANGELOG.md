@@ -7,6 +7,9 @@ is available in [Git commits](https://github.com/cryptoadya/garage-rag/commits/m
 
 ### Added
 
+- Phase 5A FastAPI MVP: `GET /health` and `POST /ask` reuse Direct/Grounded
+  workflows and CLI public responses, with strict EN/DE/RU request validation,
+  sanitized errors, one in-flight answer and lifespan-owned Qdrant/provider resources.
 - Three-mode answer evaluation: fixed fictional EN/DE/RU cases, matched/pairwise
   summaries, completeness, citation/warning review and resource accounting.
 - Hash-bound tool/schema captures and external review packets; same-model audits
