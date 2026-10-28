@@ -1153,3 +1153,67 @@ section and warning applicability, plus bounded local retrieval of referenced or
 missing continuation passages. The selector already honors explicit scope links;
 this change does not invent them for the BMW corpus or add an unbounded reader,
 new reranker, larger budget, or alternate model. No live test is part of this work.
+
+
+## Wire accounting and remaining default-route limit — 2026-10-28
+
+An additional controlled replay restored the **default four-search ceiling** and
+therefore the extra structured finalize turn. This exposed a distinct cumulative
+budget limit after context packing was corrected: at the scoped-selector commit
+`641b2b9`, the three-search/default-route fixture stops at `token_budget_exhausted`
+after four planner calls, before writing. Holding 18,597 tokens leaves too little
+for the writer and its audit. The five-call result in the preceding table used
+an explicitly lowered three-search ceiling and is not default-route acceptance.
+
+Model wire payloads now omit only known index bookkeeping fields while full raw
+metadata stays in Evidence Store and the local source map. Revision matching still
+uses the original content hash. All document/page references, applicability,
+warning/layout metadata, unknown metadata fields and passage text are preserved.
+Full protection/dependency/overlap diagnostics and hashes remain in trace/captures;
+model inputs get compact selected roles, exclusions, found/stored counts and the
+substantive-evidence flag. No source text or required warning was dropped to make
+this optimization. No context/token/call/output ceiling was increased.
+
+| Final wire observation | Found / unique | Protected | Protected chars | Selected / excluded | Context chars | Actual controlled graph result |
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
+| Same saved two searches, default ceiling four | 10 / 9 | 3 | 5101 | 4 / 5 | 6895 | insufficient_evidence; three planner calls, no writer/auditor |
+| Additional local third search, default ceiling four | 15 / 13 | 7 | 8772 | 8 / 5 | 9660 | token_budget_exhausted; four planner calls + writer, audit not invoked |
+| Same three batches, explicitly lowered ceiling three | 15 / 13 | 7 | 8772 | 8 / 5 | 9660 | audited_evidence in five-call fixture only |
+
+Membership and original text are identical to the preceding scoped-selection
+observations: S1,S4,S6,S8 after two searches; S4,S6,S8,S9,S10,S11,S12,S13 after
+three. Only the wire bookkeeping/diagnostic representation changed. Mandatory
+unknown-scope S4/S6/S8 remain intact; none were silently declared irrelevant.
+
+The default three-search-plus-finalize path holds **20,823** tokens through the
+writer. The mandatory audit requires **4,373**, but only **3,177** remain. The full
+fixture would need **25,196**, exceeding the unchanged **24,000** by **1,196**.
+The audit request is rejected before invocation, and the candidate is never exposed
+as a supported answer. The three-search-ceiling fixture holds **19,898** for its
+five calls. These are pinned-tokenizer conservative reservations, not provider
+usage or live outcomes; all model replies and audit judgments are local fixtures.
+No HTTP request or live semantic recovery is claimed.
+
+The initial desired positive default-route regression was not supported by those
+measured reservations. Its acceptance contract instead verifies the required safe
+stop, retained candidate/evidence, unchanged cap and absence of an unaudited answer.
+Other wire regressions verify compact diagnostics, intact source text, preserved
+applicability and complete original metadata in the store/local citation map.
+Full local acceptance: **463 pytest tests passed**, Ruff passed; build/CI evidence
+for the delivered revision is recorded in PR #5.
+
+This leaves a concrete architectural boundary. Reserving two *call slots* does
+not reserve enough *tokens* for writing and auditing after another planner turn.
+The smallest follow-up is a token-aware handoff that reserves a conservative
+writer/auditor envelope before spending the next planner/finalize turn, reusing
+the existing budget-ceiling route to writing once substantive evidence is available.
+If that envelope cannot fit, refuse. The existing configured three-search ceiling
+illustrates the shorter route without raising limits. This policy is proposed,
+not implemented or represented as a default-route success here. For reliable
+pruning of unknown-scope warnings, explicit procedure/warning scope metadata remains
+the separate minimal extension described above.
+
+New exact default-route/wire captures are under ignored
+`output/private/agentic-context-wire-20261027/`; earlier captures and all historical
+Phase 4B outcomes remain unchanged. PR #5 stays open, with no merge/tag/Release
+and no live API experiment.

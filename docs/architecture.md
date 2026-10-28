@@ -206,8 +206,11 @@ or agent-controlled filesystem mutation.
    reference labels remain opaque, never assumed equal to PDF page numbers. Off-topic
    prose is excluded even when it would fit. Raw dense/BM25 scores are never compared.
    Discovery order keeps displayed IDs stable after selection. Text is never cut or
-   summarized. Full applicability metadata travels with selected text; only the
-   display URL and a duplicate page label are omitted from the wire metadata.
+   summarized. All applicability and unknown metadata travel with selected text.
+   The wire omits the display URL, duplicate page label and known index bookkeeping
+   (`document_id`, `content_sha256`, `chunk_index`, `char_start`, `char_end`, `tokens`).
+   Revision matching, dependency links and local citations use the full original
+   metadata, including the omitted revision hash.
    Original documents, URLs and pages remain in the local source map.
 
 Planner history retains the question, latest correlated search/result pair, and a
@@ -231,6 +234,11 @@ a later provider/quota failure can still appear as an attempted delivery. No PDF
 text, metadata, filenames, queries or paths enter these public diagnostics.
 Evaluation private captures include `evidence_store`, even when selection stops;
 rejected raw hits can now be inspected without reconstructing historical searches.
+Model tool results carry compact roles/exclusions/counts/sufficiency diagnostics;
+the full protection/dependency maps, overlap counts and hashes stay in the trace.
+This reduces repeated wire overhead without removing evidence or weakening the
+request token guard. A fitting character context can still exhaust cumulative
+tokens before its mandatory audit; such a draft is never returned as supported.
 
 Lexical relevance and safety cues are conservative heuristics, not semantic proofs.
 Unmarked warnings or paraphrased conflicts on unrelated pages can escape detection;

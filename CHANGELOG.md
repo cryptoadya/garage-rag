@@ -19,6 +19,10 @@ is available in [Git commits](https://github.com/cryptoadya/garage-rag/commits/m
 
 ### Fixed
 
+- Agentic model inputs omit known index bookkeeping and carry compact diagnostics;
+  full provenance and diagnostic maps remain in private evidence/trace captures.
+  Default-route offline replay still refuses when its mandatory audit cannot fit
+  the unchanged token budget; this is not relabeled as answer recovery.
 - Agentic separates navigation references from substantive evidence, filters generic
   query matches, and attaches conditions through procedure-page or explicit scope
   links. Bare conditional words and adjacent pages no longer protect every hit;

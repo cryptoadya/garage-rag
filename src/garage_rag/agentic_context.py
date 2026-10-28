@@ -206,7 +206,18 @@ def select_context(store, question, *, max_chars=12000, max_chunks=20):
     for sid, item in store.entries.items():
         document = item.document
         metadata = deepcopy(document.metadata)
-        metadata.pop("source_url", None)
+        # Index bookkeeping stays in the full store/local citation map. None of
+        # these keys express applicability; preserve all other, even unknown, keys.
+        for key in (
+            "source_url",
+            "document_id",
+            "content_sha256",
+            "chunk_index",
+            "char_start",
+            "char_end",
+            "tokens",
+        ):
+            metadata.pop(key, None)
         if str(metadata.get("pdf_page")) == str(metadata.get("page_label")):
             metadata.pop("page_label", None)
         entries[sid] = {"source_id": sid, "metadata": metadata, "text": document.page_content}
@@ -230,7 +241,7 @@ def select_context(store, question, *, max_chars=12000, max_chunks=20):
             protected[sid].append("procedure_topic")
 
     def revision(sid):
-        m = entries[sid]["metadata"]
+        m = store.entries[sid].document.metadata
         return m["document"], m.get("content_sha256")
 
     def scopes(sid):

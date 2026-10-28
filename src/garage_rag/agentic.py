@@ -410,7 +410,15 @@ def run_agentic(
             {
                 "sources": json.loads(context.text),
                 "new_sources": len(set(context.sources) - set(state["context"].sources)),
-                "selection": selection.diagnostics,
+                # Full protection/dependency maps and provenance hashes stay in
+                # trace/captures; models need roles, exclusions and sufficiency.
+                "selection": {
+                    "has_substantive_evidence": selection.diagnostics["has_substantive_evidence"],
+                    "roles": {sid: selection.diagnostics["roles"][sid] for sid in context.sources},
+                    "excluded": selection.diagnostics["excluded"],
+                    "found": selection.diagnostics["found"],
+                    "stored": selection.diagnostics["stored"],
+                },
                 "search_history": evidence_store.history(),
             },
             ensure_ascii=False,
