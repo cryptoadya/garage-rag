@@ -37,6 +37,8 @@ is available in [Git commits](https://github.com/cryptoadya/garage-rag/commits/m
 
 ### Fixed
 
+- PDF uploads distinguish invalid source PDFs (422) from local indexing and
+  embedding validation failures (500), retaining existing CLI PDF diagnostics.
 - Local web UI text contrast for hints, source metadata, loading and refusal states.
 - Groq Agentic uses strict structured planner decisions with local search dispatch;
   the optional native backend uses serial search/finalize/refuse actions.

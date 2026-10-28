@@ -14,7 +14,7 @@ from langchain_core.documents import Document
 from qdrant_client import QdrantClient, models
 
 from .config import IndexConfig, digest
-from .ingestion import chunk_pages, extract_pdf
+from .ingestion import PDFValidationError, chunk_pages, extract_pdf
 
 COLLECTION = "garage_rag"
 
@@ -141,7 +141,7 @@ class Index:
         )
         diagnostics.update(chunk_diagnostics)
         if not chunks:
-            raise ValueError("PDF produced no text chunks; OCR may be needed")
+            raise PDFValidationError("PDF produced no text chunks; OCR may be needed")
         extraction_seconds = time.perf_counter() - started
         embedded = reused = 0
         for offset in range(0, len(chunks), batch_size):

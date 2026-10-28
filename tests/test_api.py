@@ -481,6 +481,20 @@ def test_indexing_failure_is_sanitized_and_preserves_previous_revision(api_setup
     assert not list(api_setup.pdf_dir.rglob("*.pdf"))
 
 
+def test_invalid_embedding_vectors_are_a_server_error_not_a_bad_pdf(api_setup, pdf_path):
+    with TestClient(api_setup.app) as client:
+        embeddings = api_setup.adapters[0]
+        embeddings.embed_documents = lambda texts: [[1.0] for _ in texts]
+        response = upload(client, pdf_path.read_bytes())
+        assert response.status_code == 500
+        assert response.json() == {
+            "detail": "PDF indexing failed. Check local storage and embeddings."
+        }
+        assert len(client.get("/documents").json()["documents"]) == 1
+        assert client.post("/ask", json={"question": "tires?"}).json()["supported"]
+    assert not list(api_setup.pdf_dir.rglob("*.pdf"))
+
+
 @pytest.mark.parametrize("operation", ["ask", "index"])
 def test_index_operations_are_exclusive_but_health_and_list_stay_responsive(api_setup, pdf_path,
                                                                           monkeypatch, operation):

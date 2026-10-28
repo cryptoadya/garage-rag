@@ -21,6 +21,7 @@ from .config import IndexConfig
 from .embeddings import E5Embeddings
 from .generation import make_llm
 from .index import Index
+from .ingestion import PDFValidationError
 from .profiles import profile_config
 from .workflow import WorkflowResult, run_direct, run_workflow
 
@@ -210,7 +211,7 @@ def create_app(
             return response
         except HTTPException:
             raise
-        except (PdfReadError, ValueError):
+        except (PdfReadError, PDFValidationError):
             raise HTTPException(
                 422, "Could not index PDF. Use an unencrypted PDF with readable text; "
                 "damaged files and scans without text are not supported.",
