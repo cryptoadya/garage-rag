@@ -1345,3 +1345,187 @@ session guard and fresh private captures. No forced query sequence, retry, fallb
 resume or other workflow mode. Inspect handoff arithmetic, exact actual requests,
 all warnings/conditions/citations against the original PDF, and mandatory audit.
 A supported result would be new single-case evidence, separate from frozen Phase 4B.
+
+## One authorized Agentic-only live trial at 587f6c4 — 2026-10-28
+
+**Result: unsuccessful task completion; safe `insufficient_evidence` refusal.**
+Exactly one production Agentic workflow ran. After two autonomous dense searches,
+the third Planner explicitly refused. Writer and mandatory auditor were **not
+invoked**, and no positive answer was delivered. Neither context nor token budget
+was exhausted. This trial does not live-validate the writer/auditor handoff branch
+or demonstrate recovery of the toolkit answer. The prior controlled offline
+handoff result remains an orchestration test with fixture replies.
+
+This is a separately authorized observation, not a replacement or additional row
+in historical Phase 4B: **Direct 2/2, Grounded 2/2, Agentic 1/2 remain unchanged**.
+PR #5 remains open. No retry, fallback, resume, second trial, other workflow mode,
+merge, tag or Release was performed.
+
+### Binding, current account checks and execution protocol
+
+Production ran unchanged at exact commit
+`587f6c430f51b8fe9c89e31dd94343392d5da36b`, with a clean checkout and imported
+runtime/source-byte checks before execution, every HTTP request and after the run.
+An ignored observer runner added capture, shared session guards, pacing and a
+durable one-shot marker, without modifying production requests, replies, prompts,
+search decisions, selector, limits or answer gates.
+
+Question: **Where is the onboard tool kit and how do I access it?** The original
+English `toolkit_access` question was read from the frozen held-out dataset.
+Groq `openai/gpt-oss-120b`, temperature zero, on-demand service, unchanged strict
+Structured Outputs Planner/schema and no native provider tool calls. Ordinary
+Agentic limits: four searches, six LLM/API calls, 24,000 reserved tokens, twelve
+graph steps, top-k capped at five, 1,024 completion tokens including reasoning per
+call. No scripted search sequence or extra warmup retrieval.
+
+Before the first request, authenticated Groq Console showed **Free / Current Plan**,
+limits 30 RPM / 1,000 RPD / 8,000 TPM / 200,000 TPD, one visible project and one
+non-expiring key. Its 27 calls in the last 24 hours matched the latest cumulative
+local history. The same key was verified privately; no key, suffix or key hash is
+published. Console usage may lag by fifteen minutes. The environment's missing
+Free Plan attestation was supplied process-only after this current verification;
+no account, payment or `.env` setting changed.
+
+The latest cumulative quota checkpoint, including failed unknown-usage holds of
+4,040 / 3,847 / 3,467 tokens, was restored. Earlier overlapping checkpoints were
+checked for active-event coverage rather than added together. All 27 known
+rolling-day entries, totaling 58,732 tokens, remained active: conservative
+headroom was **973 requests / 141,268 tokens**, sufficient for the whole authorized
+6-call / 24,000-token envelope. Previous minute windows/cooldowns had expired;
+history was not reset at midnight. No model request was spent on quota probing.
+
+Binding checks passed for the original 186-page PDF
+(`9faf9c33f9958f037c77032e514295378ddb490217c1d37015d6ca0fb48b4574`),
+frozen dataset, 241 active baseline-index chunks and logical chunk digest
+`808cfb5e7ef6cf11d343c863f79a4ac562bbe83627a12d52c85c74b81b450a24`.
+The baseline fingerprint was
+`abcaba77b00d2a4440d2f2db11de669a2b12f27d96cf42532484084638da473f`.
+E5 and the production GPT-OSS tokenizer loaded from local cache with downloads
+disabled. Tokenizer revision was
+`b5c939de8f754692c1647ca79fbf85e8c1e70f8a`; strict planner schema digest was
+`a252cf4b9816287a5673e8ecfde61e7c2ba48c2dbb6f159da5931a22b5db8f53`.
+PDF bytes, index manifest/chunk digest and runtime bindings remained unchanged.
+
+### Actual autonomous route and source delivery
+
+| Planner call | Real structured decision | Retrieved physical PDF pages, in rank order |
+| --- | --- | --- |
+| 1 | dense, `onboard tool kit location access vehicle manual`, top-k 5 | S1:180, S2:182, S3:181, S4:8, S5:31 |
+| 2 | dense, `BMW E39 onboard tool kit location how to access`, top-k 5 | S6:10, S4:8 (duplicate), S7:9, S8:146, S9:63 |
+| 3 | refuse, `insufficient_evidence`; no query/method/top-k | no further search |
+
+All three HTTP calls returned 200, valid strict structured decisions and complete
+usage. BM25 was available but was not chosen. The original page-150 toolkit
+procedure and corroborating page 23 were never retrieved. S1 supplied a page-150
+navigation pointer, not the physical location/access instructions.
+
+| After search | Found / stored / duplicate hits | Protected (serialized characters) | Selected / excluded | Context characters |
+| --- | --- | --- | --- | --- |
+| 1 | 5 / 5 / 0 | 1 (1,940) | 2 / 3 | 3,734 |
+| 2, cumulative | 10 / 9 / 1 | 4 (6,475) | 5 / 4 | 8,269 |
+
+The selector kept S1 as navigation and S4/S6/S8/S9 as conservative
+`unscoped_warning` evidence (pages 8/10/146/63). Final excluded IDs were
+S2/S3/S5/S7, each with reason `off_topic`; no protected item was blocked and no
+passage was cut. The 12,000-character / twenty-chunk limits stayed unchanged.
+`has_substantive_evidence` was false after both searches. The retained unrelated
+safety material did not cause an overflow in this trial.
+
+Actual source delivery was: Planner 1 none; Planner 2 S1,S4; Planner 3
+S1,S4,S6,S8,S9. No writer/auditor sources were sent. All nine original passages,
+metadata, ranks, scores and origins remain in the private Evidence Store; the
+duplicate page-8 hit retained S4. Hash checks confirmed intact original text in
+the actual model contexts and source-review packet. Public report tables contain
+only source diagnostics, not PDF passages.
+
+### Token-aware checks and actual accounting
+
+Audit quotes below **already include** the 2,184-token draft growth/framing
+allocation; that allocation is not added a second time. Quotes are unspent
+capacity, not reservations charged to the session.
+
+| Before additional Planner | Spent | Remaining | Writer quote | Audit envelope | Terminal pair | Planner quote | Projected spent + pair + Planner | Decision |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| After search 1 | 2,590 | 21,410 | 2,980 | 4,944 | 7,924 | 3,724 | 14,238 | continue |
+| After search 2 | 6,314 | 17,686 | 4,222 | 6,055 | 10,277 | 4,857 | 21,448 | continue |
+
+Both conservative checks allowed another autonomous Planner invocation. Neither
+required handoff, and no terminal capacity was allocated to writer/auditor.
+The third Planner then refused explicitly; the controller did not override that
+decision with a writer call. This live route did not reach a third search or the
+optional finalize-displacing-audit condition from the saved offline replay.
+
+| HTTP call / role | Held reservation | Actual input | Actual completion (reasoning included) | Actual total | HTTP status |
+| --- | ---: | ---: | ---: | ---: | --- |
+| 1 / Planner | 2,590 | 457 | 82 (22 reasoning) | 539 | 200 |
+| 2 / Planner | 3,724 | 1,591 | 74 (27 reasoning) | 1,665 | 200 |
+| 3 / Planner | 4,857 | 2,724 | 121 (79 reasoning) | 2,845 | 200 |
+| Total | **11,171 / 24,000** | **4,772** | **277 (128 reasoning)** | **5,049** | **3 / 6 calls** |
+
+Actual HTTP starts were 09:59:57.981, 10:01:00.243 and 10:02:02.183 UTC;
+monotonic intervals were **62.264 / 61.936 seconds**, both above 61 seconds.
+Execution took 126.853 seconds including pacing, not intrinsic model latency.
+The graph used six of twelve steps and two of four searches. No provider error,
+quota refusal, context overflow or token exhaustion occurred.
+
+Session reservations were charged once per actual invocation and remained
+11,171 despite smaller reported usage; the unused 12,829 was not spent.
+Separately, unchanged production provider quota accounting reconciles successful
+known-usage calls to actual tokens. Its saved cumulative history now contains
+30 events / 63,781 tokens (58,732 previous + 5,049 actual), preserving every prior
+event and all failed unknown-usage reservations. This is distinct from the
+no-refund session/Agentic reservation guard. USD billing was not measured.
+
+### Delivered answer and separate original-PDF AI review
+
+The delivered response was exactly:
+
+> There is not enough evidence in the retrieved context to answer this question.
+
+Reason `insufficient_evidence`, `supported=false`, no error, candidate draft,
+substantive answer, citation or quotation. Mandatory audit acceptance is absent;
+the user-defined success criterion was **not met**.
+
+A separate AI reviewer received only the question/mode, delivered answer, actual
+sent sources, all retrieved hits and original PDF, without audit verdict, cost,
+wire/capture internals, implementation or prior reports. It fixed a private,
+answer/source/PDF-hash-bound judgment before exposure to those data. It searched
+all 186 extracted pages and visually inspected all nine unique retrieved pages
+(including every excluded hit), plus relevant original procedure pages.
+
+Judgment: **safe refusal given insufficient sent context, but incomplete and
+answerable from the full corpus**. Neither location nor access was answered.
+Original p150 supplies both: the kit is on the underside of the luggage-compartment
+lid/tailgate, accessed by releasing its wingnut; p23 corroborates the location and
+container access. These are reviewer findings, not an answer generated by this
+workflow. Citation correctness and quote containment for the delivered refusal
+are not applicable, not a citation-pass score.
+
+No substantive location/access hit was lost by this selector: none of all nine
+unique retrieved passages contains the procedure. An excluded index pointer
+duplicates the retained S1 pointer. All source page/revision provenance was
+faithful, allowing ordinary extraction/whitespace/symbol artifacts. The reviewer
+found no toolkit-specific warning in the p150 toolkit column; neighboring wiper
+instructions, emergency tailgate-release steps and wheel-changing tool locations
+were kept in their separate scopes. No actual vehicle/body-style applicability
+was verified. This is a separate AI source check, not independent human review;
+question/mode were known and only listed relevant pages were visually inspected.
+
+### Verification and retained artifacts
+
+One-shot/protocol checks passed: exactly one workflow, three actual requests,
+unchanged strict schema/settings/runtime, source/answer/review hash bindings,
+intact selected text, standard caps, measured pacing and preserved historical
+quota events. Raw requests/replies (including private provider reasoning), full
+search results, source contexts, account observations, quota state, review packet,
+PDF renders and durable execution marker remain ignored under
+`output/private/agentic-handoff-live-587f6c4-20261028/`. No raw PDF passages, keys,
+provider reasoning or account identifiers enter this public report.
+
+Post-run **481 full offline pytest tests passed**, Ruff and `pip check` passed.
+The first offline test invocation lacked the project `HF_HOME`, so the private
+tokenizer replay could not find its local cache (480 passed / 1 failed); using the
+existing project cache with downloads disabled resolved it, without code changes.
+Wheel/sdist and delivered report-commit CI are recorded in PR #5. This report-only
+update preserves the entire earlier report prefix, production code, Direct/Grounded
+and frozen benchmark artifacts. There was no tuning or additional live execution.
