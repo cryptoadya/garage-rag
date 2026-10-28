@@ -1529,3 +1529,156 @@ existing project cache with downloads disabled resolved it, without code changes
 Wheel/sdist and delivered report-commit CI are recorded in PR #5. This report-only
 update preserves the entire earlier report prefix, production code, Direct/Grounded
 and frozen benchmark artifacts. There was no tuning or additional live execution.
+
+## Offline navigation and search-choice diagnosis after fce4ed1 — 2026-10-28
+
+**Diagnosis and proposal only; production behavior is unchanged.** No live model
+request, retry or additional experiment authorization was used. The frozen
+Phase 4B scores and the single live refusal above remain unchanged. Inspection
+used the exact saved live requests/replies and active local corpus at fce4ed1;
+all production source bytes still match the tested 587f6c4 implementation.
+
+### What the real Planner actually knew
+
+The second Planner received S1's intact toolkit-to-page-150 index entry, its
+`navigation` role, `has_substantive_evidence=false`, the first query and three
+remaining searches. The third received the same pointer, both complete query/ID
+history entries, five selected sources, the same false sufficiency flag and two
+remaining searches. Query history was compacted, not lost. New selected sources
+increased by three, but all three additions were safety material rather than
+substantive toolkit evidence.
+
+The schema and dispatch expose only semantic `dense` and lexical `bm25` searches;
+there is no page/reference action. Although the prompt says to follow references,
+the target remains an embedded text entry, without a structured topic/target card
+or a resolver. In Structured Outputs mode the model gets method names without the
+native tools' explanatory descriptions of semantic versus exact-term retrieval.
+No policy explains what to do when dense reformulation yields only navigation
+and unrelated safety material, or distinguishes new source IDs from evidence gain.
+
+The repetition guard keys `(method, normalized full query, top_k)`: the second
+query differs from the first, so it is legally accepted. It is not an exact-repeat
+bug. Neither semantic similarity nor zero substantive progress changes routing.
+After searching, `refuse / insufficient_evidence` is also a valid terminal decision;
+there is no requirement to exhaust every search or try every method. The budget
+check allowed Planner 3 (projected 21,448 / 24,000), which explicitly refused.
+There was no controller-forced refusal, truncation, malformed decision, quota error
+or missing index page.
+
+These are demonstrated interface/orchestration causes and missed opportunities,
+not knowledge of the model's internal motivation. Saved decisions establish what
+it did, not why one alternative received a higher internal preference. No private
+provider reasoning is used as an explanation or published.
+
+### Offline reproduction and method comparison
+
+A guarded replay supplied the three captured real replies and their two original
+search batches to unchanged production orchestration, using the pinned local
+GPT-OSS tokenizer. All captured model requests/replies compare equal to the live
+record. It reproduces **3 Planner calls / 2 searches / 11,171 reserved tokens /
+8,269 context characters / insufficient_evidence**, without writer/auditor.
+HTTP transport was blocked and recorded zero calls. This is reproduction of a
+known decision sequence, not a fresh model policy evaluation.
+
+Ten analyst-declared local retrieval probes used the same active 241-chunk index,
+E5 and BM25, top-k five. No model selected these counterfactual queries.
+
+| Query | Dense physical PDF pages, ranked | BM25 physical PDF pages, ranked |
+| --- | --- | --- |
+| Original English question | 23,180,85,31,100 | 150,47,23,163,157 |
+| First actual Planner query | 180,182,181,8,31 | 150,47,23,180,163 |
+| Second actual Planner query | 10,8,9,146,63 | 150,47,23,39,163 |
+| Exact topic heading extracted from S1 | 165,180,147,182,31 | 47,23,150,39,6 |
+| Same heading plus its reference label | 165,147,150,175,30 | 47,23,150,39,47 |
+
+Both real dense batches reproduce locally. The original question's dense results
+already include useful p23; its reformulations lose that hit. BM25 retrieves the
+direct p150 procedure at rank one with either actual Planner query. Thus the
+procedure is indexed and reachable with an existing method. Dense is not uniformly
+better or worse, and adding a numeric page label is not a general navigation rule.
+
+The current structural index parser extracts the topic heading and opaque label
+from S1 without a document/page-specific rule. Local BM25 on that heading, appended
+to the saved evidence, gives these unchanged-selector results:
+
+| Counterfactual point | Cumulative found / unique | Protected | Selected / excluded | Context characters | Pure writer + audit envelope | Prior/planner spend + envelope |
+| --- | --- | ---: | --- | ---: | ---: | ---: |
+| After first recorded dense search | 10 / 10 | 5 | 6 / 4 | 7,401 | 10,099 | 16,413 |
+| After both recorded dense searches | 15 / 14 | 8 | 9 / 5 | 11,940 | 12,450 | 23,621 |
+
+Both contexts include p150 and p23, preserve every protected passage intact and
+fit the ordinary 12,000-character limit. Quotes use unchanged writer/auditor
+requests, full 1,024 completion allowance and the existing draft-growth allocation;
+they make no model calls or ledger debits. Assumed search-decision spend is 6,314
+or 11,171 respectively, corresponding to the original full-input planner quotes.
+There is **no writer response, audit verdict or successful answer** in these probes.
+The late alternative leaves only 379 tokens beyond its conservative terminal pair;
+new planner guidance/cards would also need quoting and could consume that margin.
+Earlier useful retrieval is preferable to assuming a late repair will always fit.
+
+### Recommended smallest coherent change — not implemented
+
+First improve the existing search contract, keeping its strict Structured Outputs
+schema and all retrieval/answer budgets intact. A new PDF-opening tool is not
+necessary to test the demonstrated missing opportunity:
+
+1. Expose a small bounded set of **navigation leads** from already recognized,
+   relevant index entries: origin source ID, exact topic heading, opaque target
+   label and `search_required` status. Bind each lead privately to its original
+   document revision and text span. Reuse existing navigation recognition; do not
+   promote the lead to answer evidence, interpret its number as a physical page,
+   invent an instruction or extract a warning into an incomplete snippet.
+2. Give Planner concise **method/progress guidance**: dense for semantic discovery;
+   BM25 for exact headings/identifiers. Report methods tried and newly added
+   substantive evidence separately from raw/new-selected source counts. With only
+   navigation/safety and no substantive gain, prefer an untried search using the
+   observed heading or a method change over another generic dense paraphrase.
+   Before an insufficiency refusal, consider remaining relevant leads and budget.
+   Availability must honor `allow_lexical`; sufficiency remains a heuristic.
+3. Keep the choice with Planner. Do not silently rewrite dense into BM25, impose a
+   fixed method sequence, suppress justified refusals, auto-resume or spend an
+   extra call on a rejected decision. Quote the complete updated prompt/cards
+   through existing token-aware handoff before every actual invocation. Continue
+   using the unchanged Evidence Store, Context Selector, provenance/citation gates,
+   applicability checks, writer and mandatory auditor.
+
+This is a small prompt/payload change in the Agentic path, not a claim that prompt
+guidance guarantees model compliance. It provides an executable navigation route
+through an existing tool and can be tested without changing provider protocol.
+Three separate synthetic EN/DE/RU index examples with unrelated topics/page labels
+also yielded their relevant exact heading through the existing parser; these
+mechanical examples do not establish broad language or model-quality performance.
+
+### Why a blind page-opening shortcut is unsafe
+
+The E39 PDF has **no explicit `/PageLabels`**. Current ingestion records
+`PdfReader.page_labels`, which defaults to physical ordinal labels when none are
+provided. Its matching p150 was confirmed against the original PDF, not proven by
+the number alone. A separate four-page synthetic PDF reproduces the failure of a
+naive rule: index target printed label `2` is physically page 4, while default PDF
+label `2` resolves to page 2 containing front matter.
+
+If later cases require exact reference navigation rather than heading search,
+the smallest architectural extension is a bounded `follow_reference(reference_id)`
+action backed by a **verified printed-label-to-physical-page map**, current document
+revision and origin span. It must detect ambiguous/missing labels and stale
+revisions, return all intact required page chunks or a controlled unresolved/budget
+result, preserve warnings/continuations and consume the existing retrieval budget.
+No arbitrary file paths, URLs, guessed offsets or top-k truncation of a required
+page. Such an action requires an explicit strict-schema/protocol extension and
+resolver tests; it is not hidden inside the existing free-text query field and
+is not implemented or needed for the present heading-search proposal.
+
+Acceptance for the proposed first change should cover navigation-only progress,
+method availability, compact bounded leads, offset/ambiguous references remaining
+opaque, unchanged query dispatch, warning/conflict retention, source/revision IDs
+and full updated-request budgets. Scripted decisions can verify those contracts;
+whether the real Planner now chooses the useful alternative remains unmeasured.
+
+Private replay, real local retrieval matrix, counterfactual evidence, pure quotes,
+generic extraction probes and synthetic offset PDF are retained under ignored
+`output/private/agentic-navigation-diagnosis-20261028/`. Original live captures were
+read only; PDF/index bytes and logical digest remain unchanged. No raw PDF passages
+or provider reasoning are included here. **115 focused offline regression tests
+and Ruff passed**; delivered-commit CI evidence is recorded in PR #5. No production
+fix or live-quality improvement is claimed by this diagnostic report.
