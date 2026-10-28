@@ -224,6 +224,22 @@ from invoking writer/auditor and returns `insufficient_evidence`. This flag only
 detects the absence of substantive candidates; true does not certify sufficient
 evidence, applicability or safety. Existing local gates and mandatory audit still run.
 
+Both planner prompts explain Dense semantic discovery versus BM25 exact headings
+and identifiers. When there is no substantive evidence, they suggest considering
+an untried heading/method before repeating a broad query or refusing. These are
+instructions to the model, not forced routing or a guarantee of useful retrieval.
+Only planner requests receive `navigation_hints`: at most three intact headings
+(at most 120 characters each) and opaque target labels, tied to selected source
+IDs. The helper reuses structural reference-list recognition and question-topic
+matching, deduplicating within a document revision. Long/unmatched headings are
+skipped, not truncated; full original passages remain in the context/store.
+No label is treated as a physical page number and no page-opening tool is added.
+Hints are untrusted navigation data, never answer evidence or executable commands.
+The decorator copies the planner's last result message without changing graph
+state, so writer/auditor inputs keep their original payload. Full updated planner
+prompts, hints, history, schema and output allowances are quoted by the existing
+request and terminal handoff guards; no token/call/search limit is increased.
+
 `context_selections` reports cumulative found/stored/duplicate counts, selected and
 excluded counts/IDs, protection and exclusion reasons, blocked IDs, serialized size,
 protected size/count, evidence roles, overlap counts, dependency source IDs,

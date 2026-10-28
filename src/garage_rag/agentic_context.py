@@ -187,6 +187,33 @@ class Selection:
     reason: str | None = None
 
 
+def navigation_hints(context, question):
+    """Bounded search leads from selected reference lists; never page addresses."""
+    qualifiers = set().union(
+        *(_terms(" ".join(d.metadata.get("vehicle_models", []))) for d in context.sources.values())
+    )
+    focus = _terms(question) - qualifiers
+    hints, seen = [], set()
+    if not focus:
+        return hints
+    for sid, document in context.sources.items():
+        for heading, label in _navigation(document.page_content):
+            if len(heading) > 120 or _focus_match(heading, focus) < min(2, len(focus)):
+                continue
+            key = (
+                document.metadata["document"],
+                document.metadata.get("content_sha256"),
+                heading.casefold(),
+                label,
+            )
+            if key not in seen:
+                hints.append({"source_id": sid, "heading": heading, "target_label": label})
+                seen.add(key)
+                if len(hints) == 3:
+                    return hints
+    return hints
+
+
 def select_context(store, question, *, max_chars=12000, max_chunks=20):
     """Select whole evidence plus scoped dependencies; budget navigation separately."""
     if not 2 <= max_chars <= 12000 or not 1 <= max_chunks <= 20:

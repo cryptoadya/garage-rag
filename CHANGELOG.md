@@ -19,6 +19,10 @@ is available in [Git commits](https://github.com/cryptoadya/garage-rag/commits/m
 
 ### Fixed
 
+- Agentic explains semantic Dense versus exact-term BM25 search and supplies
+  compact, source-bound navigation hints only to Planner. Reference labels remain
+  opaque; no page tool, forced search sequence or answer-gate change is introduced.
+  Updated planner inputs stay inside the existing token-aware budget checks.
 - Agentic checks unspent writer/auditor token headroom before another planning
   turn and hands off substantive evidence when that turn would displace audit.
   Forecasts include complete request/schema/output costs and draft framing/growth;

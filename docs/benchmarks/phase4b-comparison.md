@@ -1682,3 +1682,65 @@ read only; PDF/index bytes and logical digest remain unchanged. No raw PDF passa
 or provider reasoning are included here. **115 focused offline regression tests
 and Ruff passed**; delivered-commit CI evidence is recorded in PR #5. No production
 fix or live-quality improvement is claimed by this diagnostic report.
+
+## Minimal planner guidance and navigation hints — offline implementation, 2026-10-28
+
+The proposed first step is now implemented, without a new tool or architecture.
+Both native and structured planners receive the same explanation of Dense semantic
+search versus BM25 exact words/headings/identifiers. Guidance asks the model to
+consider an untried heading or BM25 when only navigation/safety is available, and
+clarifies that new IDs alone do not establish useful progress. Method/query choice
+and justified refusal remain autonomous; dispatch does not rewrite or force them.
+
+Only planner requests gain `navigation_hints`, extracted from whole selected
+reference lists by the existing recognizer and question-topic matching. Each hint
+contains an existing source ID, exact heading and opaque target label. At most
+three headings of at most 120 characters are sent, deduplicated within a document
+revision. Long/unmatched headings are skipped without truncating their source.
+No target label is converted to a physical page number or executable command.
+This lexical heuristic may miss paraphrased/cross-language leads; original source
+text and ordinary search remain available. Hints are leads, not answer evidence.
+
+The request decorator copies the planner's result message; graph state is unchanged.
+Writer/auditor receive their original payload, with the same source IDs, text,
+provenance, applicability and warning checks. The complete extra prompt/hints are
+included in existing reservation and terminal handoff estimates. Strict Structured
+Outputs schema/digest, tools, Context Selector decisions, all limits, Direct/Grounded
+and generation/auditor implementation remain unchanged. No new dependency or page
+resolver was added.
+
+### Offline evidence
+
+The initial regression run failed four assertions on missing hints; after the
+change, all fourteen new cases pass. They exercise both planner protocols,
+bounded payloads, opaque labels differing from physical pages, intact source text,
+unsafe/unusable lists, EN/DE/RU examples, revision-specific source bindings,
+planner-only delivery and free selection of either Dense or BM25 without rerouting.
+Full offline pytest: **495 passed**; validation/build/CI evidence is recorded in
+PR #5. No test used a live model endpoint.
+
+Two private before/after replays use pinned production GPT-OSS token accounting,
+identical stored search results and captured replies, with HTTP transport blocked.
+They compare against pre-change e7209e1 orchestration:
+
+| Saved route (fixed replies) | Calls / searches | Context characters | Held tokens before → after | Controlled outcome |
+| --- | --- | ---: | --- | --- |
+| Actual single live refusal replay | 3 / 2 | 8,269 | 11,171 → 11,621 | insufficient_evidence, no writer/auditor |
+| Earlier controlled three-search replay | 5 / 3 | 9,660 | 19,898 → 20,348 | audited_evidence, fixture only |
+
+Both gain the source-bound topic heading and target-label hint after their first
+two searches. Evidence Store, selected context and fixed-reply answer compare equal
+before/after. Writer/auditor messages remain identical. All **450 extra reserved
+tokens** belong to actual planner inputs, not phantom calls or terminal debits.
+On the three-search route, after the third planner/search, spent is 11,294 and the
+terminal pair is 11,166; another planner needs 5,456. Handoff therefore protects
+writer/audit without that planner, inside 24,000. Actual audit reservation remains
+4,373. The refusal replay still permits Planner 3, which returns its saved refusal.
+
+These are input-delivery, budget and orchestration checks, not newly generated
+decisions or evidence of improved answer quality. No fresh search route was forced
+into a live model. Private inputs/replies and before/after comparisons remain ignored
+under `output/private/agentic-navigation-minimal-offline-20261028/`. Original live
+captures and every prior report section remain unchanged. Historical Phase 4B
+stays **Direct 2/2, Grounded 2/2, Agentic 1/2**, and the later single live refusal
+is not relabeled. No live API, retry, merge, tag or Release was performed.
