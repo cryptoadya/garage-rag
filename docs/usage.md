@@ -171,9 +171,11 @@ default `grounded`) and `language` (`auto`, `en`, `de`, `ru`, default `auto`).
 Unknown fields are rejected. The response retains CLI `ask --json` fields: `supported`,
 `text` (including verified PDF references), `reason`, `language` and public
 `workflow` observations. HTTP also adds `claims`: an ordered array of
-`{text, citations: [{source_id, document, pdf_page, quote}]}` from the final
+`{text, citations: [{source_id, document, pdf_page, quote, pdf_sha256}]}` from the final
 supported candidate. `pdf_page` is the physical PDF page counted from 1, not
 the printed page label; `quote` preserves the verified quotation verbatim.
+`pdf_sha256` identifies the source PDF content for the viewer and is `null` when
+the source metadata has no content hash.
 Refusals always return `claims: []`, including after an audit rejects a draft.
 CLI output is unchanged. Private context, drafts and raw provider errors are omitted.
 Retrieval uses the CLI defaults (top-k 5, no score threshold) and the existing

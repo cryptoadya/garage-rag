@@ -112,7 +112,8 @@ and numerical tables in the original PDF; it does not replace professional diagn
 - Free providers can be unavailable or rate limited. There is no automatic retry,
   paid fallback, hard total workflow deadline or independent human/vehicle validation.
 - CLI and API require exclusive index access. API/UI are local, without authentication;
-  conversation history and PDF management are not implemented.
+  conversation history and document deletion are not implemented. PDF upload,
+  active-document listing and viewing saved originals are available in the UI.
 - Keep `.env`, PDFs, indexes, caches and captures private, including custom paths.
   Indexes contain source text; `.gitignore` cannot protect already tracked files.
 
