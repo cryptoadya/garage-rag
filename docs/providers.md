@@ -1,31 +1,9 @@
-# Generation providers
+# Groq generation
 
-`ask --provider openrouter|groq` overrides `GARAGE_RAG_PROVIDER`. Indexing and
-search need neither provider. Both transports share the generation prompt,
-JSON schemas, local validator, language handling and bounded LangGraph workflow.
-
-## OpenRouter
-
-Set `OPENROUTER_API_KEY` in the local `.env`. The default is `openrouter/free`;
-`OPENROUTER_MODEL` or `ask --model` can select an explicit `provider/model:free`.
-The client rejects paid model IDs, requires provider parameter support and sets
-prompt/completion/request price caps to zero. SDK retries and provider fallbacks
-are disabled. Free routing still depends on availability and quotas; it does
-not pin an upstream model when using the free router.
-
-`OPENROUTER_MAX_TOKENS` defaults to 8192 (512–32768), shared by reasoning and
-visible output. Truncated responses refuse even if their JSON looks complete.
-The fixed endpoint is `https://openrouter.ai/api/v1`; each completion has a
-60-second network-operation timeout, not a total deadline. See OpenRouter's
-[routing controls](https://openrouter.ai/docs/guides/routing/provider-selection)
-and [reasoning budget](https://openrouter.ai/docs/guides/best-practices/reasoning-tokens).
-
-## Groq Cloud Free Plan
-
-Groq is an additional transport for the existing direct and bounded LangGraph
-workflows. It does not change retrieval baselines, prompts, JSON answer/draft/audit
-schemas, evidence quotations, citation validation, EN/DE/RU language handling,
-case selection, paired summaries or hash-bound review methodology.
+Groq is the only LLM provider for CLI, HTTP API and all answer modes.
+Indexing and search need no provider. `--provider groq` is optional;
+`GARAGE_RAG_PROVIDER`, if set, must be `groq`. Remove obsolete provider settings
+from an existing `.env`; no re-indexing is needed.
 
 ## Setup and billing boundary
 
@@ -42,7 +20,7 @@ garage-rag ask 'How do I check tire pressure?' --provider groq --workflow ground
 garage-rag ask 'Как проверить давление в шинах?' --provider groq --workflow direct
 ```
 
-`GARAGE_RAG_PROVIDER` selects `openrouter` (default) or `groq`; `--provider` wins.
+`GARAGE_RAG_PROVIDER` defaults to `groq`; unsupported values fail closed.
 `GROQ_MODEL` defaults to `openai/gpt-oss-120b`, currently the only allowlisted Groq
 model. `GROQ_MAX_TOKENS` is 2,048 by default, integer 512–4096, including reasoning.
 There is no automatic output repair/retry. Truncated JSON remains a refusal.
@@ -53,7 +31,7 @@ It never uses `auto`, Flex, Batch, remote/built-in tools, provider fallback or r
 Network-operation timeout is 60 seconds, not a whole-workflow deadline.
 No new LLM SDK is needed; `httpx` is an explicit pinned dependency.
 
-Unlike OpenRouter's unchanged zero-price caps, Groq has no request parameter that
+Groq has no request parameter that
 forces zero billing. Free usage depends on the account's plan. Attestation is a
 fail-closed setup guard, not an API-enforced price guarantee. This distinction
 follows Groq's [billing documentation](https://console.groq.com/docs/billing-faqs)
@@ -112,7 +90,8 @@ GROQ_FREE_PLAN_CONFIRMED=true python -m garage_rag.answer_evaluation \
 
 Use a different result path for every provider/model/selection. Reports identify
 provider and model, generation settings, dataset/code/index hashes and observed
-quota state; they cannot merge OpenRouter and Groq into one resumed report.
+quota state. Resume requires the same configuration and code; historical reports
+remain unchanged and must use a separate output path.
 `--max-api-calls` is a per-invocation attempt ceiling; failed attempts consume it.
 The existing five-attempt worst-case reservation per unfinished pair remains.
 With `--modes direct grounded agentic`, the bound is eleven per unfinished
@@ -172,10 +151,7 @@ as `quota_wait_ms`. No automatic retry follows a local/provider error.
 
 ## Agentic planner transport
 
-Agentic defaults to Groq even when `GARAGE_RAG_PROVIDER=openrouter`. An explicit
-`--provider openrouter` remains compatible, with zero-price limits and no fallback;
-Phase 4A makes no OpenRouter live/quality comparison. Other workflows keep their
-provider defaults and existing JSON completion wire format.
+Agentic uses the same Groq model and quota guards as Direct and Grounded.
 
 The experimental Groq planner uses strict `json_schema` Structured Outputs,
 without native tools, tool choice or parallel-tool options. Writer/auditor retain
@@ -184,7 +160,7 @@ JSON-object mode. Planner requests keep `reasoning_effort=low` and
 Full schemas plus framing are reserved alongside input/output, including in
 pinned-tokenizer mode. Bound requests share session and RPM/TPM/RPD/TPD guards.
 See [planner validation and dispatch](architecture.md#agentic-retrieval-phase-4a)
-for the closed contract and optional non-Groq native path. Neither protocol is a
+for the closed contract and optional native tool path. Neither protocol is a
 fallback for the other. Captures bind exact formats and sent sources; offline
 transport checks do not establish inference reliability.
 

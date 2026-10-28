@@ -472,7 +472,7 @@ def _error_category(message, provider_errors=None):
         return "authentication"
     if "free model is unavailable" in message or "Groq model unavailable" in message:
         return "free_model_unavailable"
-    if "OpenRouter request failed" in message or message.startswith("Groq request failed"):
+    if message.startswith("Groq request failed"):
         return "provider_or_network_error"
     return "local_or_workflow_error"
 
@@ -729,7 +729,7 @@ def main(argv=None):
         "--max-total-tokens", type=int, help="Hard session input+output reservation cap"
     )
     cli.add_argument("--requests-per-minute", type=int, default=15, choices=range(1, 16))
-    cli.add_argument("--provider", choices=["openrouter", "groq"])
+    cli.add_argument("--provider", choices=["groq"])
     cli.add_argument("--model", help="Explicit model; Groq defaults to openai/gpt-oss-120b")
     cli.add_argument(
         "--resume", action="store_true", help="Resume identical checkpoint; skip successes"
@@ -804,12 +804,8 @@ def main(argv=None):
         from dotenv import load_dotenv
 
         load_dotenv(Path.cwd() / ".env", override=False)
-        provider = args.provider or os.environ.get("GARAGE_RAG_PROVIDER", "openrouter")
-        selected_model = (
-            args.model or os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b")
-            if provider == "groq"
-            else args.model
-        )
+        provider = args.provider or os.environ.get("GARAGE_RAG_PROVIDER", "groq")
+        selected_model = args.model or os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b")
         if args.live and (data.get("comparative") or "agentic" in modes):
             if type(args.max_total_tokens) is not int or args.max_total_tokens < 1:
                 raise ValueError("Comparative/agentic live evaluation requires --max-total-tokens")
@@ -838,13 +834,7 @@ def main(argv=None):
             "groq_token_accounting": os.environ.get("GROQ_TOKEN_ACCOUNTING", "bytes")
             if args.live and provider == "groq"
             else None,
-            "max_tokens": (
-                os.environ.get("GROQ_MAX_TOKENS", "2048")
-                if provider == "groq"
-                else os.environ.get("OPENROUTER_MAX_TOKENS", "8192")
-            )
-            if args.live
-            else None,
+            "max_tokens": os.environ.get("GROQ_MAX_TOKENS", "2048") if args.live else None,
             "private_captures": str(args.private_captures.resolve())
             if args.private_captures
             else None,
@@ -894,12 +884,6 @@ def main(argv=None):
             validate_live_budget(
                 pairs=pairs - completed_pairs, max_api_calls=args.max_api_calls, modes=modes
             )
-            if provider == "openrouter" and (
-                not selected_model or not selected_model.endswith(":free")
-            ):
-                raise ValueError(
-                    "Choose one explicit :free model for a reproducible live comparison"
-                )
             from .generation import make_llm
 
             llm = BudgetedPacedLLM(

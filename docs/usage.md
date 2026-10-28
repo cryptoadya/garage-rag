@@ -15,15 +15,12 @@ line or commit it to Git.
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `GARAGE_RAG_PROVIDER` | `openrouter` | Direct/grounded provider; agentic defaults to Groq; `ask --provider` overrides either |
-| `OPENROUTER_API_KEY` | Empty | Required for OpenRouter generation |
+| `GARAGE_RAG_PROVIDER` | `groq` | Only supported provider for all modes; `ask --provider groq` is optional |
 | `GROQ_API_KEY` | Empty | Required for Groq generation |
 | `GROQ_FREE_PLAN_CONFIRMED` | `false` | Required local attestation of Groq Free Plan |
 | `GROQ_MODEL` | `openai/gpt-oss-120b` | Initial allowlisted Groq model; `--model` overrides it |
 | `GROQ_MAX_TOKENS` | `2048` | Reasoning + answer budget, 512–4096 |
 | `GROQ_TOKEN_ACCOUNTING` | `bytes` | Conservative reservation; optional pinned offline `tokenizer` mode |
-| `OPENROUTER_MODEL` | `openrouter/free` | Free router or explicit `provider/model:free`; `ask --model` overrides it |
-| `OPENROUTER_MAX_TOKENS` | `8192` | Combined reasoning and answer budget; integer from 512 to 32768 |
 | `GARAGE_RAG_INDEX` | Profile-specific | Private index directory; `--index-dir` overrides it |
 | `HF_HOME` | `.cache/huggingface` under the working directory | Local Hugging Face cache |
 
@@ -118,17 +115,16 @@ uses two completions. `--max-llm-calls 2 --max-searches 1` disables recovery;
 `--workflow direct` selects the original one-completion path. Each completion
 has a 60-second network-operation timeout, not a total deadline. See
 [architecture](architecture.md) for routes, budgets and evidence boundaries.
-For OpenRouter, SDK retries and provider fallback are disabled; prompt, completion and
-request [price caps](https://openrouter.ai/docs/guides/routing/provider-selection#max-price)
-are zero. An explicit free model can be selected with
-`--model provider/model:free`; availability still depends on the provider.
+Groq is the only provider, using the allowlisted `openai/gpt-oss-120b` model.
+Free Plan attestation is required; quota guards stop without retries or fallback.
+See [billing and quota boundaries](providers.md).
 
 | Symptom or reason | Action |
 | --- | --- |
 | Authentication error | Check the local API key without sharing or printing it |
-| HTTP 429 / rate-limit error | Wait and retry manually or choose another explicit free model |
-| Free model unavailable | Select another `:free` model; no paid route is attempted |
-| `output_token_limit` | Increase `OPENROUTER_MAX_TOKENS` within its bounds or select another free model |
+| HTTP 429 / rate-limit error | Wait and resume manually after checking quota reset |
+| Model unavailable | Check Groq availability; no alternate model or paid route is attempted |
+| `output_token_limit` | Increase `GROQ_MAX_TOKENS` within 512–4096, subject to quota guards |
 | `invalid_model_output` | Output failed format, language or evidence checks; inspect local retrieval before retrying |
 | `invalid_audit_output` / `unsupported_claims` | Inspect evidence and applicability; the audit cannot certify truth |
 | `ambiguous_question` / `conflicting_sources` | Clarify the vehicle/conditions or resolve conflicting documents |
@@ -138,8 +134,7 @@ are zero. An explicit free model can be selected with
 | `context_relevance_uncertain` | Overflow has no usable relevance anchors; clarify the question or inspect the original sources |
 | `no_context` / `insufficient_evidence` | Rephrase the question, inspect search results or supply relevant documentation |
 
-[Reasoning tokens share the completion budget](https://openrouter.ai/docs/guides/best-practices/reasoning-tokens#reasoning-tokens-and-max_tokens)
-with the visible JSON answer.
+Reasoning tokens share the completion budget with the visible JSON answer.
 Increasing the budget can prevent truncation but does not extend the timeout
 or relax validation. `finish_reason=length` is rejected even if the response
 looks like complete JSON. Responses are also limited to 20,000 characters;
@@ -232,8 +227,8 @@ Then enter a question, choose Direct or
 Grounded and an answer language (Auto, English, Deutsch or Русский), then submit.
 The UI shows loading, the unchanged answer text, citations grouped by claim
 (document, physical PDF page and exact quote), refusals and request errors.
-Sources use structured response data; the UI does not parse references from text
-or open local PDF files.
+Sources use structured response data; the UI does not parse references from text.
+Select a citation page to view the saved original PDF.
 Questions are limited to 4,000 characters. A new submission replaces the previous
 result; nothing is saved as chat history. Only explicit submissions call `/ask`,
 with no automatic retries.
@@ -265,8 +260,9 @@ the repository and web directories, in unique folders with directory/file
 permissions 0700/0600. The original basename is used for document identity and
 citations; paths and control characters in filenames are rejected. Every accepted
 upload is retained, including unchanged uploads and older revisions. Temporary
-files from failed requests are removed. PDFs have no download/static endpoint;
-neither originals nor their local paths are returned or committed to Git.
+files from failed requests are removed. The viewer endpoint serves only originals
+matching an active document and citation hash; no local paths are returned.
+PDFs are never committed to Git.
 
 Wrong media types return 415, unsafe filenames 400, oversized uploads 413,
 unreadable/damaged/encrypted PDFs or PDFs without text 422, and unexpected local
@@ -280,10 +276,8 @@ Keep credentials in the backend's `.env`; the frontend needs no environment file
 or API key. Both servers bind to loopback. Stop other CLI/server processes using
 the same index before starting FastAPI.
 
-The API embeds document names, PDF page numbers and quotes in plain answer text;
-it exposes no PDF URLs or file-serving endpoint. Clicking a reference jumps to
-its entry in the Sources section. Read the adjacent quote in the answer and open
-your own PDF for the full passage. Source references are preserved as returned;
+The API preserves document names, physical PDF page numbers and exact quotes in
+answer text and structured citations. The viewer uses the structured citations;
 the frontend does not verify evidence or run RAG logic.
 
 For a local build check, run `npm run build` and `npm run preview` from `frontend`,
@@ -291,10 +285,31 @@ then open [the preview](http://127.0.0.1:4173) with the backend still running.
 Preview uses the same local API proxy. This MVP uses Vite's local servers;
 the `dist` files alone do not provide an API proxy.
 
+### Original PDF viewer
+
+Select **PDF page** in a structured citation to open the saved original in a
+local dialog. Previous/next buttons and a physical page input navigate from page 1;
+the browser's PDF preview also supports zoom and search. Use **Open PDF in new tab**
+if your browser does not embed PDFs. Close or press Escape to return to the answer.
+The local PDF is never sent to Groq by the viewer.
+
+`GET /documents/pdf?document=...&sha256=...` serves only a byte-verified PDF from
+the API's private upload store whose name and SHA-256 match an active document.
+It returns PDF bytes with `X-PDF-Pages`, `Cache-Control: no-store` and no local paths.
+Structured citations expose `pdf_sha256` from existing source metadata; missing
+hashes, missing originals and replaced revisions show an unavailable message.
+There is no arbitrary file path or remote-URL parameter, and symlinks are rejected.
+Earlier CLI imports may have no retained original. Uploading the identical file
+with the same filename makes its original available without re-embedding unchanged
+content. Custom CLI metadata still follows the existing ingestion revision rules.
+Existing API uploads work without migration. Local files outside the private upload
+store and superseded revisions are never served. This remains a loopback-only,
+single-user API without authentication; do not expose it to a network.
+
 ## Privacy
 
 `ask` transmits the question, selected passages and audit draft to the selected
-LLM provider (OpenRouter/upstream providers or Groq).
+LLM provider (Groq).
 Review their retention policies before using sensitive documents. `search`
 prints private text to the terminal; exported JSON and generated answers can
 also contain copyrighted source text. Do not commit these captures.

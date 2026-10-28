@@ -132,3 +132,16 @@ h3 { font-size: 18px; font-weight: 500; letter-spacing: -0.4px; margin: 0 0 10px
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+.citation-link { background: transparent; border: 0; color: #224b3f; text-decoration: underline; padding: 4px 0; font-size: 12px; }
+.pdf-viewer { width: min(1100px, 96vw); max-width: 96vw; height: 92dvh; max-height: 96dvh; border: 1px solid #d5dfd2; border-radius: 12px; padding: 20px; color: #253d36; background: #fdfefb; }
+.pdf-viewer::backdrop { background: #152c2477; }
+.pdf-viewer[open] { display: flex; flex-direction: column; gap: 14px; }
+.pdf-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.pdf-heading h2 { overflow-wrap: anywhere; min-width: 0; }
+.pdf-heading button { flex-shrink: 0; }
+.pdf-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; font-size: 12px; }
+.pdf-controls label { margin: 0; }
+.pdf-controls input { width: 65px; padding: 5px; }
+.pdf-viewer iframe { flex: 1; min-height: 160px; width: 100%; border: 1px solid #d5dfd2; }
+.pdf-viewer .source-note { margin: 0; }

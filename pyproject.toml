@@ -22,12 +22,10 @@ dependencies = [
   "httpx==0.28.1",
   "langchain-core==1.7.0",
   "langgraph==1.2.17",
-  "langchain-openrouter==0.2.9",
   "sentence-transformers==6.2.0",
   "qdrant-client==1.20.0",
   "pypdf==6.21.2",
   "fonttools==4.67.0",
-  "openrouter==0.11.46",
   "python-dotenv==1.2.4",
   "lingua-language-detector==2.2.0",
 ]

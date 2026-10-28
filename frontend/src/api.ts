@@ -6,6 +6,7 @@ export interface Citation {
   document: string;
   pdf_page: number;
   quote: string;
+  pdf_sha256?: string | null;
 }
 
 export interface Claim {
@@ -91,6 +92,7 @@ export function uploadPdf(
 function isCitation(value: unknown): value is Citation {
   return isRecord(value) && typeof value.source_id === 'string' &&
     typeof value.document === 'string' && typeof value.quote === 'string' &&
+    (value.pdf_sha256 == null || (typeof value.pdf_sha256 === 'string' && /^[a-f0-9]{64}$/.test(value.pdf_sha256))) &&
     typeof value.pdf_page === 'number' && Number.isInteger(value.pdf_page) && value.pdf_page >= 1;
 }
 

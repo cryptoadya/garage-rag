@@ -1,3 +1,4 @@
+import { StrictMode } from 'react';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
@@ -191,4 +192,58 @@ describe('Ask your manual', () => {
     expect(result.querySelector('.answer-text')?.textContent).toBe(answer.text);
     expect(within(result).queryByRole('region', { name: /Sources/ })).not.toBeInTheDocument();
   });
+});
+
+it('opens a structured citation at its physical page and navigates without asking again', async () => {
+  const fetch = vi.fn().mockImplementation((url: string) => url.startsWith('/api/documents/pdf?')
+    ? Promise.resolve(new Response('%PDF-test', { headers: { 'X-PDF-Pages': '4' } }))
+    : Promise.resolve(respond({ ...answer, claims: [{ ...answer.claims[0], citations: [{
+      ...answer.claims[0].citations[0], pdf_page: 2, pdf_sha256: 'a'.repeat(64),
+    }] }] })));
+  vi.stubGlobal('URL', class extends URL {
+    static createObjectURL = vi.fn(() => 'blob:local-pdf');
+    static revokeObjectURL = vi.fn();
+  });
+  stubAsk(fetch);
+  render(<StrictMode><App /></StrictMode>);
+  await submit();
+  await userEvent.click(await screen.findByRole('button', { name: 'Open aurora.pdf at PDF page 2' }));
+  const viewer = await screen.findByRole('dialog', { name: 'aurora.pdf' });
+  expect(await within(viewer).findByTitle('Original PDF')).toHaveAttribute('src', 'blob:local-pdf#page=2');
+  await userEvent.click(within(viewer).getByRole('button', { name: 'Next page' }));
+  expect(within(viewer).getByTitle('Original PDF')).toHaveAttribute('src', 'blob:local-pdf#page=3');
+  fireEvent.change(within(viewer).getByLabelText('PDF page'), { target: { value: '4' } });
+  expect(within(viewer).getByRole('button', { name: 'Next page' })).toBeDisabled();
+  await userEvent.click(within(viewer).getByRole('button', { name: 'Close PDF' }));
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  expect(fetch.mock.calls.filter(([url]) => url === '/api/ask')).toHaveLength(1);
+  expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:local-pdf');
+});
+
+it('explains an unavailable original and keeps the answer visible', async () => {
+  stubAsk(vi.fn().mockResolvedValue(respond()));
+  render(<App />);
+  await submit();
+  await userEvent.click(await screen.findByRole('button', { name: 'Open aurora.pdf at PDF page 1' }));
+  expect(await screen.findByRole('alert')).toHaveTextContent('Original PDF unavailable');
+  expect(screen.getByRole('region', { name: 'Answer' })).toHaveTextContent('Check the tires');
+});
+
+
+it.each([404, 503])('handles PDF HTTP %s without retrying or losing the answer', async (status) => {
+  const fetch = vi.fn().mockImplementation((url: string) => url.startsWith('/api/documents/pdf?')
+    ? Promise.resolve(respond({}, status))
+    : Promise.resolve(respond({ ...answer, claims: [{ ...answer.claims[0], citations: [{
+      ...answer.claims[0].citations[0], pdf_sha256: 'b'.repeat(64),
+    }] }] })));
+  stubAsk(fetch);
+  render(<App />);
+  await submit();
+  await userEvent.click(await screen.findByRole('button', { name: 'Open aurora.pdf at PDF page 1' }));
+  const alert = await screen.findByRole('alert');
+  expect(alert).toHaveTextContent(status === 404 ? 'Original PDF unavailable' : 'HTTP 503');
+  expect(screen.queryByTitle('Original PDF')).not.toBeInTheDocument();
+  expect(fetch.mock.calls.filter(([url]) => url.startsWith('/api/documents/pdf?'))).toHaveLength(1);
+  await userEvent.click(screen.getByRole('button', { name: 'Close PDF' }));
+  expect(screen.getByRole('region', { name: 'Answer' }).querySelector('.answer-text')?.textContent).toBe(answer.text);
 });

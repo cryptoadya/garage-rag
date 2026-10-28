@@ -1,3 +1,4 @@
+import hashlib
 import json
 import stat
 from concurrent.futures import ThreadPoolExecutor
@@ -107,7 +108,7 @@ def without_timings(result):
         ("How do I check tires?", "de", "Prüfen Sie die Reifen im kalten Zustand."),
     ],
 )
-def test_http_matches_cli(api_setup, capsys, mode, question, language, claim):
+def test_http_matches_cli(api_setup, capsys, pdf_path, mode, question, language, claim):
     from garage_rag.cli import main
 
     setup = api_setup
@@ -134,6 +135,7 @@ def test_http_matches_cli(api_setup, capsys, mode, question, language, claim):
                         "document": "aurora.pdf",
                         "pdf_page": 1,
                         "quote": "Check tire pressure when the tires are cold.",
+                        "pdf_sha256": hashlib.sha256(pdf_path.read_bytes()).hexdigest(),
                     }
                 ],
             }
@@ -270,11 +272,12 @@ def test_citations_preserve_claim_order_multiple_sources_and_exact_quotes(api_se
     result = response.json()
     citation = {
         "source_id": "S1", "document": "manual [EN], edition.pdf", "pdf_page": 7,
-        "quote": quote,
+        "quote": quote, "pdf_sha256": None,
     }
     assert result["claims"] == [
         {"text": "Check the tires when they are cold.", "citations": [citation, {
             "source_id": "S2", "document": "other.pdf", "pdf_page": 2, "quote": other_quote,
+            "pdf_sha256": None,
         }]},
         {"text": "Check the tires before driving.", "citations": [citation]},
     ]
@@ -522,6 +525,103 @@ def test_index_operations_are_exclusive_but_health_and_list_stay_responsive(api_
                     assert response.headers["retry-after"] == "1"
                 assert client.get("/health").status_code == 200
                 assert len(client.get("/documents").json()["documents"]) == 1
+            finally:
+                release.set()
+            assert pending.result(timeout=10).status_code == 200
+
+
+def pdf_url(name, content):
+    from urllib.parse import urlencode
+
+    return "/documents/pdf?" + urlencode({
+        "document": name, "sha256": hashlib.sha256(content).hexdigest(),
+    })
+
+
+def test_pdf_original_is_hash_bound_private_and_survives_restart(api_setup, pdf_path):
+    content = pdf_path.read_bytes()
+    name = "manual [DE], édition.pdf"
+    url = pdf_url(name, content)
+    with TestClient(api_setup.app) as client:
+        assert client.get(url).status_code == 404
+        assert upload(client, content, name).status_code == 200
+        response = client.get(url)
+        assert response.status_code == 200
+        assert response.content == content
+        assert response.headers["content-type"] == "application/pdf"
+        assert response.headers["cache-control"] == "no-store"
+        assert response.headers["x-content-type-options"] == "nosniff"
+        assert response.headers["x-pdf-pages"] == "4"
+        assert "inline" in response.headers["content-disposition"]
+        wrong_hash = url.replace(hashlib.sha256(content).hexdigest(), "0" * 64)
+        assert client.get(wrong_hash).status_code == 404
+    with TestClient(api_setup.app) as client:
+        assert client.get(url).content == content
+
+
+@pytest.mark.parametrize(
+    "kind", ["outside", "symlink", "directory_symlink", "tampered", "inactive", "old_revision"]
+)
+def test_pdf_never_serves_untrusted_or_inactive_files(api_setup, pdf_path, kind):
+    content = pdf_path.read_bytes()
+    with TestClient(api_setup.app) as client:
+        assert upload(client, content, "view.pdf").status_code == 200
+        stored = next(api_setup.pdf_dir.rglob("view.pdf"))
+        if kind == "outside":
+            stored.unlink()  # The CLI original outside private storage must not be used.
+        elif kind == "symlink":
+            stored.unlink()
+            stored.symlink_to(pdf_path)
+        elif kind == "directory_symlink":
+            outside = api_setup.pdf_dir.parent / "outside"
+            stored.parent.rename(outside)
+            stored.parent.symlink_to(outside, target_is_directory=True)
+        elif kind == "tampered":
+            stored.write_bytes(content + b"changed")
+        elif kind == "inactive":
+            stored.rename(stored.with_name("orphan.pdf"))
+        elif kind == "old_revision":
+            assert upload(client, content + b"\n% revised", "view.pdf").status_code == 200
+        response = client.get(pdf_url("orphan.pdf" if kind == "inactive" else "view.pdf", content))
+        assert response.status_code == 404
+        assert response.json() == {"detail": "Original PDF unavailable for this citation."}
+        assert str(api_setup.pdf_dir) not in response.text
+        for name in ("../view.pdf", "..\\view.pdf", str(pdf_path)):
+            assert client.get(pdf_url(name, content)).status_code == 404
+
+
+def test_pdf_cli_original_unavailable_until_identical_upload(api_setup, pdf_path):
+    content = pdf_path.read_bytes()
+    with TestClient(api_setup.app) as client:
+        assert client.get(pdf_url("aurora.pdf", content)).status_code == 404
+        assert upload(client, content, "aurora.pdf").json()["status"] == "unchanged"
+        assert client.get(pdf_url("aurora.pdf", content)).content == content
+        result = client.post("/ask", json={"question": "tires?"}).json()
+        citation = result["claims"][0]["citations"][0]
+        assert citation["pdf_sha256"] == hashlib.sha256(content).hexdigest()
+
+
+def test_pdf_read_does_not_contend_with_workflow_lock(api_setup, pdf_path):
+    content = pdf_path.read_bytes()
+    entered, release = Event(), Event()
+    with TestClient(api_setup.app) as client:
+        assert upload(client, content, "read.pdf").status_code == 200
+        model = api_setup.models[0]
+        invoke = model.invoke
+
+        def slow(messages):
+            entered.set()
+            assert release.wait(10)
+            return invoke(messages)
+
+        model.invoke = slow
+        with ThreadPoolExecutor() as pool:
+            pending = pool.submit(client.post, "/ask", json={"question": "tires?"})
+            try:
+                assert entered.wait(10)
+                url = pdf_url("read.pdf", content)
+                responses = list(pool.map(lambda _: client.get(url), range(2)))
+                assert all(r.status_code == 200 and r.content == content for r in responses)
             finally:
                 release.set()
             assert pending.result(timeout=10).status_code == 200

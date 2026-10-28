@@ -1,9 +1,10 @@
 import { Fragment, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { ask } from './api';
-import type { Answer, Language, Mode } from './api';
+import type { Answer, Citation, Language, Mode } from './api';
 import { AnswerText } from './AnswerText';
 import { Documents } from './Documents';
+import { PdfViewer } from './PdfViewer';
 
 type Result =
   | { status: 'idle' | 'loading' }
@@ -19,6 +20,7 @@ export default function App() {
   const [result, setResult] = useState<Result>({ status: 'idle' });
   const inFlight = useRef(false);
   const [uploading, setUploading] = useState(false);
+  const [citation, setCitation] = useState<Citation | null>(null);
   const loading = result.status === 'loading';
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -98,7 +100,7 @@ export default function App() {
                 </button>
               </fieldset>
             </form>
-            <p className="privacy-note">Retrieval stays local. Your question and selected passages go to the configured AI provider.</p>
+            <p className="privacy-note">Retrieval stays local. Your question and selected passages go to Groq.</p>
           </section>
 
           <section className="answer-panel" aria-labelledby="answer-heading" aria-busy={loading}>
@@ -121,7 +123,7 @@ export default function App() {
               {result.status === 'success' ? (
                 <section className="result" aria-label="Answer">
                   <div className="result-meta"><span className={result.answer.supported ? 'answer-badge' : 'refusal-badge'}>{result.answer.supported ? 'Answer with evidence' : 'No supported answer'}</span><span>{result.mode === 'grounded' ? 'Grounded' : 'Direct'} · {languageNames[result.answer.language]}</span></div>
-                  <div lang={result.answer.language}><AnswerText text={result.answer.text} claims={result.answer.supported ? result.answer.claims : []} /></div>
+                  <div lang={result.answer.language}><AnswerText text={result.answer.text} claims={result.answer.supported ? result.answer.claims : []} onOpenPdf={setCitation} /></div>
                   {!result.answer.supported ? <p className="refusal-reason">Reason: <code>{result.answer.reason}</code></p> : null}
                 </section>
               ) : null}
@@ -130,6 +132,7 @@ export default function App() {
         </div>
         <footer className="site-footer"><span>Built around your documents.</span><span>Check the original manual for your vehicle and equipment.</span></footer>
       </main>
+      {citation ? <PdfViewer citation={citation} onClose={() => setCitation(null)} /> : null}
     </Fragment>
   );
 }

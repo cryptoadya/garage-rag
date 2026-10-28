@@ -40,7 +40,7 @@ def test_pdf_validation_keeps_existing_cli_diagnostics(
     assert output.out == ""
 
 
-def test_stats_and_search_need_no_openrouter_key(
+def test_stats_and_search_need_no_groq_key(
     tmp_path, pdf_path, tokenizer, embeddings, config, monkeypatch, capsys
 ):
     from garage_rag.index import Index
@@ -49,7 +49,7 @@ def test_stats_and_search_need_no_openrouter_key(
     with Index(directory, config) as index:
         index.ingest(pdf_path, embeddings, tokenizer)
     monkeypatch.setattr("garage_rag.cli.load_dotenv", lambda *a, **kw: None)
-    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+    monkeypatch.delenv("GROQ_API_KEY", raising=False)
     monkeypatch.setattr("garage_rag.cli.IndexConfig", lambda **kw: config)
     monkeypatch.setattr("garage_rag.cli.E5Embeddings", lambda *a, **kw: embeddings)
     assert main(["--index-dir", str(directory), "stats"]) == 0
@@ -66,11 +66,12 @@ def test_missing_key_never_echoes_environment(tmp_path, monkeypatch, capsys, con
     with Index(directory, config):
         pass
     monkeypatch.setattr("garage_rag.cli.load_dotenv", lambda *a, **kw: None)
-    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+    monkeypatch.delenv("GROQ_API_KEY", raising=False)
+    monkeypatch.setenv("GROQ_FREE_PLAN_CONFIRMED", "true")
     monkeypatch.setenv("UNRELATED_SECRET", "do-not-print-this-value")
     assert main(["--index-dir", str(directory), "ask", "шины?"]) == 2
     stderr = capsys.readouterr().err
-    assert "OPENROUTER_API_KEY" in stderr
+    assert "GROQ_API_KEY" in stderr
     assert "do-not-print-this-value" not in stderr
 
 
@@ -167,7 +168,7 @@ def test_ask_language_through_cli(
     if truncated:
         assert not result["supported"]
         assert result["reason"] == "output_token_limit"
-        assert "OPENROUTER_MAX_TOKENS" in captured.err
+        assert "GROQ_MAX_TOKENS" in captured.err
         return
     assert result["supported"]
     assert result["language"] == language
@@ -183,10 +184,11 @@ def test_unsupported_answer_language_is_a_cli_usage_error():
 
 
 @pytest.mark.parametrize(
-    "explicit,expected", [([], "groq"), (["--provider", "openrouter"], "openrouter")]
+    "explicit", [[], ["--provider", "groq"]]
 )
-def test_agentic_provider_default_is_groq_even_with_legacy_environment(
-    tmp_path, monkeypatch, capsys, explicit, expected
+@pytest.mark.parametrize("workflow", ["direct", "grounded", "agentic"])
+def test_all_modes_default_to_groq(
+    tmp_path, monkeypatch, capsys, explicit, workflow
 ):
     from garage_rag.generation import GenerationError
 
@@ -194,7 +196,7 @@ def test_agentic_provider_default_is_groq_even_with_legacy_environment(
     directory.mkdir()
     (directory / "manifest.json").write_text("{}")
     monkeypatch.setattr("garage_rag.cli.load_dotenv", lambda *a, **kw: None)
-    monkeypatch.setenv("GARAGE_RAG_PROVIDER", "openrouter")
+    monkeypatch.delenv("GARAGE_RAG_PROVIDER", raising=False)
     calls = []
 
     def make(**kw):
@@ -203,10 +205,10 @@ def test_agentic_provider_default_is_groq_even_with_legacy_environment(
 
     monkeypatch.setattr("garage_rag.cli.make_llm", make)
     assert (
-        main(["--index-dir", str(directory), "ask", "tires", "--workflow", "agentic", *explicit])
+        main(["--index-dir", str(directory), "ask", "tires", "--workflow", workflow, *explicit])
         == 2
     )
-    assert calls[0]["provider"] == expected
+    assert calls[0]["provider"] == "groq"
     capsys.readouterr()
 
 

@@ -6,3 +6,5 @@ afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
 });
+
+HTMLDialogElement.prototype.showModal = function () { this.open = true; };

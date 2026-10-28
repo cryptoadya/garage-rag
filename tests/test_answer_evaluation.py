@@ -273,10 +273,16 @@ def test_live_cli_checkpoints_failure_and_resumes_only_unfinished_mode(tmp_path,
         max_tokens = 8192
         temperature = 0
 
+        def quota_state(self):
+            return {}
+
+        def restore_quota(self, state):
+            pass
+
         def invoke(self, messages):
             calls.append(messages)
             if len(calls) == 2:
-                raise GenerationError("OpenRouter request failed")
+                raise GenerationError("Groq request failed")
             return SimpleNamespace(content='{"supported":false,"claims":[]}')
 
     monkeypatch.setattr("garage_rag.generation.make_llm", lambda **kw: Model())
@@ -294,9 +300,9 @@ def test_live_cli_checkpoints_failure_and_resumes_only_unfinished_mode(tmp_path,
         "en",
         "--live",
         "--model",
-        "test/model:free",
+        "openai/gpt-oss-120b",
         "--provider",
-        "openrouter",
+        "groq",
         "--max-api-calls",
         "5",
     ]
@@ -304,7 +310,7 @@ def test_live_cli_checkpoints_failure_and_resumes_only_unfinished_mode(tmp_path,
     partial = json.loads(output.read_text())
     assert len(partial["rows"]) == 2
     assert not partial["complete"]
-    assert partial["provenance"]["model"] == "test/model:free"
+    assert partial["provenance"]["model"] == "openai/gpt-oss-120b"
     assert main([*args, "--resume"]) == 0
     resumed = json.loads(output.read_text())
     assert len(calls) == 3
