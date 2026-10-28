@@ -118,7 +118,7 @@ export default function App() {
               {result.status === 'success' ? (
                 <section className="result" aria-label="Answer">
                   <div className="result-meta"><span className={result.answer.supported ? 'answer-badge' : 'refusal-badge'}>{result.answer.supported ? 'Answer with evidence' : 'No supported answer'}</span><span>{result.mode === 'grounded' ? 'Grounded' : 'Direct'} · {languageNames[result.answer.language]}</span></div>
-                  <div lang={result.answer.language}><AnswerText text={result.answer.text} /></div>
+                  <div lang={result.answer.language}><AnswerText text={result.answer.text} claims={result.answer.supported ? result.answer.claims : []} /></div>
                   {!result.answer.supported ? <p className="refusal-reason">Reason: <code>{result.answer.reason}</code></p> : null}
                 </section>
               ) : null}

@@ -9,6 +9,11 @@ const answer = {
   reason: 'verified_citations',
   language: 'en',
   workflow: { mode: 'grounded', events: [], elapsed_ms: 1 },
+  claims: [{
+    text: 'Check the tires when they are cold.',
+    citations: [{ source_id: 'S1', document: 'aurora.pdf', pdf_page: 1,
+      quote: 'Check tire pressure when the tires are cold.' }],
+  }],
 };
 
 function respond(body: unknown = answer, status = 200) {
@@ -35,7 +40,7 @@ describe('Ask your manual', () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
-  it('sends only the API fields and turns source references into local links', async () => {
+  it('sends only the API fields and displays structured claim citations', async () => {
     const fetch = vi.fn().mockResolvedValue(respond());
     vi.stubGlobal('fetch', fetch);
     render(<App />);
@@ -49,10 +54,12 @@ describe('Ask your manual', () => {
     const result = await screen.findByRole('region', { name: 'Answer' });
     expect(result).toHaveTextContent('Check the tires when they are cold.');
     expect(result).toHaveTextContent('"Check tire pressure when the tires are cold."');
-    const link = within(result).getByRole('link', { name: '[aurora.pdf, PDF page 1]' });
-    expect(link).toHaveAttribute('href', '#source-1');
-    expect(document.querySelector('#source-1')).toHaveTextContent('aurora.pdf');
-    expect(document.querySelector('#source-1')).toHaveTextContent('PDF page 1');
+    const sources = within(result).getByRole('region', { name: /Sources/ });
+    expect(sources).toHaveTextContent('Check the tires when they are cold.');
+    expect(sources).toHaveTextContent('aurora.pdf');
+    expect(sources).toHaveTextContent('PDF page 1');
+    expect(sources).toHaveTextContent('Check tire pressure when the tires are cold.');
+    expect(result.querySelector('.answer-text')?.textContent).toBe(answer.text);
   });
 
   it.each(['auto', 'en', 'de', 'ru'])('forwards Direct mode and %s language', async (language) => {
@@ -97,6 +104,7 @@ describe('Ask your manual', () => {
     expect(result).toHaveTextContent('no_context');
     expect(result.querySelector('[lang="ru"]')).toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(within(result).queryByRole('region', { name: /Sources/ })).not.toBeInTheDocument();
   });
 
   it.each([422, 500, 502, 503])('shows HTTP %s errors without losing the question, then recovers', async (status) => {
@@ -126,6 +134,11 @@ describe('Ask your manual', () => {
   it.each([
     new Response('<html>proxy error</html>', { status: 502 }),
     respond({ ...answer, text: null }),
+    respond({ ...answer, claims: null }),
+    respond({ ...answer, claims: [{ text: 'Claim', citations: [{ document: 'a.pdf' }] }] }),
+    respond({ ...answer, claims: [{ ...answer.claims[0], citations: [
+      { ...answer.claims[0].citations[0], pdf_page: 0 },
+    ] }] }),
   ])('handles a non-JSON or malformed response without crashing', async (response) => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(response));
     render(<App />);
@@ -136,15 +149,39 @@ describe('Ask your manual', () => {
 
   it('keeps response markup inert and preserves multiline text and repeated citations', async () => {
     const text = '<script>alert(1)</script>\n[aurora.pdf, PDF page 1] "First line\nsecond line"\n\nAnother claim.\n[aurora.pdf, PDF page 1] "Another quote"';
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(respond({ ...answer, text })));
+    const citation = { source_id: 'S1', document: 'manual [EN], <img src=x>.pdf',
+      pdf_page: 7, quote: 'First line\nsecond line <script>alert(1)</script>' };
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(respond({ ...answer, text, claims: [
+      { text: 'First claim.', citations: [citation, { ...citation, source_id: 'S2',
+        document: 'other.pdf', pdf_page: 2, quote: 'Another quote' }] },
+      { text: 'Another claim.', citations: [citation] },
+    ] })));
     render(<App />);
     await submit();
     const result = await screen.findByRole('region', { name: 'Answer' });
     expect(result).toHaveTextContent('<script>alert(1)</script>');
     expect(result.querySelector('script')).toBeNull();
-    expect(within(result).getAllByRole('link')).toHaveLength(2);
-    expect(document.querySelectorAll('#source-1')).toHaveLength(1);
-    expect(document.querySelector('#source-2')).toBeNull();
-    expect(result.textContent).toContain('First line\nsecond line');
+    expect(result.querySelector('img')).toBeNull();
+    expect(result.querySelector('.answer-text')?.textContent).toBe(text);
+    const sources = within(result).getByRole('region', { name: /Sources/ });
+    const claims = within(sources).getAllByRole('listitem');
+    expect(claims).toHaveLength(2);
+    expect(claims[0]).toHaveTextContent('First claim.');
+    expect(claims[0]).toHaveTextContent('other.pdf');
+    expect(claims[0]).toHaveTextContent('PDF page 2');
+    expect(claims[1]).toHaveTextContent('Another claim.');
+    expect(claims[1]).not.toHaveTextContent('other.pdf');
+    expect(claims[1]).toHaveTextContent('PDF page 7');
+    expect(claims[1].querySelector('blockquote')?.textContent).toBe(citation.quote);
+    expect(sources).not.toHaveTextContent('aurora.pdf');
+  });
+
+  it('does not infer sources from answer text when structured claims are empty', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(respond({ ...answer, claims: [] })));
+    render(<App />);
+    await submit();
+    const result = await screen.findByRole('region', { name: 'Answer' });
+    expect(result.querySelector('.answer-text')?.textContent).toBe(answer.text);
+    expect(within(result).queryByRole('region', { name: /Sources/ })).not.toBeInTheDocument();
   });
 });

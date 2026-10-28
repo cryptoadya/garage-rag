@@ -120,7 +120,20 @@ def test_http_matches_cli(api_setup, capsys, mode, question, language, claim):
         assert response.status_code == 200
         result = response.json()
         assert result["supported"] is True
-        assert set(result) == {"supported", "text", "reason", "language", "workflow"}
+        assert set(result) == {"supported", "text", "reason", "language", "workflow", "claims"}
+        assert result.pop("claims") == [
+            {
+                "text": claim,
+                "citations": [
+                    {
+                        "source_id": "S1",
+                        "document": "aurora.pdf",
+                        "pdf_page": 1,
+                        "quote": "Check tire pressure when the tires are cold.",
+                    }
+                ],
+            }
+        ]
         assert "[" in result["text"]  # Verified PDF references survive HTTP serialization.
         assert "candidate" not in response.text
         assert "context" not in result
@@ -217,7 +230,77 @@ def test_no_evidence_is_a_normal_answer(api_setup, monkeypatch, mode):
         assert response.status_code == 200
         assert response.json()["supported"] is False
         assert response.json()["reason"] == "no_context"
+        assert response.json()["claims"] == []
         assert api_setup.models[0].calls == 0
+
+
+def test_citations_preserve_claim_order_multiple_sources_and_exact_quotes(api_setup, monkeypatch):
+    from langchain_core.documents import Document
+
+    from garage_rag.index import SearchHit
+
+    quote = 'Check tire pressure\nwhen the tires are cold. "Before driving."'
+    other_quote = "Check the tires before driving."
+    documents = [
+        Document(page_content=quote, metadata={
+            "document": "manual [EN], edition.pdf", "pdf_page": 7, "page_label": "3",
+            "source_url": "file:///private/manual.pdf", "private_field": "hidden",
+        }),
+        Document(page_content=other_quote, metadata={"document": "other.pdf", "pdf_page": 2}),
+    ]
+    monkeypatch.setattr(Index, "search", lambda *a, **kw: [SearchHit(d, 1) for d in documents])
+    with TestClient(api_setup.app) as client:
+        api_setup.models[0].invoke = lambda messages: SimpleNamespace(
+            content=json.dumps({"supported": True, "claims": [
+                {"text": "Check the tires when they are cold.", "evidence": [
+                    {"source_id": "S1", "quote": quote},
+                    {"source_id": "S2", "quote": other_quote},
+                ]},
+                {"text": "Check the tires before driving.", "evidence": [
+                    {"source_id": "S1", "quote": quote},
+                ]},
+            ]}),
+        )
+        response = client.post("/ask", json={"question": "tires?", "mode": "direct"})
+    assert response.status_code == 200
+    result = response.json()
+    citation = {
+        "source_id": "S1", "document": "manual [EN], edition.pdf", "pdf_page": 7,
+        "quote": quote,
+    }
+    assert result["claims"] == [
+        {"text": "Check the tires when they are cold.", "citations": [citation, {
+            "source_id": "S2", "document": "other.pdf", "pdf_page": 2, "quote": other_quote,
+        }]},
+        {"text": "Check the tires before driving.", "citations": [citation]},
+    ]
+    assert "private" not in response.text
+    assert "page_label" not in response.text
+
+
+@pytest.mark.parametrize("rejection", ["audit", "invalid_quote"])
+def test_refusals_do_not_expose_rejected_draft_citations(api_setup, rejection):
+    with TestClient(api_setup.app) as client:
+        model = api_setup.models[0]
+        invoke = model.invoke
+
+        def reject(messages):
+            response = invoke(messages)
+            value = json.loads(response.content)
+            if rejection == "audit" and "decision" in value:
+                value["decision"] = "unsupported"
+            elif rejection == "invalid_quote" and "claims" in value:
+                value["claims"][0]["evidence"][0]["quote"] = "Rejected private draft quote."
+            response.content = json.dumps(value)
+            return response
+
+        model.invoke = reject
+        response = client.post("/ask", json={"question": "tires?"})
+    assert response.status_code == 200
+    assert response.json()["supported"] is False
+    assert response.json()["claims"] == []
+    assert "Check the tires" not in response.text
+    assert "Rejected private draft" not in response.text
 
 
 def test_local_failure_is_safe(api_setup, monkeypatch):

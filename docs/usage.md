@@ -173,9 +173,14 @@ curl http://127.0.0.1:8000/ask \
 check provider availability or load the embedding weights. `POST /ask` accepts a
 nonblank question of at most 4,000 characters, `mode` (`direct` or `grounded`,
 default `grounded`) and `language` (`auto`, `en`, `de`, `ru`, default `auto`).
-Unknown fields are rejected. The response matches CLI `ask --json`: `supported`,
+Unknown fields are rejected. The response retains CLI `ask --json` fields: `supported`,
 `text` (including verified PDF references), `reason`, `language` and public
-`workflow` observations. Private context, drafts and raw provider errors are omitted.
+`workflow` observations. HTTP also adds `claims`: an ordered array of
+`{text, citations: [{source_id, document, pdf_page, quote}]}` from the final
+supported candidate. `pdf_page` is the physical PDF page counted from 1, not
+the printed page label; `quote` preserves the verified quotation verbatim.
+Refusals always return `claims: []`, including after an audit rejects a draft.
+CLI output is unchanged. Private context, drafts and raw provider errors are omitted.
 Retrieval uses the CLI defaults (top-k 5, no score threshold) and the existing
 workflow budgets. Valid refusals return HTTP 200 with `supported: false`.
 OpenAPI schemas and interactive API documentation are available at `/docs`.
@@ -216,7 +221,10 @@ npm run dev
 
 Open [the local UI](http://127.0.0.1:5173). Enter a question, choose Direct or
 Grounded and an answer language (Auto, English, Deutsch or Русский), then submit.
-The UI shows loading, the answer, source references, refusals and request errors.
+The UI shows loading, the unchanged answer text, citations grouped by claim
+(document, physical PDF page and exact quote), refusals and request errors.
+Sources use structured response data; the UI does not parse references from text
+or open local PDF files.
 Questions are limited to 4,000 characters. A new submission replaces the previous
 result; nothing is saved as chat history. Only explicit submissions call `/ask`,
 with no automatic retries.
