@@ -26,6 +26,68 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value);
 }
 
+export interface IndexedDocument {
+  document: string;
+  pages: number;
+  chunks: number;
+}
+
+export type UploadPhase = 'uploading' | 'indexing';
+
+function isDocument(value: unknown): value is IndexedDocument {
+  return isRecord(value) && typeof value.document === 'string' &&
+    typeof value.pages === 'number' && Number.isInteger(value.pages) && value.pages > 0 &&
+    typeof value.chunks === 'number' && Number.isInteger(value.chunks) && value.chunks > 0;
+}
+
+export async function listDocuments(): Promise<IndexedDocument[]> {
+  try {
+    const response = await fetch('/api/documents');
+    const body: unknown = await response.json();
+    if (response.ok && isRecord(body) && Array.isArray(body.documents) && body.documents.every(isDocument)) {
+      return body.documents;
+    }
+  } catch { /* Show a fixed message for network and malformed response errors. */ }
+  throw new Error('Could not load documents. Check the backend and refresh documents.');
+}
+
+export function uploadPdf(
+  file: File, onProgress: (phase: UploadPhase, percent?: number) => void,
+): Promise<{ status: 'indexed' | 'unchanged'; document: IndexedDocument }> {
+  return new Promise((resolve, reject) => {
+    if (!file.name.toLowerCase().endsWith('.pdf') || file.size === 0 || file.size > 50 * 1024 * 1024) {
+      reject(new Error('Choose a nonempty PDF up to 50 MiB.'));
+      return;
+    }
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `/api/documents?filename=${encodeURIComponent(file.name)}`);
+    xhr.setRequestHeader('Content-Type', 'application/pdf');
+    xhr.upload.addEventListener('progress', (event) => {
+      onProgress('uploading', event.lengthComputable ? Math.round(event.loaded / event.total * 100) : undefined);
+    });
+    xhr.upload.addEventListener('load', () => onProgress('indexing'));
+    const disconnected = () => reject(new Error(
+      'Upload connection lost. Refresh documents to check whether indexing completed before retrying.',
+    ));
+    xhr.addEventListener('error', disconnected);
+    xhr.addEventListener('abort', disconnected);
+    xhr.addEventListener('load', () => {
+      let body: unknown;
+      try { body = JSON.parse(xhr.responseText); } catch { body = null; }
+      if (xhr.status < 200 || xhr.status >= 300) {
+        const detail = isRecord(body) && typeof body.detail === 'string' ? body.detail : 'PDF upload failed.';
+        reject(new Error(`HTTP ${xhr.status} · ${detail}`));
+      } else if (isRecord(body) && (body.status === 'indexed' || body.status === 'unchanged') && isDocument(body.document)) {
+        resolve({ status: body.status, document: body.document });
+      } else {
+        reject(new Error('Unexpected upload response. Refresh documents before retrying.'));
+      }
+    });
+    onProgress('uploading', 0);
+    xhr.send(file);
+  });
+}
+
 function isCitation(value: unknown): value is Citation {
   return isRecord(value) && typeof value.source_id === 'string' &&
     typeof value.document === 'string' && typeof value.quote === 'string' &&

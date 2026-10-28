@@ -186,25 +186,29 @@ workflow budgets. Valid refusals return HTTP 200 with `supported: false`.
 OpenAPI schemas and interactive API documentation are available at `/docs`.
 
 The server reads only the working directory's `.env`, without overriding existing
-environment variables. `GARAGE_RAG_INDEX` selects an existing index (default
+environment variables. `GARAGE_RAG_INDEX` selects the index (default
 `data/qdrant`); `GARAGE_RAG_PROFILE` selects `baseline`, `e5-base` or `bge-m3`
 (default `baseline`, with the same profile-specific directories as the CLI).
 `GARAGE_RAG_DEVICE` selects `cpu` (default) or `mps`. Provider/model settings are
 the same as the CLI; credentials are checked at startup without a generation call.
-An incompatible, missing or already locked index prevents startup.
+An absent index is initialized empty for the first UI upload. An incompatible
+or already locked index prevents startup.
 
 One process owns the index and provider client until shutdown and reuses one lazy
 embedding adapter. Run **one worker**, without reload, and stop the server before
-using the CLI against the same index. One `/ask` runs at a time; overlap returns
-503 with `Retry-After: 1`, while health remains responsive. Validation errors return
+using the CLI against the same index. Indexing and `/ask` share a non-queuing
+lock; overlap returns 503 with `Retry-After: 1`. Health and the active-document
+list remain responsive. Validation errors return
 422, retrieval failures 503, generation failures 502 and unexpected local failures
 500, with fixed messages that omit inputs, paths and provider payloads.
 There is no authentication; the launch command binds to loopback for local use.
 
 ## Local web UI
 
-From a repository checkout, prepare the backend index and provider credentials
-as in the quick start. Use two terminals, both starting at the repository root:
+From a repository checkout, install `.[dev]` in the Python environment and
+configure provider credentials as in the quick start. You can start with an
+empty index and upload your first PDF through the UI. Use two terminals, both
+starting at the repository root:
 
 ```bash
 # Terminal 1: activate the Python environment, then start the backend.
@@ -219,7 +223,12 @@ npm ci
 npm run dev
 ```
 
-Open [the local UI](http://127.0.0.1:5173). Enter a question, choose Direct or
+Open [the local UI](http://127.0.0.1:5173). In **Your PDFs**, choose a PDF and
+select **Upload and index PDF**. Wait for **Ready for questions** and the document
+to appear in the indexed list. Upload progress covers file transfer; indexing
+runs within the same request, without a background job or automatic retry.
+The first upload can also load the local tokenizer and embedding weights.
+Then enter a question, choose Direct or
 Grounded and an answer language (Auto, English, Deutsch or Русский), then submit.
 The UI shows loading, the unchanged answer text, citations grouped by claim
 (document, physical PDF page and exact quote), refusals and request errors.
@@ -228,6 +237,42 @@ or open local PDF files.
 Questions are limited to 4,000 characters. A new submission replaces the previous
 result; nothing is saved as chat history. Only explicit submissions call `/ask`,
 with no automatic retries.
+
+### PDF upload and storage
+
+`GET /documents` returns only active indexed entries:
+`{"documents":[{"document":"manual.pdf","pages":12,"chunks":24}]}`.
+It includes documents indexed by the CLI; failed and partially indexed revisions
+are not listed. **Refresh documents** reloads this list, including after a lost
+upload connection where the server may still have completed indexing.
+
+`POST /documents?filename=manual.pdf` accepts a raw `application/pdf` body, up
+to 50 MiB, and returns `{"status":"indexed","document":{...}}` after indexing.
+Reuploading the same file under the same filename through this API reuses the
+existing ingestion path and returns
+`"status":"unchanged"` without re-embedding. Changed content with the same
+filename activates a new revision using the existing index behavior; other
+documents stay indexed. Questions search all active documents as before.
+
+```bash
+curl http://127.0.0.1:8000/documents
+curl 'http://127.0.0.1:8000/documents?filename=manual.pdf' \
+  -H 'Content-Type: application/pdf' --data-binary @/path/to/manual.pdf
+```
+
+Accepted PDFs are retained under `~/.garage-rag/pdfs/<index-path-hash>/`, outside
+the repository and web directories, in unique folders with directory/file
+permissions 0700/0600. The original basename is used for document identity and
+citations; paths and control characters in filenames are rejected. Every accepted
+upload is retained, including unchanged uploads and older revisions. Temporary
+files from failed requests are removed. PDFs have no download/static endpoint;
+neither originals nor their local paths are returned or committed to Git.
+
+Wrong media types return 415, unsafe filenames 400, oversized uploads 413,
+unreadable/damaged/encrypted PDFs or PDFs without text 422, and unexpected local
+storage/embedding failures 500 with sanitized messages. Scans need an existing
+text layer; this MVP performs no OCR. No document deletion, authentication,
+background queue or Agentic changes are included.
 
 The browser posts to `/api/ask`; the local Vite proxy forwards to the existing
 `POST http://127.0.0.1:8000/ask`. Backend behavior and provider settings are unchanged.

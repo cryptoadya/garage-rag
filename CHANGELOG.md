@@ -14,6 +14,10 @@ is available in [Git commits](https://github.com/cryptoadya/garage-rag/commits/m
 
 ### Added
 
+- Phase 5D PDF management: stream PDF uploads to private local storage, index
+  them with the existing ingestion/embeddings/Qdrant pipeline, and list active
+  documents. The React UI shows upload progress, indexing, readiness and errors.
+  New indexes can start empty; indexing and answers share exclusive access.
 - Phase 5C structured HTTP citations: final supported claims expose document,
   physical PDF page and exact quote from existing verified evidence. The UI
   groups citations by claim without parsing answer text; refusals expose no

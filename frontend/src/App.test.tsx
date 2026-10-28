@@ -29,10 +29,15 @@ async function submit(question = 'How do I check tires?') {
   await user.click(screen.getByRole('button', { name: 'Ask GarageRAG' }));
 }
 
+function stubAsk(fetch: typeof globalThis.fetch) {
+  vi.stubGlobal('fetch', (url: string, options?: RequestInit) => url === '/api/documents'
+    ? Promise.resolve(respond({ documents: [] })) : fetch(url, options));
+}
+
 describe('Ask your manual', () => {
-  it('does not request on load or submit blank input', async () => {
+  it('does not ask on load or submit blank input', async () => {
     const fetch = vi.fn();
-    vi.stubGlobal('fetch', fetch);
+    stubAsk(fetch);
     render(<App />);
     expect(screen.getByRole('button', { name: 'Ask GarageRAG' })).toBeDisabled();
     await userEvent.type(screen.getByRole('textbox', { name: 'Your question' }), '   ');
@@ -42,7 +47,7 @@ describe('Ask your manual', () => {
 
   it('sends only the API fields and displays structured claim citations', async () => {
     const fetch = vi.fn().mockResolvedValue(respond());
-    vi.stubGlobal('fetch', fetch);
+    stubAsk(fetch);
     render(<App />);
     await submit();
     expect(fetch).toHaveBeenCalledTimes(1);
@@ -64,7 +69,7 @@ describe('Ask your manual', () => {
 
   it.each(['auto', 'en', 'de', 'ru'])('forwards Direct mode and %s language', async (language) => {
     const fetch = vi.fn().mockResolvedValue(respond());
-    vi.stubGlobal('fetch', fetch);
+    stubAsk(fetch);
     render(<App />);
     await userEvent.selectOptions(screen.getByLabelText('Answer mode'), 'direct');
     await userEvent.selectOptions(screen.getByLabelText('Answer language'), language);
@@ -78,13 +83,15 @@ describe('Ask your manual', () => {
   it('keeps one request in flight and exposes loading state', async () => {
     let resolve!: (response: Response) => void;
     const fetch = vi.fn(() => new Promise<Response>((done) => { resolve = done; }));
-    vi.stubGlobal('fetch', fetch);
+    stubAsk(fetch);
     render(<App />);
     await submit();
     expect(screen.getByRole('status')).toHaveTextContent('Preparing your answer');
     expect(screen.getByRole('textbox', { name: 'Your question' })).toBeDisabled();
     expect(screen.getByLabelText('Answer mode')).toBeDisabled();
     expect(screen.getByLabelText('Answer language')).toBeDisabled();
+    expect(screen.getByLabelText('Choose PDF')).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Upload and index PDF' })).toBeDisabled();
     fireEvent.submit(screen.getByRole('form', { name: 'Ask a question' }));
     expect(fetch).toHaveBeenCalledTimes(1);
     await act(async () => resolve(respond()));
@@ -93,7 +100,7 @@ describe('Ask your manual', () => {
   });
 
   it('shows a valid refusal as an answer, with the returned language and reason', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(respond({
+    stubAsk(vi.fn().mockResolvedValue(respond({
       ...answer, supported: false, text: 'Недостаточно данных.', reason: 'no_context', language: 'ru',
     })));
     render(<App />);
@@ -110,7 +117,7 @@ describe('Ask your manual', () => {
   it.each([422, 500, 502, 503])('shows HTTP %s errors without losing the question, then recovers', async (status) => {
     const fetch = vi.fn().mockResolvedValueOnce(respond({ detail: 'Server is busy.' }, status))
       .mockResolvedValueOnce(respond());
-    vi.stubGlobal('fetch', fetch);
+    stubAsk(fetch);
     render(<App />);
     await submit();
     expect(await screen.findByRole('alert')).toHaveTextContent(`HTTP ${status}`);
@@ -124,7 +131,7 @@ describe('Ask your manual', () => {
 
   it('reports an unavailable backend without an automatic retry', async () => {
     const fetch = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
-    vi.stubGlobal('fetch', fetch);
+    stubAsk(fetch);
     render(<App />);
     await submit();
     expect(await screen.findByRole('alert')).toHaveTextContent('Check that the local backend is running');
@@ -140,7 +147,7 @@ describe('Ask your manual', () => {
       { ...answer.claims[0].citations[0], pdf_page: 0 },
     ] }] }),
   ])('handles a non-JSON or malformed response without crashing', async (response) => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(response));
+    stubAsk(vi.fn().mockResolvedValue(response));
     render(<App />);
     await submit();
     expect(await screen.findByRole('alert')).toBeVisible();
@@ -151,7 +158,7 @@ describe('Ask your manual', () => {
     const text = '<script>alert(1)</script>\n[aurora.pdf, PDF page 1] "First line\nsecond line"\n\nAnother claim.\n[aurora.pdf, PDF page 1] "Another quote"';
     const citation = { source_id: 'S1', document: 'manual [EN], <img src=x>.pdf',
       pdf_page: 7, quote: 'First line\nsecond line <script>alert(1)</script>' };
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(respond({ ...answer, text, claims: [
+    stubAsk(vi.fn().mockResolvedValue(respond({ ...answer, text, claims: [
       { text: 'First claim.', citations: [citation, { ...citation, source_id: 'S2',
         document: 'other.pdf', pdf_page: 2, quote: 'Another quote' }] },
       { text: 'Another claim.', citations: [citation] },
@@ -177,7 +184,7 @@ describe('Ask your manual', () => {
   });
 
   it('does not infer sources from answer text when structured claims are empty', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(respond({ ...answer, claims: [] })));
+    stubAsk(vi.fn().mockResolvedValue(respond({ ...answer, claims: [] })));
     render(<App />);
     await submit();
     const result = await screen.findByRole('region', { name: 'Answer' });
