@@ -5,6 +5,13 @@ is available in [Git commits](https://github.com/cryptoadya/garage-rag/commits/m
 
 ## [Unreleased]
 
+### Changed
+
+- Shorten the README around CLI/API/UI onboarding; keep operational details in
+  the usage/testing guides and document retained benchmark artifacts. Mark the
+  Phase 4B preparation protocol as historical. Include frontend sources and the
+  npm lockfile in source distributions; the Python wheel remains runtime-only.
+
 ### Added
 
 - Phase 5B local React/TypeScript/Vite UI: question submission to the existing

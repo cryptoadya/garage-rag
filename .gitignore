@@ -5,7 +5,8 @@
 /data/
 /output/
 /outputs/
-# Benchmark runs are local; publish reviewed Markdown summaries, not raw JSON.
+# Benchmark runs belong in /output/; /benchmarks/ holds versioned input datasets.
+# Publish reviewed Markdown summaries, not new raw result JSON.
 /docs/benchmarks/*.json
 # Frozen public baselines must also remain available in source distributions.
 !/docs/benchmarks/phase2a-baseline.v1.json
@@ -36,3 +37,4 @@ coverage.xml
 .coverage
 htmlcov/
 node_modules/
+*.tsbuildinfo

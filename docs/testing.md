@@ -11,7 +11,8 @@ python -m build
 ```
 
 [CI](https://github.com/cryptoadya/garage-rag/actions/workflows/ci.yml) runs pytest
-and Ruff on Python 3.12/Linux with model downloads disabled. The build command
+and Ruff on Python 3.12/Linux with model downloads disabled, plus the frontend
+tests and build on Node.js 22. The Python build command
 creates wheel/sdist artifacts in ignored `dist/`. Local acceptance also uses
 Python 3.12/macOS arm64 CPU; MPS is not validated.
 
@@ -19,6 +20,12 @@ Tests generate PDFs from the original fictional [Aurora corpus](../tests/fixture
 A local tokenizer and deterministic vectors avoid private BMW material, downloaded
 weights and live API calls. Qdrant persistence/retrieval and LangGraph execution
 are real; model responses and HTTP transports are controlled fixtures.
+
+If the checkout contains private historical graph captures, their replay also
+requires the pinned Groq tokenizer in the local cache. Set
+`HF_HOME="$PWD/.cache/huggingface"` when using the repository's existing cache.
+A fresh clone skips those private-capture tests; do not download model weights
+or make provider calls to run them.
 
 | Area | Contracts checked |
 | --- | --- |
@@ -36,6 +43,25 @@ quality, representative latency or vehicle safety. Scripted answer comparisons
 are documented in [answer evaluation](benchmarks/grounded-answering.md); they
 are separate experiments and are not required to rerun for documentation changes.
 
+## Frontend checks
+
+From the repository root, with Node.js 22.12+ (22.x), 24.x or 26+:
+
+```bash
+cd frontend
+npm ci
+npm test
+npm run build
+```
+
+Vitest and Testing Library use controlled HTTP responses for request fields,
+mode/language selection, duplicate submission, sources, refusals and errors.
+They make no provider calls. The build includes TypeScript checking.
+For browser smoke testing, check desktop/mobile layouts, submit in both modes,
+follow a source reference and verify refusal/error recovery. A live submission
+uses the configured backend provider and its quota guards; it requires an
+explicitly authorized live scope. See [local UI setup](usage.md#local-web-ui).
+
 ## Optional manual checks
 
 Follow the [quick start](../README.md#quick-start) with a permitted English PDF.
@@ -51,8 +77,12 @@ introduce paid fallbacks to obtain a passing result.
 
 Inspect both wheel and sdist contents: the wheel must contain the runtime package,
 entry point and MIT license; the sdist additionally contains public docs, tests,
-synthetic fixtures and frozen benchmark JSON. Neither may include `.env`, PDFs,
-indexes, model caches, captures or private archives. Install the built wheel in
+synthetic fixtures, frozen benchmark JSON and frontend sources/configuration with
+the npm lockfile. The UI runs from the source checkout or unpacked sdist; it is
+not bundled or served by the Python wheel. Neither artifact may include `.env`,
+PDFs, indexes, model caches, captures, private archives, `node_modules` or frontend
+build output. See the [retained benchmark inventory](benchmarks/README.md).
+Install the built wheel in
 an isolated environment and check `garage-rag --help` and module entry points.
 The sdist allowlist lives in [pyproject.toml](../pyproject.toml).
 
