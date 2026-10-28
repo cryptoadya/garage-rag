@@ -12,6 +12,11 @@ The implementation lives in [`src/garage_rag`](../src/garage_rag):
 | `evaluation`, `optimization` | Frozen retrieval evaluation and profile comparisons |
 | `answer_evaluation`, `source_evaluation`, `review_packet` | Paired answer evaluation and private hash-bound review |
 | `cli` | `index`, `stats`, `search` and `ask` commands |
+| `api` | Single-process FastAPI adapter for Direct/Grounded with sanitized public responses |
+
+The React client lives in [`frontend`](../frontend). It calls the existing API
+through a local Vite proxy; it holds no provider credentials or retrieval logic.
+See [API configuration](usage.md#http-api) and [UI setup](usage.md#local-web-ui).
 
 ## Extraction and indexing
 

@@ -1,9 +1,14 @@
 # Phase 4B: preregistered real-corpus comparison
 
-Prepared offline on 2026-10-27. **Not authorized to run yet. Phase 4B remains
-open.** This replaces the exact-query Aurora retrieval fixture as the proposed
-comparison. The earlier incomplete Grounded answer and false auditor acceptance
-remain measured results; neither is relabelled as a success or erased.
+**Historical preparation protocol, frozen on 2026-10-27.** The subsequently
+authorized six-workflow comparison is complete; see the
+[consolidated results and schedule amendment](phase4b-comparison.md#method-and-review-rules).
+The execution details below describe the proposal at preparation time, including
+the then-current native planner. They are not current launch instructions.
+
+The proposal replaced the exact-query Aurora retrieval fixture. The earlier
+incomplete Grounded answer and false auditor acceptance remain measured results;
+neither is relabelled as a success or erased.
 
 ## Fixed selection
 
@@ -146,6 +151,7 @@ Private preparation evidence is under ignored
 The saved HTTP 400's backend cause remains uncertain (see the diagnostic section
 in the comparison report); offline transport replay cannot certify a Groq fix.
 The Grounded false completeness acceptance remains a measured auditor weakness.
-**Phase 4B stays open pending an explicitly authorized real-corpus comparison and
-separate source review.** No new live request, merge, tag or Release is authorized
-or performed by this preparation.
+At preparation time, Phase 4B remained open pending an explicitly authorized
+real-corpus comparison and separate source review. This preparation itself
+authorized or performed no live request, merge, tag or Release. The subsequent
+outcomes are recorded in the [comparison report](phase4b-comparison.md).
