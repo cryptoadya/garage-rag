@@ -1744,3 +1744,125 @@ under `output/private/agentic-navigation-minimal-offline-20261028/`. Original li
 captures and every prior report section remain unchanged. Historical Phase 4B
 stays **Direct 2/2, Grounded 2/2, Agentic 1/2**, and the later single live refusal
 is not relabeled. No live API, retry, merge, tag or Release was performed.
+
+## One authorized navigation-hint live trial at 3a79fa5 — 2026-10-28
+
+**Result: unsuccessful task completion; `unsafe_numeric_evidence` safe stop.**
+Exactly one Agentic workflow ran at unchanged production commit
+`3a79fa5369fed45d8425ef9ed1f5d9f77c290784`. Planner received the new navigation hint,
+then finalized after one search. Writer produced an unreturned draft; the existing
+local numeric gate stopped it before mandatory auditor invocation. No positive
+answer was delivered or audited. No context/token/quota limit was exhausted.
+
+This is a separate new observation. Frozen Phase 4B remains **Direct 2/2, Grounded
+2/2, Agentic 1/2**, and the earlier live refusal at 587f6c4 remains unchanged.
+No retry, fallback, forced query, resume, second trial, merge, tag or Release.
+
+### Preflight and actual route
+
+Fresh authenticated Console checks confirmed Free / Current Plan and unchanged
+GPT-OSS limits: 30 RPM / 1,000 RPD / 8,000 TPM / 200,000 TPD. The same single
+non-expiring key/project showed 30 calls in 24 hours, matching the latest cumulative
+checkpoint after the previous live run: **63,781 tokens / 30 requests**. Earlier
+failed unknown-usage holds of 4,040 / 3,847 / 3,467 remained active and charged.
+All active earlier checkpoint events were covered; overlapping snapshots were not
+summed and history was not reset. Headroom **970 requests / 136,219 tokens** covered
+the full authorized envelope; minute windows/cooldowns had expired. No model quota
+probe was sent. Account observations can lag by fifteen minutes.
+
+Exact code/import bindings, original 186-page PDF/hash, frozen dataset/question,
+241-chunk index/logical digest, offline E5 and pinned GPT-OSS tokenizer/schema were
+verified before execution and remained unchanged after it. Same original English
+question and settings: Groq GPT-OSS 120B, strict Structured Outputs Planner,
+temperature zero, 1,024 completion tokens including reasoning, ordinary four-search /
+six-call / 24,000-reserved-token / twelve-step limits, top-k <=5. The ignored
+observer runner added one-shot capture/session guards and >=61-second pacing only;
+it did not inject hints, modify prompts or choose methods/queries.
+
+| Actual call | Real decision/output | Source delivery |
+| --- | --- | --- |
+| Planner 1 | Dense, `onboard tool kit location and how to access it`, top-k 5 | initially empty |
+| Planner 2 | `finalize`, all other fields null | S1:p23, S2:p180, S4:p39; new hint below |
+| Writer | supported three-claim candidate, later blocked locally | same S1,S2,S4; no navigation hints |
+
+Raw ranked hits were S1:p23, S2:p180, S3:p85, S4:p39, S5:p31. All five were stored;
+S3/S5 were excluded as `off_topic`. Selected **3/5**, protected **2** (S1/S4),
+context **4,111/12,000 characters**; no duplicate, truncation or blocked passage.
+The selector marked substantive evidence present. P150 itself was not retrieved.
+
+Planner 2 received exactly one production-generated hint: source **S2**, heading
+**Onboard tool kit**, opaque target label **150**. Delivery is verified in the real
+HTTP body. It chose no BM25 or heading-following search, instead finalizing on the
+available substantive evidence. Thus the hint was delivered, but operational
+reference following was **not observed**. Internal use or a causal effect on its
+decision cannot be inferred from this one trial. The first query also differs
+from the earlier trial, so this is not a controlled prompt ablation or evidence
+that the hints improved answer quality.
+
+### Budget, stop and resource accounting
+
+Before Planner 2: spent **2,724**, remaining **21,276**; writer quote **3,077** +
+audit envelope **5,070** = **8,147**. Additional planner quote **3,989** gives
+projected **14,860/24,000**, so the token-aware check allowed continued planning.
+Planner explicitly finalized; no budget-forced handoff occurred. Before writing,
+spent **6,713** plus terminal pair **8,147** still fit. Audit capacity **14,210**
+was protected after the writer quote. Audit was blocked by a local gate, not
+displaced by a planner call or insufficient capacity.
+
+| HTTP call | Held reservation | Actual input | Completion (reasoning included) | Actual total |
+| --- | ---: | ---: | ---: | ---: |
+| Planner 1 | 2,724 | 591 | 95 (33 reasoning) | 686 |
+| Planner 2 | 3,989 | 1,856 | 94 (55 reasoning) | 1,950 |
+| Writer | 3,077 | 1,657 | 921 (680 reasoning) | 2,578 |
+| Total | **9,790/24,000** | **4,104** | **1,110 (768 reasoning)** | **5,214** |
+
+All three requests returned HTTP 200 with complete usage and `stop` finish reasons.
+Actual HTTP-start intervals **61.913 / 61.867 seconds** met the pacing requirement.
+Execution took **128.508 seconds** including pacing; five graph steps, one search,
+three calls. Session reservations were charged once and not refunded. Separately,
+provider successful-usage reconciliation left **33 cumulative events / 68,995
+tokens**, preserving all prior events/failure holds. No USD billing was measured.
+
+### Draft failure and separate original-PDF AI check
+
+The delivered answer was the generic refusal:
+
+> There is not enough evidence in the retrieved context to answer this question.
+
+Its machine reason is `unsafe_numeric_evidence`, not `insufficient_evidence`.
+Offline per-claim replay of the unchanged numeric gate confirms claim 2 alone
+fails because it contains the number word **two**. That gate conservatively rejects
+spelled-out quantities even in intact cited prose; no damaged-source flag or digit
+comparison caused this stop. Local source-ID/quote validation passed. This is a
+mechanical explanation of the gate, not a semantic verdict or an audit result.
+
+A separate AI reviewer fixed an answer/draft/source/PDF-hash-bound judgment from
+only the question/mode, delivered refusal, unreturned candidate, sent sources and
+original PDF, without audit/cost/implementation/old reports. It searched the full
+PDF text and visually checked six original pages, including p23/38/39/150/180.
+
+Its independent finding is that the **unreturned candidate is materially wrong**:
+claims 1 and 3 have supported location/normal-access facts from S1:p23, but claim 2
+conflates the sport-wagon emergency tailgate-release sequence with ordinary kit
+access and changes the object being pulled to the kit. Sport-wagon scope and
+tailgate-release wording are already in S4:p39; the electrical-malfunction heading
+is on preceding p38, which was not retrieved. All five quoted passages are present
+after whitespace normalization, but quote containment does not entail claim 2.
+Original p150 independently confirms normal access; it is reviewer evidence only,
+not retroactively added to the model context.
+
+The delivered refusal safely withheld that draft but answered neither requested
+fact, despite S1 already supporting a concise answer. The generic insufficiency
+message does not explain the numeric failure. No toolkit-specific warning was
+found in the dedicated p150 column; the omitted scope matters because the draft
+imported an unrelated emergency procedure. This is separate AI review, not human
+ground truth or physical vehicle validation. Mandatory audit was never invoked,
+so its hypothetical verdict is unknown. The defined success criterion was not met.
+
+Raw replies/private reasoning, evidence, hints, guard diagnostics, quota history,
+one-shot marker, review and fresh PDF renders remain ignored under
+`output/private/agentic-navigation-live-3a79fa5-20261028/`. No raw PDF passages or
+provider reasoning are published. Post-run **495 full offline pytest tests and
+Ruff passed**; build and report-commit CI evidence is recorded in PR #5. Only this
+separate report is appended; production code and all prior report bytes remain
+unchanged. No gate was weakened and no additional live request was made.
