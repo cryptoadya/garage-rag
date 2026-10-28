@@ -105,30 +105,21 @@ def test_api_error_is_sanitized():
     assert "secret-token" not in str(exc.value)
 
 
-def test_missing_key_and_paid_model_are_rejected(monkeypatch):
-    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
-    with pytest.raises(GenerationError, match="OPENROUTER_API_KEY"):
-        make_llm()
-    with pytest.raises(GenerationError, match="free"):
-        make_llm(model="paid/model", api_key="test-not-a-real-key")
+def test_default_provider_is_groq_and_requires_free_plan(monkeypatch):
+    monkeypatch.delenv("GARAGE_RAG_PROVIDER", raising=False)
+    monkeypatch.delenv("GROQ_FREE_PLAN_CONFIRMED", raising=False)
+    with pytest.raises(GenerationError, match="Free Plan"):
+        make_llm(api_key="test-only")
+    monkeypatch.setenv("GROQ_FREE_PLAN_CONFIRMED", "true")
+    with make_llm(api_key="test-only").client as client:
+        assert str(client.base_url) == "https://api.groq.com/openai/v1/"
 
 
-@pytest.mark.parametrize("configured", [None, "4096", "16384"])
-def test_completion_budget_leaves_room_for_reasoning(monkeypatch, configured):
-    monkeypatch.delenv("OPENROUTER_MAX_TOKENS", raising=False)
-    if configured is not None:
-        monkeypatch.setenv("OPENROUTER_MAX_TOKENS", configured)
-    llm = make_llm(api_key="test-not-a-real-key")
-    with llm.client:
-        assert llm.max_tokens == (int(configured) if configured else 8192)
-
-
-@pytest.mark.parametrize("configured", ["secret-token", "0", "511", "32769", "1.5"])
-def test_invalid_completion_budget_is_rejected_safely(monkeypatch, configured):
-    monkeypatch.setenv("OPENROUTER_MAX_TOKENS", configured)
-    with pytest.raises(GenerationError, match="OPENROUTER_MAX_TOKENS") as exc:
-        make_llm(api_key="test-not-a-real-key")
-    assert "secret-token" not in str(exc.value)
+@pytest.mark.parametrize("provider", ["removed-provider", "paid-provider"])
+def test_other_providers_fail_closed(monkeypatch, provider):
+    monkeypatch.setenv("GARAGE_RAG_PROVIDER", provider)
+    with pytest.raises(GenerationError, match="Groq"):
+        make_llm(api_key="test-only")
 
 
 @pytest.mark.parametrize("content", ["", "truncated JSON", json.dumps(valid_reply())])
@@ -146,38 +137,21 @@ def test_token_limit_never_accepts_partial_output_or_retries(content):
     assert len(calls) == 1
 
 
-@pytest.mark.parametrize("status", [401, 429, 503])
-def test_real_sdk_wire_disables_paid_fallback_and_hidden_retries(monkeypatch, status):
-    import httpx
-    import openrouter
+@pytest.mark.parametrize("configured,expected", [(None, 2048), ("512", 512), ("4096", 4096)])
+def test_groq_completion_budget_preserves_reasoning_allowance(monkeypatch, configured, expected):
+    monkeypatch.setenv("GROQ_FREE_PLAN_CONFIRMED", "true")
+    monkeypatch.delenv("GROQ_MAX_TOKENS", raising=False)
+    if configured is not None:
+        monkeypatch.setenv("GROQ_MAX_TOKENS", configured)
+    llm = make_llm(api_key="test-only")
+    with llm.client:
+        assert llm.max_tokens == expected
 
-    requests = []
 
-    def transport(request):
-        requests.append(json.loads(request.content))
-        return httpx.Response(
-            status, json={"error": {"code": status, "message": "secret-token provider error"}}
-        )
-
-    constructor = openrouter.OpenRouter
-    http = httpx.Client(transport=httpx.MockTransport(transport))
-    monkeypatch.setattr(
-        openrouter, "OpenRouter", lambda **kwargs: constructor(client=http, **kwargs)
-    )
-    monkeypatch.delenv("OPENROUTER_MAX_TOKENS", raising=False)
-    llm = make_llm(api_key="test-not-a-real-key")
-    with llm.client, pytest.raises(GenerationError) as exc:
-        answer("Как проверить шины?", hits(), llm)
-    assert "secret-token" not in str(exc.value)
-    if status == 429:
-        assert "rate limit" in str(exc.value)
-    if status == 401:
-        assert "authentication" in str(exc.value)
-    assert len(requests) == 1
-    body = requests[0]
-    assert body["model"] == "openrouter/free"
-    assert body["max_tokens"] == 8192
-    assert body["provider"]["max_price"] == {"prompt": "0", "completion": "0", "request": "0"}
-    assert body["provider"]["allow_fallbacks"] is False
-    assert "models" not in body
-    assert "messages" in body
+@pytest.mark.parametrize("configured", ["secret-token", "0", "511", "4097", "1.5"])
+def test_groq_invalid_completion_budget_is_rejected_safely(monkeypatch, configured):
+    monkeypatch.setenv("GROQ_FREE_PLAN_CONFIRMED", "true")
+    monkeypatch.setenv("GROQ_MAX_TOKENS", configured)
+    with pytest.raises(GenerationError, match="GROQ_MAX_TOKENS") as caught:
+        make_llm(api_key="test-only")
+    assert "secret-token" not in str(caught.value)

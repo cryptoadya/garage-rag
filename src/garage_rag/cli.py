@@ -79,9 +79,9 @@ def parser():
             )
             command.add_argument(
                 "--provider",
-                choices=["openrouter", "groq"],
+                choices=["groq"],
                 default=None,
-                help="Agentic defaults to Groq; other modes use GARAGE_RAG_PROVIDER/OpenRouter",
+                help="Groq is the only LLM provider",
             )
             command.add_argument(
                 "--max-total-tokens",
@@ -128,11 +128,7 @@ def main(argv=None):
             raise ValueError("No index found; run garage-rag index first")
         # Validate mode-specific caps before provider construction or local loading.
         if args.command == "ask":
-            args.provider = args.provider or (
-                "groq"
-                if args.workflow == "agentic"
-                else os.environ.get("GARAGE_RAG_PROVIDER", "openrouter")
-            )
+            args.provider = args.provider or os.environ.get("GARAGE_RAG_PROVIDER", "groq")
             if args.workflow == "agentic":
                 limits = AgenticLimits(
                     args.max_llm_calls or 6, args.max_searches or 4, args.max_total_tokens

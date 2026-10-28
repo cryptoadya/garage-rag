@@ -1,6 +1,6 @@
-import type { Claim } from './api';
+import type { Citation, Claim } from './api';
 
-export function AnswerText({ text, claims }: { text: string; claims: Claim[] }) {
+export function AnswerText({ text, claims, onOpenPdf }: { text: string; claims: Claim[]; onOpenPdf: (citation: Citation) => void }) {
   return (
     <>
       <div className="answer-text">{text}</div>
@@ -16,7 +16,7 @@ export function AnswerText({ text, claims }: { text: string; claims: Claim[] }) 
                   {claim.citations.map((citation, citationIndex) => (
                     <div className="citation" key={citationIndex}>
                       <p>{citation.document}</p>
-                      <span>PDF page {citation.pdf_page}</span>
+                      <button className="citation-link" onClick={() => onOpenPdf(citation)} aria-label={`Open ${citation.document} at PDF page ${citation.pdf_page}`}>PDF page {citation.pdf_page} ↗</button>
                       <blockquote>{citation.quote}</blockquote>
                     </div>
                   ))}
@@ -24,7 +24,7 @@ export function AnswerText({ text, claims }: { text: string; claims: Claim[] }) 
               </li>
             ))}
           </ol>
-          <p className="source-note">Physical PDF pages, counted from 1. Open your own PDF to read the full passage.</p>
+          <p className="source-note">Physical PDF pages, counted from 1. Select a page to view the saved original PDF.</p>
         </section>
       ) : null}
     </>

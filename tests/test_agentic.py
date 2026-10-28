@@ -425,9 +425,8 @@ def test_score_filter_disables_lexical_tool_instead_of_silently_dropping_filter(
     assert calls == []
 
 
-def test_explicit_openrouter_alternative_real_sdk_tool_wire(monkeypatch):
+def test_groq_native_tool_wire(monkeypatch):
     import httpx
-    import openrouter
 
     from garage_rag.agentic import AgenticLimits
     from garage_rag.generation import make_llm
@@ -465,18 +464,22 @@ def test_explicit_openrouter_alternative_real_sdk_tool_wire(monkeypatch):
                 "id": "fixture",
                 "object": "chat.completion",
                 "system_fingerprint": None,
-                "model": "fixture/model:free",
+                "model": "openai/gpt-oss-120b",
                 "created": 0,
                 "choices": [{"index": 0, "finish_reason": finish, "message": message}],
                 "usage": {"prompt_tokens": 100, "completion_tokens": 50, "total_tokens": 150},
             },
         )
 
-    constructor = openrouter.OpenRouter
-    http = httpx.Client(transport=httpx.MockTransport(transport))
-    monkeypatch.setattr(openrouter, "OpenRouter", lambda **kw: constructor(client=http, **kw))
-    monkeypatch.setenv("OPENROUTER_MAX_TOKENS", "512")
-    llm = make_llm(provider="openrouter", api_key="test-only")
+    constructor = httpx.Client
+    monkeypatch.setattr(httpx, "Client", lambda **kw: constructor(
+        transport=httpx.MockTransport(transport), **kw
+    ))
+    monkeypatch.setenv("GROQ_FREE_PLAN_CONFIRMED", "true")
+    monkeypatch.setenv("GROQ_MAX_TOKENS", "512")
+    llm = make_llm(api_key="test-only")
+    # Exercise the optional native protocol; the default planner stays unchanged.
+    llm.structured_planner_supported = False
     with llm.client:
         result = run(
             llm, limits=AgenticLimits(max_llm_calls=3, max_searches=1, max_total_tokens=48000)
@@ -487,12 +490,8 @@ def test_explicit_openrouter_alternative_real_sdk_tool_wire(monkeypatch):
     assert requests[1]["messages"][-1]["tool_call_id"] == "c1"
     assert "tools" not in requests[-1]
     for request in requests:
-        assert request["provider"]["allow_fallbacks"] is False
-        assert request["provider"]["max_price"] == {
-            "prompt": "0",
-            "completion": "0",
-            "request": "0",
-        }
+        assert request["model"] == "openai/gpt-oss-120b"
+        assert request["service_tier"] == "on_demand"
 
 
 def test_sufficient_stop_reason_cannot_override_failed_local_validation():

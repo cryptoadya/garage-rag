@@ -3,6 +3,7 @@
 import hashlib
 import os
 import shutil
+import stat
 import tempfile
 from contextlib import ExitStack, asynccontextmanager
 from pathlib import Path
@@ -12,7 +13,7 @@ from typing import Literal
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from pypdf.errors import PdfReadError
 from starlette.concurrency import run_in_threadpool
@@ -68,6 +69,7 @@ class CitationResponse(BaseModel):
     document: str
     pdf_page: int = Field(ge=1, description="Physical PDF page, starting at 1; not a page label.")
     quote: str
+    pdf_sha256: str | None = None
 
 
 class ClaimResponse(BaseModel):
@@ -105,6 +107,7 @@ def structured_claims(run: WorkflowResult) -> list[ClaimResponse]:
                     document=run.context.sources[evidence.source_id].metadata["document"],
                     pdf_page=run.context.sources[evidence.source_id].metadata["pdf_page"],
                     quote=evidence.quote,
+                    pdf_sha256=run.context.sources[evidence.source_id].metadata.get("content_sha256"),
                 )
                 for evidence in claim.evidence
             ],
@@ -194,6 +197,48 @@ def create_app(
         return DocumentsResponse(documents=[
             document_info(name, record) for name, record in sorted(snapshot.items())
         ])
+
+    @app.get("/documents/pdf")
+    def original_pdf(document: str, sha256: str):
+        require_ready()
+        unavailable = HTTPException(404, "Original PDF unavailable for this citation.")
+        if (
+            not document.lower().endswith(".pdf")
+            or any(c in "/\\" or ord(c) < 32 or ord(c) == 127 for c in document)
+        ):
+            raise unavailable
+        record = index.manifest["documents"].get(document)
+        if record is None or record["content_sha256"] != sha256:
+            raise unavailable
+        # Search only the API's private upload store, never manifest/source paths.
+        # Existing uploads need no migration or second path registry. Read a bounded
+        # snapshot and hash those exact bytes, avoiding FileResponse path races.
+        for folder in pdf_root.glob("pdf-*"):
+            if folder.is_symlink() or not folder.is_dir():
+                continue
+            path = folder / document
+            try:
+                fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+                with os.fdopen(fd, "rb") as source:
+                    if not stat.S_ISREG(os.fstat(source.fileno()).st_mode):
+                        continue
+                    content = source.read(MAX_PDF_BYTES + 1)
+            except OSError:
+                continue
+            if len(content) > MAX_PDF_BYTES or hashlib.sha256(content).hexdigest() != sha256:
+                continue
+            # Manifest activation is atomic. Recheck after reading in case an
+            # upload replaced the active revision while the snapshot was read.
+            active = index.manifest["documents"].get(document, {})
+            if active.get("content_sha256") != sha256:
+                raise unavailable
+            return Response(content, media_type="application/pdf", headers={
+                "Content-Disposition": "inline",
+                "Cache-Control": "no-store",
+                "X-Content-Type-Options": "nosniff",
+                "X-PDF-Pages": str(record["pages"]),
+            })
+        raise unavailable
 
     def index_upload(folder, path):
         # The worker owns the lock and file cleanup even if its HTTP client leaves.

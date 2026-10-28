@@ -355,9 +355,8 @@ def test_whole_graph_disables_inherited_langsmith_tracing(monkeypatch):
     assert run(llm).answer.supported
 
 
-def test_real_sdk_success_wire_has_two_zero_price_requests_without_hidden_calls(monkeypatch):
+def test_groq_success_wire_has_two_fixed_model_requests_without_hidden_calls(monkeypatch):
     import httpx
-    import openrouter
 
     from garage_rag.generation import make_llm
 
@@ -373,7 +372,7 @@ def test_real_sdk_success_wire_has_two_zero_price_requests_without_hidden_calls(
                 "id": "synthetic-response",
                 "object": "chat.completion",
                 "system_fingerprint": None,
-                "model": "fixture/model:free",
+                "model": "openai/gpt-oss-120b",
                 "created": 0,
                 "choices": [
                     {
@@ -389,10 +388,13 @@ def test_real_sdk_success_wire_has_two_zero_price_requests_without_hidden_calls(
             },
         )
 
-    constructor = openrouter.OpenRouter
-    http = httpx.Client(transport=httpx.MockTransport(transport))
+    constructor = httpx.Client
+    monkeypatch.setenv("GROQ_FREE_PLAN_CONFIRMED", "true")
+    monkeypatch.setenv("GROQ_MAX_TOKENS", "512")
     monkeypatch.setattr(
-        openrouter, "OpenRouter", lambda **kwargs: constructor(client=http, **kwargs)
+        httpx, "Client", lambda **kwargs: constructor(
+            transport=httpx.MockTransport(transport), **kwargs
+        )
     )
     llm = make_llm(api_key="test-not-a-real-key")
     with llm.client:
@@ -403,14 +405,13 @@ def test_real_sdk_success_wire_has_two_zero_price_requests_without_hidden_calls(
     assert result.trace.output_tokens == 10
     assert result.trace.public_dict()["token_usage_complete"]
     for body in requests:
-        assert body["provider"]["max_price"] == {"prompt": "0", "completion": "0", "request": "0"}
-        assert body["provider"]["allow_fallbacks"] is False
+        assert body["model"] == "openai/gpt-oss-120b"
+        assert body["service_tier"] == "on_demand"
         assert "models" not in body
 
 
 def test_provider_failure_keeps_safe_status_in_trace_without_payload(monkeypatch):
     import httpx
-    import openrouter
 
     from garage_rag.generation import make_llm
 
@@ -422,10 +423,13 @@ def test_provider_failure_keeps_safe_status_in_trace_without_payload(monkeypatch
             502, json={"error": {"code": 502, "message": "private provider payload"}}
         )
 
-    constructor = openrouter.OpenRouter
-    http = httpx.Client(transport=httpx.MockTransport(transport))
+    constructor = httpx.Client
+    monkeypatch.setenv("GROQ_FREE_PLAN_CONFIRMED", "true")
+    monkeypatch.setenv("GROQ_MAX_TOKENS", "512")
     monkeypatch.setattr(
-        openrouter, "OpenRouter", lambda **kwargs: constructor(client=http, **kwargs)
+        httpx, "Client", lambda **kwargs: constructor(
+            transport=httpx.MockTransport(transport), **kwargs
+        )
     )
     llm = make_llm(api_key="test-not-a-real-key")
     with llm.client:

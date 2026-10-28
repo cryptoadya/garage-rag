@@ -120,52 +120,14 @@ def build_context(hits, max_chars=12000, max_chunks=8, *, compact=False):
 
 
 def make_llm(model=None, api_key=None, *, provider=None):
-    provider = provider or os.environ.get("GARAGE_RAG_PROVIDER", "openrouter")
-    if provider == "groq":
-        from .groq import GroqLLM
+    provider = provider or os.environ.get("GARAGE_RAG_PROVIDER", "groq")
+    if provider != "groq":
+        raise GenerationError(
+            "Groq is the only supported LLM provider; use GARAGE_RAG_PROVIDER=groq"
+        )
+    from .groq import GroqLLM
 
-        return GroqLLM(model=model, api_key=api_key)
-    if provider != "openrouter":
-        raise GenerationError("Choose LLM provider openrouter or groq")
-    from langchain_openrouter import ChatOpenRouter
-    from openrouter import OpenRouter
-
-    model = model or os.environ.get("OPENROUTER_MODEL") or "openrouter/free"
-    if not (model == "openrouter/free" or re.fullmatch(r"[\w.-]+/[\w.-]+:free", model)):
-        raise GenerationError("Only openrouter/free or an explicit provider/model:free is allowed")
-    budget_error = "OPENROUTER_MAX_TOKENS must be an integer between 512 and 32768"
-    try:
-        max_tokens = int(os.environ.get("OPENROUTER_MAX_TOKENS", "8192"))
-    except ValueError:
-        raise GenerationError(budget_error) from None
-    if not 512 <= max_tokens <= 32768:
-        raise GenerationError(budget_error)
-    api_key = api_key or os.environ.get("OPENROUTER_API_KEY", "").strip()
-    if not api_key:
-        raise GenerationError("Set OPENROUTER_API_KEY in .env; local search needs no API key")
-    # The underlying SDK otherwise defaults to retries lasting up to one hour,
-    # even when ChatOpenRouter(max_retries=0) omits its own retry configuration.
-    client = OpenRouter(
-        api_key=api_key,
-        server_url="https://openrouter.ai/api/v1",
-        timeout_ms=60000,
-        retry_config=None,
-    )
-    return ChatOpenRouter(
-        model=model,
-        api_key=api_key,
-        client=client,
-        max_retries=0,
-        timeout=60000,
-        temperature=0,
-        # OpenRouter counts reasoning and visible JSON against the same budget.
-        max_tokens=max_tokens,
-        openrouter_provider={
-            "allow_fallbacks": False,
-            "require_parameters": True,
-            "max_price": {"prompt": "0", "completion": "0", "request": "0"},
-        },
-    )
+    return GroqLLM(model=model, api_key=api_key)
 
 
 def _normal_space(text):
@@ -187,18 +149,7 @@ def invoke_model(llm, messages):
     except Exception as exc:
         if isinstance(exc, GenerationError):
             raise exc from None
-        status = getattr(exc, "status_code", None)
-        provider = getattr(llm, "provider", "openrouter")
-        if status == 429:
-            message = "OpenRouter rate limit reached; wait and retry manually (no paid fallback)"
-        elif status in (401, 403):
-            message = "OpenRouter rejected authentication; check your local API key"
-        elif status in (402, 404):
-            message = "The selected free model is unavailable; choose another explicit :free model"
-        else:
-            message = "OpenRouter request failed or timed out; retry manually (no paid fallback)"
-        if provider == "groq":
-            message = "Groq request failed or timed out; resume manually (no retry or fallback)"
+        message = "Groq request failed or timed out; resume manually (no retry or fallback)"
         raise GenerationError(message) from None
     return response
 

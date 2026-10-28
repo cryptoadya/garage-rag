@@ -7,12 +7,22 @@ is available in [Git commits](https://github.com/cryptoadya/garage-rag/commits/m
 
 ### Changed
 
+- Phase 5E: Groq is the sole LLM provider for CLI, API and all modes. Remove the
+  alternate transport, SDK dependencies and current setup instructions; retain
+  historical benchmark reports. Existing Groq model, Free Plan attestation,
+  conservative quota accounting and no-retry/fallback guards remain unchanged.
+
 - Shorten the README around CLI/API/UI onboarding; keep operational details in
   the usage/testing guides and document retained benchmark artifacts. Mark the
   Phase 4B preparation protocol as historical. Include frontend sources and the
   npm lockfile in source distributions; the Python wheel remains runtime-only.
 
 ### Added
+
+- Phase 5E PDF viewer: open a structured citation at its physical PDF page,
+  navigate pages and return to the answer. Serve only SHA-256-verified private
+  uploads matching active document revisions; unavailable originals (including
+  earlier CLI imports) receive a clear message. Existing uploads need no migration.
 
 - Phase 5D PDF management: stream PDF uploads to private local storage, index
   them with the existing ingestion/embeddings/Qdrant pipeline, and list active

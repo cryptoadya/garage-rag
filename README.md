@@ -13,10 +13,11 @@ answers with verbatim evidence and locally verified PDF page references.
 - Direct answers or bounded Grounded draft/audit answering, with local citation checks.
 - FastAPI and a local React UI for Direct/Grounded questions, languages and sources.
 - Experimental CLI-only Agentic retrieval with bounded local dense/BM25 searches.
-- OpenRouter free-only routing and optional Groq with Free Plan attestation.
+- Groq-only generation with Free Plan attestation and conservative quota guards.
+- Open a saved original PDF directly from a citation, with page navigation.
 
 Indexing and search need no LLM account or Qdrant server. Generation sends the
-question, selected passages and audit drafts to the chosen provider.
+question, selected passages and audit drafts to Groq.
 
 ## Quick start
 
@@ -53,7 +54,8 @@ reuses its completed revision.
 
 ### CLI answers
 
-Set `OPENROUTER_API_KEY` in your local `.env`, then run:
+Set `GROQ_API_KEY` in your local `.env`. Verify your organization is on Free Plan
+and set `GROQ_FREE_PLAN_CONFIRMED=true` before generating answers:
 
 ```bash
 garage-rag ask 'How do I check the engine oil level?'

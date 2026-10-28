@@ -135,7 +135,7 @@ Groq uses `planner.Decision`: one strict JSON search/finalize/refuse decision,
 with required nullable method/query/top_k/reason fields. Local validation rejects
 incompatible or extra fields, unknown methods/reasons, blank queries and invalid
 top-k. Planner history is ordinary assistant/user JSON, without provider tools.
-The optional non-Groq backend uses required serial native search/finalize/refuse
+The retained native tool protocol uses required serial search/finalize/refuse
 actions; no protocol switch follows an error. Initial empty context is not evidence
 of absence. Malformed decisions stop without repair/retry; finalize without sources
 refuses without writer/audit calls. See [wire settings](providers.md#agentic-planner-transport).
@@ -267,14 +267,13 @@ routes from live decisions, failures and separately reviewed answers.
 | Graph recursion limit | 16, fixed safety net; normal longest path is seven nodes |
 | Context | 8 chunks / 12,000 serialized characters, whole passages |
 | Network-operation timeout | 60 seconds per request; no total call/workflow deadline |
-| OpenRouter completion/reasoning tokens | 8192 per call, configurable 512–32768 |
 | Groq completion/reasoning tokens | 2048 per call, configurable 512–4096 |
 
 A draft reserves budget for its mandatory audit. A one-call grounded budget
 therefore refuses without a completion. Normal acceptance uses two calls;
 recovery after draft refusal uses at most three, after audit insufficiency at
 most four. Direct mode ignores grounded budget flags. The default worst-case
-completion allowance is 32,768 OpenRouter or 8,192 Groq tokens across four calls.
+completion allowance is 8,192 Groq tokens across four calls.
 
 Timeouts are HTTPX network-operation/inactivity limits, not whole-call deadlines;
 keepalive traffic or local loading/search can extend wall time. Provider/local
@@ -317,7 +316,7 @@ are not zero-cost evidence. Provider errors retain only a validated HTTP status 
 fixed category, never raw payloads. Traces omit questions, filenames, source text,
 claims, quotes and keys; the answer itself can contain private quotations.
 
-The selected provider receives the question, selected passages/metadata and audit
+Groq receives the question, selected passages/metadata and audit
 draft. Indexing/search stay local. LangSmith tracing is disabled around the whole
 graph. Optional evaluation captures and review packets contain exact private
 requests/replies and must stay outside Git. External retention/billing policies

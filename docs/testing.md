@@ -4,7 +4,7 @@
 
 ```bash
 python -m pip install -e '.[dev]'
-HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 OPENROUTER_API_KEY= GROQ_API_KEY= python -m pytest
+HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 GROQ_API_KEY= python -m pytest
 ruff check .
 python -m pip check
 python -m build
@@ -33,7 +33,7 @@ or make provider calls to run them.
 | Retrieval evaluation | Hit/MRR arithmetic, labels, frozen/disjoint datasets, corpus guards, active-only BM25, fusion and reranking |
 | Generation/workflow | EN/DE/RU, source/quote/schema validation, numeric/table regressions, all-claim audit coverage, expansion retention, budgets and safe failures |
 | Agentic retrieval | Evidence-dependent dense/BM25 and multilingual paths, real local search, cumulative source comparison, native call/result IDs, refusal reasons, strict budgets and mandatory audit |
-| Provider wire behavior | Zero-price routing, disabled retries/fallbacks, truncation, Groq plan/quota guards, headers, tokenizer accounting and timing |
+| Provider wire behavior | Fixed Groq endpoint/model, disabled retries/fallbacks, truncation, plan/quota guards, headers, tokenizer accounting and timing |
 | Evaluation/review | Checkpoint/resume identity, exact answer/source hashes, mixed reviewer provenance, capture tampering and unfilled private review packets |
 | Three-mode comparison | EN/DE/RU matched matrices, pairwise completeness, citation/warning labels, audit separation and shared tool-bound session guards |
 | Privacy | Sanitized errors/observations and whole-graph tracing suppression |
@@ -60,6 +60,9 @@ plus document listing, PDF transfer progress, indexing/readiness, upload failure
 and immediate questions after upload. API tests use real synthetic PDFs and
 Qdrant Local to check empty-index startup, ingestion/reuse, safe file storage,
 size/type/name validation, failure cleanup and upload/answer exclusivity.
+PDF viewer tests cover exact hash-bound bytes, missing/CLI originals, inactive
+and superseded revisions, tampering, symlinks and traversal. Frontend tests cover
+opening structured citations, page navigation, cleanup and unavailable originals.
 They make no provider calls. The build includes TypeScript checking.
 For browser smoke testing, check desktop/mobile layouts, submit in both modes,
 follow a source reference and verify refusal/error recovery. A live submission
