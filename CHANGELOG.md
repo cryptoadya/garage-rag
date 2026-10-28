@@ -7,6 +7,10 @@ is available in [Git commits](https://github.com/cryptoadya/garage-rag/commits/m
 
 ### Added
 
+- Phase 5B local React/TypeScript/Vite UI: question submission to the existing
+  FastAPI, Direct/Grounded and answer-language selection, source-reference links,
+  loading/refusal/error states and responsive layout. Local dev/preview proxy,
+  frontend behavior tests and type-checked build; no backend workflow changes.
 - Phase 5A FastAPI MVP: `GET /health` and `POST /ask` reuse Direct/Grounded
   workflows and CLI public responses, with strict EN/DE/RU request validation,
   sanitized errors, one in-flight answer and lifespan-owned Qdrant/provider resources.
@@ -18,6 +22,7 @@ is available in [Git commits](https://github.com/cryptoadya/garage-rag/commits/m
 
 ### Fixed
 
+- Local web UI text contrast for hints, source metadata, loading and refusal states.
 - Groq Agentic uses strict structured planner decisions with local search dispatch;
   the optional native backend uses serial search/finalize/refuse actions.
 - Agentic separates private evidence storage from bounded whole-passage context,
