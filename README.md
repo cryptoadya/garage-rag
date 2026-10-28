@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/cryptoadya/garage-rag/actions/workflows/ci.yml/badge.svg)](https://github.com/cryptoadya/garage-rag/actions/workflows/ci.yml)
 
-A local-first RAG CLI and HTTP API for automotive documentation. Ask in **English, German or
+A local-first RAG CLI, HTTP API and web UI for automotive documentation. Ask in **English, German or
 Russian**, search an English PDF locally, and generate answers with verbatim
 evidence and locally verified PDF page references.
 
@@ -18,6 +18,7 @@ auditing remains unproven. It does not replace professional diagnosis.
 - Pinned E5 Small, E5 Base and BGE-M3 embedding profiles with isolated indexes.
 - Direct generation or bounded draft/audit answering with one optional local expansion.
 - A minimal FastAPI server for Direct/Grounded answers and public workflow metadata.
+- A local React interface for questions, Direct/Grounded mode, answer language and sources.
 - Experimental, opt-in agentic retrieval: model-selected dense/BM25 searches
   and multilingual query rewrites.
 - OpenRouter free-only routing and an optional Groq transport with Free Plan attestation.
@@ -125,6 +126,48 @@ using the CLI against the same index. One `/ask` runs at a time; overlap returns
 500, with fixed messages that omit inputs, paths and provider payloads.
 There is no authentication; the launch command binds to loopback for local use.
 
+### Local web UI
+
+From a repository checkout, prepare the backend index and provider credentials
+as in the quick start. Use two terminals, both starting at the repository root:
+
+```bash
+# Terminal 1: activate the Python environment, then start the backend.
+source .venv/bin/activate
+python -m uvicorn garage_rag.api:create_app --factory --host 127.0.0.1 --port 8000 --workers 1
+```
+
+```bash
+# Terminal 2: Node.js 22.12+ (22.x), 24.x or 26+ and npm.
+cd frontend
+npm ci
+npm run dev
+```
+
+Open [the local UI](http://127.0.0.1:5173). Enter a question, choose Direct or
+Grounded and an answer language (Auto, English, Deutsch or Русский), then submit.
+The UI shows loading, the answer, source references, refusals and request errors.
+Questions are limited to 4,000 characters. A new submission replaces the previous
+result; nothing is saved as chat history. Only explicit submissions call `/ask`,
+with no automatic retries.
+
+The browser posts to `/api/ask`; the local Vite proxy forwards to the existing
+`POST http://127.0.0.1:8000/ask`. Backend behavior and provider settings are unchanged.
+Keep credentials in the backend's `.env`; the frontend needs no environment file
+or API key. Both servers bind to loopback. Stop other CLI/server processes using
+the same index before starting FastAPI.
+
+The API embeds document names, PDF page numbers and quotes in plain answer text;
+it exposes no PDF URLs or file-serving endpoint. Clicking a reference jumps to
+its entry in the Sources section. Read the adjacent quote in the answer and open
+your own PDF for the full passage. Source references are preserved as returned;
+the frontend does not verify evidence or run RAG logic.
+
+For a local build check, run `npm run build` and `npm run preview` from `frontend`,
+then open [the preview](http://127.0.0.1:4173) with the backend still running.
+Preview uses the same local API proxy. This MVP uses Vite's local servers;
+the `dist` files alone do not provide an API proxy.
+
 ### Agentic retrieval
 
 ```bash
@@ -163,8 +206,9 @@ See [current architecture](docs/architecture.md#agentic-retrieval-phase-4a) and 
   claim or preserve all warnings from its full source passage.
 - Free services can be unavailable or rate limited. There is no hard total
   workflow deadline, independent human quality acceptance or vehicle validation.
-- Qdrant Local allows one process per index. No Web UI, conversation
-  memory, unrestricted agent, MCP or Docker integration is implemented.
+- Qdrant Local allows one process per index. The local UI supports Direct/Grounded
+  only; conversation memory, PDF management, authentication, unrestricted agents,
+  MCP and Docker integration are not implemented.
 - Keep `.env`, PDFs, indexes, caches and captures private, including custom paths.
   Indexes contain source text; `.gitignore` cannot protect already tracked files.
 
@@ -175,7 +219,20 @@ python -m pip install -e '.[dev]'
 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 OPENROUTER_API_KEY= GROQ_API_KEY= python -m pytest
 ruff check .
 python -m build
+# Frontend checks (from the repository root):
+cd frontend
+npm ci
+npm test
+npm run build
 ```
+
+Frontend tests use Vitest and Testing Library with controlled HTTP responses:
+request fields, language/mode selection, loading/duplicate submission, references,
+refusals, HTTP/network errors, malformed responses and inert response text.
+They make no provider calls. TypeScript checking is included in the build.
+For browser smoke testing, check desktop and mobile layouts, submit in both
+modes, follow a source reference, and verify refusal/error recovery. A live
+submission uses the configured backend provider and its existing quota guards.
 
 | Guide | Contents |
 | --- | --- |
