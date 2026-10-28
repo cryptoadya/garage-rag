@@ -16,7 +16,7 @@ import httpx
 from langchain_core.messages import AIMessage
 
 from .generation import GenerationError
-from .local_tools import byte_reservation, checked_call, checked_tools, wire_messages
+from .local_tools import CONTROL_TOOLS, byte_reservation, checked_call, checked_tools, wire_messages
 
 MODEL = "openai/gpt-oss-120b"
 TOKENIZER_REVISION = "b5c939de8f754692c1647ca79fbf85e8c1e70f8a"
@@ -70,6 +70,7 @@ def quota_headers(headers):
 
 class GroqLLM:
     provider = "groq"
+    structured_planner_supported = True
     temperature = 0
 
     def __init__(self, model=None, api_key=None):
@@ -119,12 +120,27 @@ class GroqLLM:
         self._resume_after = 0.0
         self.quota_observer = None
 
+    def bind_planner(self):
+        return _PlannerLLM(self)
+
     def bind_tools(self, tools, *, tool_choice="auto", parallel_tool_calls=False):
-        if tool_choice != "auto" or parallel_tool_calls is not False:
-            raise GenerationError("Groq agent requires serial auto local tools")
-        return _ToolLLM(self, checked_tools(tools))
+        tools = checked_tools(tools)
+        if tool_choice not in ("auto", "required") or parallel_tool_calls is not False:
+            raise GenerationError("Groq agent requires serial local actions")
+        if tool_choice == "required" and any(t not in tools for t in CONTROL_TOOLS):
+            raise GenerationError("Required local actions must allow finalize and refuse")
+        return _ToolLLM(self, tools, tool_choice)
 
     def request_reservation(self, messages, tools=None):
+        from .planner import PLANNER_FORMAT
+
+        if isinstance(tools, dict):
+            if tools != PLANNER_FORMAT:
+                raise GenerationError("Only the closed planner schema is allowed")
+            payload = wire_messages(messages)
+            if any(m["role"] == "tool" or m.get("tool_calls") for m in payload):
+                raise GenerationError("Structured planner cannot use native tools")
+            return self.reserve_tokens(payload) + len(json.dumps(tools).encode()) + 256
         return self.reserve_tokens(wire_messages(messages, tools), tools)
 
     def reserve_tokens(self, payload, tools=None):
@@ -175,11 +191,13 @@ class GroqLLM:
     def invoke(self, messages):
         return self._invoke(messages)
 
-    def _invoke(self, messages, tools=None):
+    def _invoke(self, messages, tools=None, tool_choice="auto", response_format=None):
         payload = wire_messages(messages, tools)
         # UTF-8 bytes bound byte-level tokenizer text tokens conservatively. Include
         # chat framing and reserve the full completion budget, including reasoning.
-        reserve = self.reserve_tokens(payload, tools)
+        if response_format and tools:
+            raise GenerationError("Structured outputs cannot be combined with native tools")
+        reserve = self.request_reservation(messages, response_format or tools)
         now = time.monotonic()
         self._history = [entry for entry in self._history if now - entry[0] < 86400]
         if self._blocked or time.time() < self._resume_after:
@@ -217,13 +235,20 @@ class GroqLLM:
                     **(
                         {
                             "tools": tools,
-                            "tool_choice": "auto",
+                            "tool_choice": tool_choice,
                             "parallel_tool_calls": False,
                             "reasoning_effort": "low",
                             "include_reasoning": False,
                         }
                         if tools
-                        else {"response_format": {"type": "json_object"}}
+                        else {
+                            "response_format": response_format or {"type": "json_object"},
+                            **(
+                                {"reasoning_effort": "low", "include_reasoning": False}
+                                if response_format
+                                else {}
+                            ),
+                        }
                     ),
                 },
             )
@@ -290,7 +315,11 @@ class GroqLLM:
                     }
                 ]
                 checked_call(normalized[0], tools)
-            elif finish not in {"stop", "length"} or calls:
+            elif (
+                finish not in {"stop", "length"}
+                or calls
+                or (tools and tool_choice == "required" and finish != "length")
+            ):
                 raise ValueError
             content = message.get("content") or ""
             if not isinstance(content, str) or len(content) > 20000:
@@ -321,11 +350,24 @@ class GroqLLM:
 class _ToolLLM:
     """A bound view sharing the client's quota history and single-attempt transport."""
 
-    def __init__(self, llm, tools):
-        self.llm, self.tools = llm, tools
+    def __init__(self, llm, tools, tool_choice):
+        self.llm, self.tools, self.tool_choice = llm, tools, tool_choice
 
     def __getattr__(self, name):
         return getattr(self.llm, name)
 
     def invoke(self, messages):
-        return self.llm._invoke(messages, self.tools)
+        return self.llm._invoke(messages, self.tools, self.tool_choice)
+
+
+class _PlannerLLM:
+    def __init__(self, llm):
+        self.llm = llm
+
+    def __getattr__(self, name):
+        return getattr(self.llm, name)
+
+    def invoke(self, messages):
+        from .planner import PLANNER_FORMAT
+
+        return self.llm._invoke(messages, response_format=PLANNER_FORMAT)

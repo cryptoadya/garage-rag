@@ -91,6 +91,80 @@ def test_free_plan_requires_explicit_confirmation(monkeypatch):
         make_llm(provider="groq", api_key="private-test-key")
 
 
+@pytest.mark.parametrize(
+    "status, category",
+    [(400, "provider_or_network_error"), (401, "authentication"), (429, "rate_limit")],
+)
+def test_agentic_provider_failure_after_tool_result_is_not_a_local_error(
+    monkeypatch, status, category
+):
+    from langchain_core.documents import Document
+
+    from garage_rag.agentic import run_agentic
+    from garage_rag.answer_evaluation import _row
+    from garage_rag.index import SearchHit
+
+    monkeypatch.setenv("GROQ_MAX_TOKENS", "1024")
+    requests = []
+
+    def transport(request):
+        body = json.loads(request.content)
+        requests.append(body)
+        from conftest import decision
+
+        assert body["response_format"]["type"] == "json_schema"
+        assert "tools" not in body and "tool_choice" not in body
+        if len(requests) == 1:
+            return success(
+                decision("search", method="dense", query="Aurora release location", top_k=5)
+            )
+        assert json.loads(body["messages"][-1]["content"])["sources"]
+        return httpx.Response(
+            status,
+            json={
+                "error": {
+                    "type": "invalid_request_error",
+                    "code": "output_parse_failed",
+                    "message": "Parsing failed.",
+                    "failed_generation": "Need more detail.",
+                }
+            },
+        )
+
+    llm = model(monkeypatch, transport)
+    hits = [
+        SearchHit(
+            Document(
+                page_content=(
+                    "For the Aurora manual tailgate release, "
+                    "see the emergency release instructions."
+                ),
+                metadata={"document": "aurora-synthetic.pdf", "pdf_page": 1},
+            ),
+            1.0,
+        )
+    ]
+    with llm.client:
+        result = run_agentic(
+            "Where is the Aurora manual tailgate release?",
+            lambda *args: hits,
+            llm,
+            answer_language="en",
+        )
+        with pytest.raises(GenerationError):
+            llm.invoke([HumanMessage(content="Must not retry")])
+    assert len(requests) == result.trace.llm_calls == 2
+    assert result.trace.search_calls == 1
+    assert result.trace.provider_errors[-1]["http_status"] == status
+    assert not result.trace.public_dict()["token_usage_complete"]
+    assert llm._history[-1][1] > 1024  # Unknown failed usage keeps the full reservation.
+    assert "Need more detail" not in result.error
+    row = _row(
+        result, {"id": "observed_failure", "expected": "answer"}, "en", "agentic", 1, scripted=False
+    )
+    assert row["error"] and row["error_category"] == category
+
+
 def test_observed_groq_timeout_keeps_provider_identity_and_safe_trace(monkeypatch):
     from garage_rag.source_evaluation import ObservedEvaluationLLM
 
@@ -542,7 +616,9 @@ def test_tool_response_with_multiple_calls_cannot_trigger_parallel_search(monkey
 
 
 @pytest.mark.parametrize("initial_empty", [False, True])
-def test_agentic_groq_native_loop_changes_strategy_from_tool_evidence(monkeypatch, initial_empty):
+def test_agentic_groq_structured_loop_changes_strategy_from_local_evidence(
+    monkeypatch, initial_empty
+):
     from test_workflow import audit, draft, hit
 
     from garage_rag.agentic import AgenticLimits, run_agentic
@@ -552,36 +628,28 @@ def test_agentic_groq_native_loop_changes_strategy_from_tool_evidence(monkeypatc
     def transport(request):
         payload = json.loads(request.content)
         requests.append(payload)
-        results = [m for m in payload["messages"] if m["role"] == "tool"]
+        from conftest import decision
+
+        # User sources for structured planner; native local pair for unchanged writer.
+        results = [
+            m
+            for m in payload["messages"]
+            if m["role"] in {"user", "tool"} and "sources" in json.loads(m["content"])
+        ]
         if "evidence auditor" in payload["messages"][0]["content"]:
             return success(json.dumps(audit()))
+        if payload["response_format"]["type"] != "json_schema":
+            return success(json.dumps(draft()))
+        assert "tools" not in payload
         if results and json.loads(results[-1]["content"])["sources"]:
-            return success("FINALIZE" if "tools" in payload else json.dumps(draft()))
-        name = "lexical_search" if results else "dense_search"
-        query = "cold tire pressure" if results else "Reifendruck prüfen"
-        return httpx.Response(
-            200,
-            json={
-                "choices": [
-                    {
-                        "finish_reason": "tool_calls",
-                        "message": {
-                            "content": None,
-                            "tool_calls": [
-                                {
-                                    "id": f"c{len(requests)}",
-                                    "type": "function",
-                                    "function": {
-                                        "name": name,
-                                        "arguments": json.dumps({"query": query, "top_k": 1}),
-                                    },
-                                }
-                            ],
-                        },
-                    }
-                ],
-                "usage": {"prompt_tokens": 100, "completion_tokens": 50},
-            },
+            return success(decision("finalize"))
+        return success(
+            decision(
+                "search",
+                method="bm25" if results else "dense",
+                query="cold tire pressure" if results else "Reifendruck prüfen",
+                top_k=1,
+            )
         )
 
     def search(method, query, k):
@@ -607,7 +675,7 @@ def test_agentic_groq_native_loop_changes_strategy_from_tool_evidence(monkeypatc
         )
     assert result.answer.supported
     assert len(requests) == result.trace.llm_calls == (5 if initial_empty else 3)
-    assert result.trace.input_tokens == (260 if initial_empty else 140)
+    assert result.trace.input_tokens == (100 if initial_empty else 60)
     assert searches == (
         [("dense", "Reifendruck prüfen"), ("bm25", "cold tire pressure")]
         if initial_empty

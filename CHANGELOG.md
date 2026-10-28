@@ -5,6 +5,33 @@ is available in [Git commits](https://github.com/cryptoadya/garage-rag/commits/m
 
 ## [Unreleased]
 
+### Added
+
+- Three-mode answer evaluation: fixed fictional EN/DE/RU cases, matched/pairwise
+  summaries, completeness, citation/warning review and resource accounting.
+- Hash-bound tool/schema captures and external review packets; same-model audits
+  remain observations. Shared live call/pacing/token guards cover every binding.
+  Comparative live runs require explicit caps and private captures.
+
+### Fixed
+
+- Groq Agentic uses strict structured planner decisions with local search dispatch;
+  the optional native backend uses serial search/finalize/refuse actions.
+- Agentic separates private evidence storage from bounded whole-passage context,
+  preserves stable source IDs and safety dependencies, distinguishes navigation
+  from procedure evidence, and sends compact history/diagnostics. Protected
+  overflow and uncertain relevance refuse explicitly.
+- Token-aware handoff protects writer/auditor capacity before extra planning.
+  Actual audit requests are checked again; failed requests retain reservations.
+- Planner-only bounded navigation hints explain dense/BM25 choices without
+  guessing PDF pages, forcing a search sequence or changing answer gates.
+- Evaluation classifies provider failures from structured observations even when
+  the workflow returns a sanitized generic error.
+
+Agentic remains experimental; Direct/Grounded are primary. See the
+[consolidated comparison](docs/benchmarks/phase4b-comparison.md) for results and
+limitations. These changes prepare 0.5.0; no release is published here.
+
 ## [0.4.0] - 2026-10-26
 
 ### Added

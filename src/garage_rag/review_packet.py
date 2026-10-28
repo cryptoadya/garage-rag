@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 
 from .config import digest
+from .source_evaluation import request_context
 
 
 def write_packet(report, captures, directory):
@@ -21,19 +22,30 @@ def write_packet(report, captures, directory):
         for call, public in zip(calls, row.get("model_calls", []), strict=True):
             if digest(call["messages"]) != public["request_sha256"]:
                 raise ValueError("Mismatched private capture request")
-            payload = json.loads(call["messages"][1]["content"])
-            if digest(payload["sources"]) != public["sources_sha256"]:
+            phase, source_set = request_context(call["messages"])
+            if digest(source_set) != public["sources_sha256"] or phase != public["phase"]:
                 raise ValueError("Mismatched private capture sources")
+            for private_key, public_key in (
+                ("tools", "tools_sha256"),
+                ("response_format", "response_format_sha256"),
+                ("response_tool_calls", "response_tool_calls_sha256"),
+            ):
+                if (private_key in call) != (public_key in public) or (
+                    private_key in call and digest(call[private_key]) != public[public_key]
+                ):
+                    raise ValueError("Mismatched private capture native tools")
             if (
                 "response_sha256" in public
                 and digest(call.get("response")) != public["response_sha256"]
             ) or ("response_sha256" not in public and "response" in call):
                 raise ValueError("Mismatched private capture response")
             sources = {
-                "sources_sha256": digest(payload["sources"]),
-                "source_count": len(payload["sources"]),
+                "sources_sha256": digest(source_set),
+                "source_count": len(source_set),
             }
-            if "draft" not in payload and sources not in observed:
+            if (phase == "draft" or phase == "planner" and source_set) and (
+                not observed or sources != observed[-1]
+            ):
                 observed.append(sources)
         if observed != row.get("sent_contexts", []):
             raise ValueError("Mismatched private capture contexts")
@@ -52,20 +64,41 @@ def write_packet(report, captures, directory):
             + "<details><summary>Every actual model input and raw reply</summary>"
             + pre(calls)
             + "</details><h3>Public observations and hashes</h3>"
-            + pre({
-                k: row[k]
-                for k in (
-                    *keys, "supported", "reason", "error", "error_category", "returned_claims",
-                    "trace", "sent_contexts", "model_calls",
-                )
-                if k in row
-            })
+            + pre(
+                {
+                    k: row[k]
+                    for k in (
+                        *keys,
+                        "supported",
+                        "reason",
+                        "error",
+                        "error_category",
+                        "returned_claims",
+                        "trace",
+                        "sent_contexts",
+                        "model_calls",
+                    )
+                    if k in row
+                }
+            )
             + "</section>"
         )
         if not row["error"]:
             key = {k: row[k] for k in keys}
             claim_rows.append(
-                {**key, "claim_support": [None] * row["returned_claims"], "complete_answer": None}
+                {
+                    **key,
+                    "claim_support": [None] * row["returned_claims"],
+                    "complete_answer": None,
+                    **(
+                        {
+                            "citation_support": [None] * row["returned_claims"],
+                            "warnings_preserved": None,
+                        }
+                        if "citation_support" in row
+                        else {}
+                    ),
+                }
             )
             if row.get("sent_contexts"):
                 source_rows.append(
@@ -97,7 +130,10 @@ supports a complete, unambiguous answer with all relevant conditions. A page hit
 alone is insufficient; missing table layout can make a set insufficient.</li>
 <li>For every returned claim, check entailment, applicability, numbers, units,
 translation, exact quotation and source/page mapping against the original PDF.
-Judge completeness separately. For a refusal, distinguish missing evidence from
+Judge completeness separately. In comparative reviews, citation_support judges whether
+the cited evidence supports the entire claim, and warnings_preserved judges all
+required warnings on positive answers (null when not applicable). Never copy audit
+decisions into these labels. For a refusal, distinguish missing evidence from
 over-abstention or policy/validation rejection. Inspect earlier drafts separately.</li>
 <li>Fill claim-review.template.json booleans and source-review.template.json
 sufficient/insufficient values. Remove unresolved rows rather than guessing.

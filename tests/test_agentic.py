@@ -3,46 +3,12 @@
 import json
 
 import pytest
+from conftest import Model, control, reply, tool
 from langchain_core.messages import AIMessage
 from test_workflow import TEXT, audit, draft, hit
 
 from garage_rag.agentic import AgenticLimits
 from garage_rag.generation import GenerationError
-
-
-def tool(name="dense_search", query="cold tire pressure", top_k=3, call_id="c1"):
-    return AIMessage(
-        content="",
-        tool_calls=[{"id": call_id, "name": name, "args": {"query": query, "top_k": top_k}}],
-        response_metadata={"finish_reason": "tool_calls"},
-    )
-
-
-def reply(value):
-    return AIMessage(content=json.dumps(value), response_metadata={"finish_reason": "stop"})
-
-
-def control(text="FINALIZE"):
-    return AIMessage(content=text, response_metadata={"finish_reason": "stop"})
-
-
-class Model:
-    provider = "groq"
-    max_tokens = 512
-
-    def __init__(self, *responses):
-        self.responses = list(responses)
-        self.messages = []
-
-    def bind_tools(self, tools, **kwargs):
-        return self
-
-    def invoke(self, messages):
-        self.messages.append(messages)
-        response = self.responses.pop(0)
-        if isinstance(response, Exception):
-            raise response
-        return response
 
 
 def run(model, search=None, **kwargs):
@@ -404,7 +370,7 @@ def test_budget_includes_final_audit_and_does_not_refund_missing_usage():
         limits=AgenticLimits(max_llm_calls=3, max_searches=1, max_total_tokens=cap),
     )
     assert result.answer.reason == "token_budget_exhausted"
-    assert result.trace.llm_calls == 2
+    assert result.trace.llm_calls == 1  # Pair preflight refuses before spending the writer.
     assert result.trace.reserved_tokens <= cap
 
 

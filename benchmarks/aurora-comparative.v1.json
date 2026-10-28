@@ -1,0 +1,416 @@
+{
+  "schema_version": 1,
+  "id": "aurora-comparative-v1",
+  "suite": "synthetic_grounded_answering",
+  "comparative": true,
+  "provenance": {
+    "author": "Codex agent",
+    "license": "MIT; original fictional text",
+    "independent_human_review": false,
+    "purpose": "Fixed controlled retrieval and reply fixtures; not LLM quality, natural retrieval performance, or human-validated translations."
+  },
+  "scenarios": [
+    {
+      "id": "simple",
+      "kind": "simple",
+      "questions": {
+        "en": "When should I check tire pressure?",
+        "de": "Wann soll ich den Reifendruck prüfen?",
+        "ru": "Когда следует проверять давление в шинах?"
+      },
+      "initial": [
+        "Check tire pressure when the tires are cold."
+      ],
+      "expanded": [
+        "Check tire pressure when the tires are cold."
+      ],
+      "expected": "answer",
+      "reference": {
+        "en": "Check tire pressure when the tires are cold.",
+        "de": "Prüfen Sie den Reifendruck bei kalten Reifen.",
+        "ru": "Проверяйте давление на холодных шинах."
+      },
+      "warnings_required": false,
+      "followup": null,
+      "targeted": [],
+      "script": {
+        "first": {
+          "en": "Check tire pressure when the tires are cold.",
+          "de": "Prüfen Sie den Reifendruck bei kalten Reifen.",
+          "ru": "Проверяйте давление на холодных шинах."
+        },
+        "quote": "Check tire pressure when the tires are cold.",
+        "audit": "accept",
+        "expanded": null,
+        "expanded_quote": null,
+        "labels": {
+          "first": {
+            "claim_support": [
+              true
+            ],
+            "complete_answer": true,
+            "citation_support": [
+              true
+            ],
+            "warnings_preserved": null
+          },
+          "expanded": {
+            "claim_support": [
+              true
+            ],
+            "complete_answer": true,
+            "citation_support": [
+              true
+            ],
+            "warnings_preserved": null
+          }
+        }
+      }
+    },
+    {
+      "id": "compound",
+      "kind": "compound",
+      "questions": {
+        "en": "How should I secure the vehicle before using the Aurora jack, and may I work underneath it?",
+        "de": "Wie sichere ich das Fahrzeug vor Verwendung des Aurora-Wagenhebers, und darf ich darunter arbeiten?",
+        "ru": "Как зафиксировать автомобиль перед использованием домкрата Aurora и можно ли работать под ним?"
+      },
+      "initial": [
+        "Apply the parking brake before using the Aurora jack."
+      ],
+      "expanded": [
+        "Apply the parking brake before using the Aurora jack.",
+        "Never work under a vehicle supported only by the Aurora jack."
+      ],
+      "expected": "answer",
+      "reference": {
+        "en": "Apply the parking brake before using the Aurora jack. Never work under a vehicle supported only by the Aurora jack.",
+        "de": "Ziehen Sie vor Verwendung des Aurora-Wagenhebers die Feststellbremse an. Arbeiten Sie niemals unter einem Fahrzeug, das nur vom Aurora-Wagenheber gehalten wird.",
+        "ru": "Перед использованием домкрата Aurora включите стояночный тормоз. Никогда не работайте под автомобилем, который удерживается только домкратом Aurora."
+      },
+      "warnings_required": true,
+      "followup": "Aurora jack safety",
+      "targeted": [
+        "Never work under a vehicle supported only by the Aurora jack."
+      ],
+      "script": {
+        "first": {
+          "en": "Apply the parking brake before using the Aurora jack.",
+          "de": "Ziehen Sie vor Verwendung des Aurora-Wagenhebers die Feststellbremse an.",
+          "ru": "Перед использованием домкрата Aurora включите стояночный тормоз."
+        },
+        "quote": "Apply the parking brake before using the Aurora jack.",
+        "audit": "insufficient",
+        "expanded": {
+          "en": "Apply the parking brake before using the Aurora jack. Never work under a vehicle supported only by the Aurora jack.",
+          "de": "Ziehen Sie vor Verwendung des Aurora-Wagenhebers die Feststellbremse an. Arbeiten Sie niemals unter einem Fahrzeug, das nur vom Aurora-Wagenheber gehalten wird.",
+          "ru": "Перед использованием домкрата Aurora включите стояночный тормоз. Никогда не работайте под автомобилем, который удерживается только домкратом Aurora."
+        },
+        "expanded_quote": "Apply the parking brake before using the Aurora jack.",
+        "labels": {
+          "first": {
+            "claim_support": [
+              true
+            ],
+            "complete_answer": false,
+            "citation_support": [
+              true
+            ],
+            "warnings_preserved": false
+          },
+          "expanded": {
+            "claim_support": [
+              true
+            ],
+            "complete_answer": true,
+            "citation_support": [
+              true
+            ],
+            "warnings_preserved": true
+          }
+        },
+        "expanded_quotes": [
+          "Apply the parking brake before using the Aurora jack.",
+          "Never work under a vehicle supported only by the Aurora jack."
+        ],
+        "expanded_audit": "accept"
+      }
+    },
+    {
+      "id": "warning",
+      "kind": "warning",
+      "questions": {
+        "en": "How do I raise the vehicle and what restriction applies to working underneath?",
+        "de": "Wie hebe ich das Fahrzeug an und welche Einschränkung gilt für Arbeiten darunter?",
+        "ru": "Как поднять автомобиль и какое ограничение действует для работы под ним?"
+      },
+      "initial": [
+        "Use the Aurora jack to raise the vehicle. Never work under a vehicle supported only by the Aurora jack."
+      ],
+      "expanded": [
+        "Use the Aurora jack to raise the vehicle. Never work under a vehicle supported only by the Aurora jack."
+      ],
+      "expected": "answer",
+      "reference": {
+        "en": "Use the Aurora jack to raise the vehicle. Never work under a vehicle supported only by the Aurora jack.",
+        "de": "Heben Sie das Fahrzeug mit dem Aurora-Wagenheber an. Arbeiten Sie niemals unter einem Fahrzeug, das nur vom Aurora-Wagenheber gehalten wird.",
+        "ru": "Поднимите автомобиль домкратом Aurora. Никогда не работайте под автомобилем, который удерживается только домкратом Aurora."
+      },
+      "warnings_required": true,
+      "followup": null,
+      "targeted": [],
+      "script": {
+        "first": {
+          "en": "Use the Aurora jack to raise the vehicle.",
+          "de": "Heben Sie das Fahrzeug mit dem Aurora-Wagenheber an.",
+          "ru": "Поднимите автомобиль домкратом Aurora."
+        },
+        "quote": "Use the Aurora jack to raise the vehicle. Never work under a vehicle supported only by the Aurora jack.",
+        "audit": "accept",
+        "expanded": null,
+        "expanded_quote": null,
+        "labels": {
+          "first": {
+            "claim_support": [
+              false
+            ],
+            "complete_answer": false,
+            "citation_support": [
+              false
+            ],
+            "warnings_preserved": false
+          },
+          "expanded": {
+            "claim_support": [
+              true
+            ],
+            "complete_answer": true,
+            "citation_support": [
+              true
+            ],
+            "warnings_preserved": true
+          }
+        }
+      }
+    },
+    {
+      "id": "ambiguous",
+      "kind": "ambiguous",
+      "questions": {
+        "en": "Where is the release handle in my Aurora?",
+        "de": "Wo ist der Entriegelungsgriff in meinem Aurora?",
+        "ru": "Где находится ручка разблокировки в моей Aurora?"
+      },
+      "initial": [
+        "For Aurora Touring, the release handle is in the left side compartment.",
+        "For Aurora Saloon, the release handle is in the right side compartment."
+      ],
+      "expanded": [
+        "For Aurora Touring, the release handle is in the left side compartment.",
+        "For Aurora Saloon, the release handle is in the right side compartment."
+      ],
+      "expected": "refuse",
+      "reference": null,
+      "warnings_required": false,
+      "followup": null,
+      "targeted": [],
+      "script": {
+        "first": {
+          "en": "The release handle is in the left side compartment.",
+          "de": "Der Entriegelungsgriff ist im linken Seitenfach.",
+          "ru": "Ручка разблокировки находится в левом боковом отсеке."
+        },
+        "quote": "For Aurora Touring, the release handle is in the left side compartment.",
+        "audit": "ambiguous",
+        "expanded": null,
+        "expanded_quote": null,
+        "labels": {
+          "first": {
+            "claim_support": [
+              false
+            ],
+            "complete_answer": false,
+            "citation_support": [
+              false
+            ],
+            "warnings_preserved": null
+          },
+          "expanded": {
+            "claim_support": [
+              true
+            ],
+            "complete_answer": true,
+            "citation_support": [
+              true
+            ],
+            "warnings_preserved": null
+          }
+        }
+      }
+    },
+    {
+      "id": "absent",
+      "kind": "absent",
+      "questions": {
+        "en": "What is the cylinder-head bolt tightening torque?",
+        "de": "Wie hoch ist das Anzugsdrehmoment der Zylinderkopfschrauben?",
+        "ru": "Каков момент затяжки болтов головки блока?"
+      },
+      "initial": [
+        "Check tire pressure when the tires are cold."
+      ],
+      "expanded": [
+        "Check tire pressure when the tires are cold."
+      ],
+      "expected": "refuse",
+      "reference": null,
+      "warnings_required": false,
+      "followup": null,
+      "targeted": [],
+      "script": {
+        "first": null,
+        "quote": "Check tire pressure when the tires are cold.",
+        "audit": "out_of_scope",
+        "expanded": null,
+        "expanded_quote": null,
+        "labels": {
+          "first": {
+            "claim_support": [
+              false
+            ],
+            "complete_answer": false,
+            "citation_support": [
+              false
+            ],
+            "warnings_preserved": null
+          },
+          "expanded": {
+            "claim_support": [
+              true
+            ],
+            "complete_answer": true,
+            "citation_support": [
+              true
+            ],
+            "warnings_preserved": null
+          }
+        }
+      }
+    },
+    {
+      "id": "conflict",
+      "kind": "conflict",
+      "questions": {
+        "en": "Where is the Aurora emergency key stored according to these documents?",
+        "de": "Wo liegt der Aurora-Notschlüssel laut diesen Dokumenten?",
+        "ru": "Где хранится аварийный ключ Aurora согласно этим документам?"
+      },
+      "initial": [
+        "Aurora owner manual, same model and year: the emergency key is stored in the left compartment.",
+        "Aurora service supplement, same model and year: the emergency key is stored in the right compartment. Neither document supersedes the other."
+      ],
+      "expanded": [
+        "Aurora owner manual, same model and year: the emergency key is stored in the left compartment.",
+        "Aurora service supplement, same model and year: the emergency key is stored in the right compartment. Neither document supersedes the other."
+      ],
+      "expected": "refuse",
+      "reference": null,
+      "warnings_required": false,
+      "followup": null,
+      "targeted": [],
+      "script": {
+        "first": {
+          "en": "The emergency key is stored in the left compartment.",
+          "de": "Der Notschlüssel liegt im linken Fach.",
+          "ru": "Аварийный ключ хранится в левом отсеке."
+        },
+        "quote": "Aurora owner manual, same model and year: the emergency key is stored in the left compartment.",
+        "audit": "conflicting",
+        "expanded": null,
+        "expanded_quote": null,
+        "labels": {
+          "first": {
+            "claim_support": [
+              false
+            ],
+            "complete_answer": false,
+            "citation_support": [
+              false
+            ],
+            "warnings_preserved": null
+          },
+          "expanded": {
+            "claim_support": [
+              true
+            ],
+            "complete_answer": true,
+            "citation_support": [
+              true
+            ],
+            "warnings_preserved": null
+          }
+        }
+      }
+    },
+    {
+      "id": "follow_reference",
+      "kind": "follow_reference",
+      "questions": {
+        "en": "Where is the Aurora manual tailgate release?",
+        "de": "Wo ist die manuelle Heckklappenentriegelung des Aurora?",
+        "ru": "Где находится ручная разблокировка багажника Aurora?"
+      },
+      "initial": [
+        "For the Aurora manual tailgate release, see the emergency release instructions."
+      ],
+      "expanded": [
+        "For the Aurora manual tailgate release, see the emergency release instructions.",
+        "Check tire pressure when the tires are cold."
+      ],
+      "expected": "answer",
+      "reference": {
+        "en": "The Aurora manual tailgate release is under the rear seat.",
+        "de": "Die manuelle Heckklappenentriegelung des Aurora ist unter dem Rücksitz.",
+        "ru": "Ручная разблокировка багажника Aurora находится под задним сиденьем."
+      },
+      "warnings_required": false,
+      "followup": "Aurora emergency release instructions",
+      "targeted": [
+        "The Aurora manual tailgate release is under the rear seat."
+      ],
+      "script": {
+        "first": null,
+        "quote": "For the Aurora manual tailgate release, see the emergency release instructions.",
+        "audit": "accept",
+        "expanded": {
+          "en": "The Aurora manual tailgate release is under the rear seat.",
+          "de": "Die manuelle Heckklappenentriegelung des Aurora ist unter dem Rücksitz.",
+          "ru": "Ручная разблокировка багажника Aurora находится под задним сиденьем."
+        },
+        "expanded_quote": "The Aurora manual tailgate release is under the rear seat.",
+        "labels": {
+          "first": {
+            "claim_support": [
+              true
+            ],
+            "complete_answer": true,
+            "citation_support": [
+              true
+            ],
+            "warnings_preserved": null
+          },
+          "expanded": {
+            "claim_support": [
+              true
+            ],
+            "complete_answer": true,
+            "citation_support": [
+              true
+            ],
+            "warnings_preserved": null
+          }
+        }
+      }
+    }
+  ]
+}

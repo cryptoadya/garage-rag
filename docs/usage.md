@@ -134,6 +134,8 @@ are zero. An explicit free model can be selected with
 | `ambiguous_question` / `conflicting_sources` | Clarify the vehicle/conditions or resolve conflicting documents |
 | `unsafe_numeric_evidence` | Inspect the original PDF layout; do not infer table cells from extracted text |
 | `llm_budget_exhausted` / `no_new_context` | No unaudited answer is returned; inspect retrieval before changing budgets |
+| `context_budget_exhausted` | Agentic cannot fit all protected evidence; inspect private hits and selection diagnostics |
+| `context_relevance_uncertain` | Overflow has no usable relevance anchors; clarify the question or inspect the original sources |
 | `no_context` / `insufficient_evidence` | Rephrase the question, inspect search results or supply relevant documentation |
 
 [Reasoning tokens share the completion budget](https://openrouter.ai/docs/guides/best-practices/reasoning-tokens#reasoning-tokens-and-max_tokens)
