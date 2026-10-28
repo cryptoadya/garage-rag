@@ -55,7 +55,11 @@ npm run build
 ```
 
 Vitest and Testing Library use controlled HTTP responses for request fields,
-mode/language selection, duplicate submission, sources, refusals and errors.
+mode/language selection, duplicate submission, sources, refusals and errors,
+plus document listing, PDF transfer progress, indexing/readiness, upload failures
+and immediate questions after upload. API tests use real synthetic PDFs and
+Qdrant Local to check empty-index startup, ingestion/reuse, safe file storage,
+size/type/name validation, failure cleanup and upload/answer exclusivity.
 They make no provider calls. The build includes TypeScript checking.
 For browser smoke testing, check desktop/mobile layouts, submit in both modes,
 follow a source reference and verify refusal/error recovery. A live submission

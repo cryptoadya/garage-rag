@@ -14,6 +14,7 @@ from .config import IndexConfig
 from .embeddings import E5Embeddings
 from .generation import GenerationError, make_llm
 from .index import Index
+from .ingestion import PDFValidationError
 from .profiles import profile_config
 from .workflow import WorkflowLimits, run_direct, run_workflow
 
@@ -266,7 +267,7 @@ def main(argv=None):
         return 2
     except (ValueError, FileNotFoundError) as exc:
         # These errors come from local validation. Never print third-party request errors.
-        if isinstance(exc, ValueError) and type(exc) is not ValueError:
+        if isinstance(exc, ValueError) and type(exc) not in {ValueError, PDFValidationError}:
             print(
                 "Error: invalid data or configuration; check PDF/index settings.", file=sys.stderr
             )

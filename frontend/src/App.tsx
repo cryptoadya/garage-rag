@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 import { ask } from './api';
 import type { Answer, Language, Mode } from './api';
 import { AnswerText } from './AnswerText';
+import { Documents } from './Documents';
 
 type Result =
   | { status: 'idle' | 'loading' }
@@ -17,11 +18,12 @@ export default function App() {
   const [language, setLanguage] = useState<Language>('auto');
   const [result, setResult] = useState<Result>({ status: 'idle' });
   const inFlight = useRef(false);
+  const [uploading, setUploading] = useState(false);
   const loading = result.status === 'loading';
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (inFlight.current || !question.trim() || question.length > 4000) return;
+    if (inFlight.current || uploading || !question.trim() || question.length > 4000) return;
     inFlight.current = true;
     setResult({ status: 'loading' });
     try {
@@ -54,11 +56,12 @@ export default function App() {
           <p>Ask a question. Get an answer with evidence from your documents.</p>
         </div>
 
+        <Documents disabled={loading} onBusyChange={setUploading} />
         <div className="workspace">
           <section className="question-panel" aria-labelledby="question-heading">
             <div className="panel-heading"><span className="step">01</span><h2 id="question-heading">Ask your manual</h2></div>
             <form aria-label="Ask a question" onSubmit={submit}>
-              <fieldset disabled={loading}>
+              <fieldset disabled={loading || uploading}>
                 <label htmlFor="question">Your question</label>
                 <textarea
                   id="question"
@@ -90,7 +93,7 @@ export default function App() {
                   </div>
                 </div>
                 <p className="mode-hint" id="mode-hint">{mode === 'grounded' ? 'Drafts an answer, then checks it against the evidence.' : 'Answers directly from retrieved evidence.'}</p>
-                <button className="submit-button" type="submit" disabled={loading || !question.trim()}>
+                <button className="submit-button" type="submit" disabled={loading || uploading || !question.trim()}>
                   {loading ? 'Preparing answer…' : 'Ask GarageRAG'}<span aria-hidden="true">↗</span>
                 </button>
               </fieldset>

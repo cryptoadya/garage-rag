@@ -13,6 +13,33 @@ def test_missing_index_is_reported_without_creating_one(tmp_path, capsys):
     assert "run garage-rag index first" in capsys.readouterr().err
 
 
+@pytest.mark.parametrize("encrypted", [False, True])
+def test_pdf_validation_keeps_existing_cli_diagnostics(
+    tmp_path, tokenizer, embeddings, config, monkeypatch, capsys, encrypted
+):
+    from pypdf import PdfWriter
+
+    path = tmp_path / "manual.pdf"
+    writer = PdfWriter()
+    writer.add_blank_page(300, 300)
+    if encrypted:
+        writer.encrypt("private-password")
+    writer.write(path)
+    embeddings.tokenizer = tokenizer
+    monkeypatch.setattr("garage_rag.cli.load_dotenv", lambda *a, **kw: None)
+    monkeypatch.setattr("garage_rag.cli.IndexConfig", lambda **kw: config)
+    monkeypatch.setattr("garage_rag.cli.E5Embeddings", lambda *a, **kw: embeddings)
+    assert main(["--index-dir", str(tmp_path / "index"), "index", str(path)]) == 2
+    output = capsys.readouterr()
+    expected = ("Password-protected PDF is not supported" if encrypted
+                else "PDF produced no text chunks; OCR may be needed")
+    assert output.err == (
+        "Indexing locally; private text is stored only in the index.\n"
+        f"Error: {expected}\n"
+    )
+    assert output.out == ""
+
+
 def test_stats_and_search_need_no_openrouter_key(
     tmp_path, pdf_path, tokenizer, embeddings, config, monkeypatch, capsys
 ):

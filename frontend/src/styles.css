@@ -12,7 +12,7 @@
 
 * { box-sizing: border-box; }
 body { margin: 0; min-width: 320px; }
-button, textarea, select { font: inherit; }
+button, textarea, select, input { font: inherit; }
 button, select { cursor: pointer; }
 a { color: inherit; }
 button, a, select, textarea, [tabindex] { -webkit-tap-highlight-color: transparent; }
@@ -30,6 +30,20 @@ h1 { font-size: clamp(30px, 3.4vw, 45px); font-weight: 500; letter-spacing: -1.8
 .intro > p:last-child { font-size: 15px; color: var(--text-muted); margin: 0; }
 .mobile-break { display: none; }
 .workspace { display: grid; grid-template-columns: minmax(340px, 0.85fr) minmax(0, 1.3fr); border: 1px solid #dce3d8; border-radius: 14px; overflow: hidden; background: #fff; box-shadow: 0 8px 32px #233d3610; }
+.documents-panel { border: 1px solid #dce3d8; border-radius: 14px; background: #fff; padding: 24px; margin-bottom: 24px; }
+.documents-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.secondary-button { color: #224b3f; background: #f4f6f2; border: 1px solid #d5dfd2; border-radius: 6px; padding: 8px 12px; font-size: 12px; }
+.secondary-button:disabled { opacity: 0.6; }
+.document-hint { font-size: 12px; color: var(--text-muted); overflow-wrap: anywhere; }
+.document-error { font-size: 13px; color: #815b46; overflow-wrap: anywhere; }
+.documents-panel form { margin-top: 16px; }
+.upload-controls { display: flex; gap: 20px; align-items: end; flex-wrap: wrap; }
+.upload-controls > div { min-width: 0; flex: 1; }
+.upload-controls input { max-width: 100%; font-size: 12px; }
+.upload-controls .submit-button { width: auto; padding: 0 20px; }
+.document-list { list-style: none; padding: 0; margin: 16px 0 0; }
+.document-list li { display: flex; flex-wrap: wrap; gap: 6px 20px; justify-content: space-between; border-top: 1px solid #e1e6de; padding: 10px 0; font-size: 12px; overflow-wrap: anywhere; }
+.document-list li span:last-child { color: var(--text-muted); }
 .question-panel { padding: 28px; border-right: 1px solid #e1e6de; }
 .panel-heading { display: flex; gap: 10px; align-items: center; min-height: 24px; }
 .step { color: var(--text-muted); font-size: 10px; font-variant-numeric: tabular-nums; letter-spacing: 0.6px; }
@@ -106,6 +120,8 @@ h3 { font-size: 18px; font-weight: 500; letter-spacing: -0.4px; margin: 0 0 10px
   textarea { min-height: 140px; }
   textarea, select { font-size: 16px; }
   .options { grid-template-columns: 1fr; gap: 17px; }
+  .upload-controls { flex-direction: column; align-items: stretch; }
+  .upload-controls .submit-button { width: 100%; }
   .mode-hint { min-height: 0; margin-bottom: 20px; }
   .privacy-note { max-width: none; }
   .empty-state, .loading-state { min-height: 300px; }

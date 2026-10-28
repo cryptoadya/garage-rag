@@ -11,6 +11,10 @@ from langchain_core.documents import Document
 from pypdf import PdfReader
 
 
+class PDFValidationError(ValueError):
+    """Invalid source PDF, with a fixed local diagnostic safe for CLI display."""
+
+
 def clean_text(text: str) -> str:
     text = unicodedata.normalize("NFKC", text).replace("\r\n", "\n").replace("\r", "\n")
     text = "".join(c for c in text if c in "\n\t" or not unicodedata.category(c).startswith("C"))
@@ -24,7 +28,7 @@ def extract_pdf(path: Path, metadata: dict | None = None) -> tuple[list[Document
     raw = path.read_bytes()
     reader = PdfReader(BytesIO(raw), strict=False)
     if reader.is_encrypted and not reader.decrypt(""):
-        raise ValueError("Password-protected PDF is not supported")
+        raise PDFValidationError("Password-protected PDF is not supported")
     supplied = dict(metadata or {})
     # Invariant fields always come from the file, never user metadata.
     base = {
@@ -46,7 +50,7 @@ def extract_pdf(path: Path, metadata: dict | None = None) -> tuple[list[Document
         for i, page in enumerate(reader.pages)
     ]
     if not pages:
-        raise ValueError("PDF contains no pages")
+        raise PDFValidationError("PDF contains no pages")
     # Only repeated long margin lines: preserve short headings and all numeric lines.
     margins = Counter()
     for page in pages:

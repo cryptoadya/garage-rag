@@ -14,7 +14,7 @@ from langchain_core.documents import Document
 from qdrant_client import QdrantClient, models
 
 from .config import IndexConfig, digest
-from .ingestion import chunk_pages, extract_pdf
+from .ingestion import PDFValidationError, chunk_pages, extract_pdf
 
 COLLECTION = "garage_rag"
 
@@ -26,12 +26,18 @@ class SearchHit:
 
 
 class Index:
-    def __init__(self, path: Path, config: IndexConfig | None = None):
+    def __init__(
+        self, path: Path, config: IndexConfig | None = None, *, allow_cross_thread: bool = False
+    ):
         self.path = Path(path)
         self.config = config or IndexConfig()
         self.path.mkdir(parents=True, exist_ok=True)
         self.manifest_path = self.path / "manifest.json"
-        self.client = QdrantClient(path=str(self.path / "vectors"))
+        # The HTTP adapter serializes all vector/embedding work with its own lock.
+        # SQLite on macOS otherwise rejects writes from FastAPI's worker thread.
+        self.client = QdrantClient(
+            path=str(self.path / "vectors"), force_disable_check_same_thread=allow_cross_thread
+        )
         try:
             if self.manifest_path.exists():
                 self.manifest = json.loads(self.manifest_path.read_text())
@@ -135,7 +141,7 @@ class Index:
         )
         diagnostics.update(chunk_diagnostics)
         if not chunks:
-            raise ValueError("PDF produced no text chunks; OCR may be needed")
+            raise PDFValidationError("PDF produced no text chunks; OCR may be needed")
         extraction_seconds = time.perf_counter() - started
         embedded = reused = 0
         for offset in range(0, len(chunks), batch_size):
