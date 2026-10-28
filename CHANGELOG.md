@@ -22,6 +22,7 @@ is available in [Git commits](https://github.com/cryptoadya/garage-rag/commits/m
 
 ### Fixed
 
+- Local web UI text contrast for hints, source metadata, loading and refusal states.
 - Groq Agentic uses strict structured planner decisions with local search dispatch;
   the optional native backend uses serial search/finalize/refuse actions.
 - Agentic separates private evidence storage from bounded whole-passage context,
