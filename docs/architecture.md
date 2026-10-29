@@ -81,20 +81,20 @@ flowchart TD
 Context contains at most eight whole passages within a 12,000-character JSON
 budget. Every source ID maps to exactly the text sent. Pydantic requires strict
 JSON, at most six claims and four evidence entries per claim. Direct/Grounded
-writers select source IDs; the server copies the corresponding whole original
-passages as quotes, keeping the existing public citation fields. Local checks reject unknown IDs,
+writers supply a source ID and a verbatim source-language quote excerpt for each
+evidence entry. Source IDs alone are invalid; the server does not replace missing
+quotes with whole chunks. Local checks reject unknown IDs,
 quotes absent after whitespace normalization, translated evidence, wrong-language
 claims, bracketed references and truncated output. PDF citations come from local
-metadata. Legacy quote-bearing outputs still undergo strict quote validation.
-For a unique match differing only by the legacy Cyrillic font's broken
-line-end hyphen, the quote is restored to its exact original source span; changed
-numbers or other text remain invalid. Direct mode finishes without semantic auditing.
-For oil-level procedures, a recognized complete source step requiring the engine
-to be stopped at operating temperature is retained explicitly in the answer.
-This local rule neither infers temperatures nor overrides a contradictory claim;
-language, source and quote validation run before and after retaining the condition.
-Numeric checks isolate numbered steps and figure boundaries from unrelated table
-rows. A source-confirmed structural marker count is distinct from a measured value;
+metadata. Quotes are not repaired for particular PDF fonts. A model-rewritten
+extraction artifact fails validation; whitespace normalization is still allowed.
+Direct mode finishes without semantic auditing or local rewriting of claim text.
+A valid quote establishes text provenance, not entailment or completeness: Direct
+can still omit prerequisites, contradict a quote or add an unsupported explanation.
+The writer is asked for focused excerpts, but excerpt relevance and length are not
+guaranteed by local substring validation.
+Numeric checks isolate numbered steps from unrelated table rows. Spelled-out
+counts are conservatively rejected without object-specific exceptions;
 table values cannot be established by a nearby valid procedure step. Known layout
 flags and replacement-character damage still block numerical use. Full-passage
 quotes are represented by source IDs in audit requests to avoid duplicating text;
@@ -106,7 +106,9 @@ conflicts and whole-question completeness. Unique, complete claim coverage and
 all checks true are required. An incomplete `unsupported` draft can be revised once
 against the same full context when two calls remain, then must pass another audit.
 The existing four-completion ceiling is unchanged. Malformed/inconsistent audits
-refuse without repair. An auditor cannot override a failed local check.
+refuse without repair. An auditor cannot override a failed local check. The audit
+is model-based and can miss semantic errors or omitted conditions; local scripted
+tests verify workflow enforcement, not live-model answer quality.
 
 Only a draft's `insufficient_evidence` or an audit's `insufficient` verdict can
 trigger one expansion. It uses the same initial search query and score filter at top-20,

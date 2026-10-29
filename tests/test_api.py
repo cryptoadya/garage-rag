@@ -331,11 +331,12 @@ def test_citations_preserve_claim_order_multiple_sources_and_exact_quotes(api_se
     quote = 'Check tire pressure\nwhen the tires are cold. "Before driving."'
     other_quote = "Check the tires before driving."
     documents = [
-        Document(page_content=quote, metadata={
+        Document(page_content='Preparation.\n' + quote + '\nOther maintenance.', metadata={
             "document": "manual [EN], edition.pdf", "pdf_page": 7, "page_label": "3",
             "source_url": "file:///private/manual.pdf", "private_field": "hidden",
         }),
-        Document(page_content=other_quote, metadata={"document": "other.pdf", "pdf_page": 2}),
+        Document(page_content=other_quote + ' Store the tools safely.',
+                 metadata={"document": "other.pdf", "pdf_page": 2}),
     ]
     monkeypatch.setattr(Index, "search", lambda *a, **kw: [SearchHit(d, 1) for d in documents])
     with TestClient(api_setup.app) as client:

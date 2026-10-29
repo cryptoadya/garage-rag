@@ -73,13 +73,13 @@ def test_de_ru_flattened_tables_remain_unsafe(source):
     assert result.answer.reason == 'unsafe_numeric_evidence'
 
 
-def test_quote_recovers_exact_source_span_after_broken_font_hyphen():
+def test_repaired_font_text_is_not_an_exact_quote():
     source = 'Прогрейте контур до рабочей темИ\nпературы и отключите насос.'
     value = draft('Warm the circuit to operating temperature and stop the pump.',
                   'Прогрейте контур до рабочей температуры и отключите насос.')
     result = answer('How do I check oil?', [hit(source)], Reply(value))
-    assert result.supported
-    assert source in result.text
+    assert not result.supported
+    assert result.reason == 'invalid_model_output'
 
 
 def test_broken_font_recovery_never_repairs_changed_value():
@@ -105,15 +105,16 @@ def test_incomplete_procedure_is_revised_within_existing_grounded_budget():
     assert 'revision_instruction' in llm.calls[2][1].content
 
 
-def test_source_reference_copies_original_passage_locally():
-    source = 'Прогрейте контур до рабочей темИ\nпературы и отключите насос.'
+@pytest.mark.parametrize('source_id', ['S1', 'S99'])
+def test_source_reference_requires_an_explicit_quote(source_id):
+    source = 'Disconnect the pump before opening the cover.'
     value = {'supported': True, 'claims': [{
         'text': 'Warm the circuit to operating temperature and stop the pump.',
-        'evidence': [{'source_id': 'S1'}],
+        'evidence': [{'source_id': source_id}],
     }]}
     result = answer('How do I check oil?', [hit(source)], Reply(value))
-    assert result.supported
-    assert source in result.text
+    assert not result.supported
+    assert result.reason == 'invalid_model_output'
 
 
 def test_unknown_source_reference_is_not_resolved():
@@ -124,44 +125,74 @@ def test_unknown_source_reference_is_not_resolved():
     assert not answer('How do I check oil?', [hit()], Reply(value)).supported
 
 
-def test_oil_level_answer_retains_explicit_warm_engine_prerequisite():
+def test_direct_does_not_rewrite_an_incomplete_oil_level_claim():
     source = 'Motorölstand prüfen\n2. Den betriebswarmen Motor abstellen\n3. Nach 5 min prüfen.'
-    value = {'supported': True, 'claims': [{
-        'text': 'Заглушите двигатель и подождите 5 минут перед проверкой уровня масла.',
-        'evidence': [{'source_id': 'S1'}],
-    }]}
+    text = 'Заглушите двигатель и подождите 5 минут перед проверкой уровня масла.'
+    value = draft(text, source)
     result = answer('Как проверить уровень масла?', [hit(source)], Reply(value))
     assert result.supported
-    assert 'до рабочей температуры' in result.text
+    assert result.text.splitlines()[0] == text
     assert source in result.text
-
-
-def test_oil_temperature_prerequisite_is_never_invented():
-    source = 'Motorölstand prüfen\n2. Den Motor abstellen\n3. Nach 5 min prüfen.'
-    value = {'supported': True, 'claims': [{
-        'text': 'Заглушите двигатель и подождите 5 минут перед проверкой уровня масла.',
-        'evidence': [{'source_id': 'S1'}],
-    }]}
-    result = answer('Как проверить уровень масла?', [hit(source)], Reply(value))
-    assert result.supported
-    assert 'до рабочей температуры' not in result.text
 
 
 @pytest.mark.parametrize('text', [
     'Stop the engine before checking the oil level.',
-    'Заглушите холодный двигатель перед проверкой уровня масла.',
+    'Stop the cold engine before checking the oil level.',
 ])
-def test_prerequisite_retention_never_masks_wrong_language_or_contradiction(text):
+def test_grounded_audit_decides_missing_or_contradictory_prerequisites(text):
     source = 'Motorölstand prüfen\n2. Den betriebswarmen Motor abstellen\n3. Nach 5 min prüfen.'
-    value = {'supported': True, 'claims': [{'text': text, 'evidence': [{'source_id': 'S1'}]}]}
-    assert not answer('Как проверить уровень масла?', [hit(source)], Reply(value)).supported
+    llm = Scripted(draft(text, source), audit('unsupported', entailed=False))
+    result = run(llm, lambda k: [hit(source)])
+    assert not result.answer.supported
+    assert len(llm.calls) == 2
+    payload = json.loads(llm.calls[1][1].content)
+    assert payload['draft']['claims'][0]['text'] == text
+    assert payload['sources'][0]['text'] == source
 
 
-def test_grounded_accepts_source_verified_marker_count():
-    source = 'Der Stand muss zwischen den beiden Markierungen liegen.'
-    result = run(Scripted(draft('The level should be between the two marks.', source), audit()),
-                 lambda k: [hit(source)])
-    assert result.answer.supported
+@pytest.mark.parametrize('source,text', [
+    ('Der Stand muss zwischen den beiden Markierungen liegen.',
+     'The level should be between the two marks.'),
+    ('The cover must be secured with two clips.', 'Secure the cover with two clips.'),
+])
+def test_spelled_out_counts_have_no_object_specific_numeric_exceptions(source, text):
+    llm = Scripted(draft(text, source))
+    result = run(llm, lambda k: [hit(source)])
+    assert result.answer.reason == 'unsafe_numeric_evidence'
+    assert len(llm.calls) == 1
+
+
+@pytest.mark.parametrize('source,quote,text', [
+    ('Disconnect the pump. Keep the opening clear. Close the cover.',
+     'Keep the opening clear.', 'Keep the opening clear.'),
+    ('Vorbereitung. Die Öffnung muss frei bleiben. Abschluss.',
+     'Die Öffnung muss frei bleiben.', 'Keep the opening clear.'),
+    ('Подготовка. Не закрывайте отверстие. Завершение.',
+     'Не закрывайте отверстие.', 'Keep the opening clear.'),
+    ('Прогрейте контур до рабочей темИ\nпературы и отключите насос.',
+     'Прогрейте контур до рабочей темИ\nпературы и отключите насос.',
+     'Warm the circuit and disconnect the pump.'),
+])
+@pytest.mark.parametrize('mode', ['direct', 'grounded'])
+def test_citations_keep_selected_source_language_excerpt(source, quote, text, mode):
+    llm = Scripted(draft(text, quote), *([audit()] if mode == 'grounded' else []))
+    result = (run(llm, lambda k: [hit(source)]).answer if mode == 'grounded'
+              else answer('How should I proceed?', [hit(source)], llm))
+    assert result.supported
+    assert result.text == f'{text}\n[aurora.pdf, PDF page 1] "{quote}"'
+    assert len(llm.calls) == (2 if mode == 'grounded' else 1)
+    assert 'Copy each quote verbatim' in llm.calls[0][0].content
+
+
+def test_audit_keeps_selected_quote_and_surrounding_conditions():
+    source = 'Only when the circuit is cold. Disconnect the pump. Keep the cover closed.'
+    quote = 'Disconnect the pump.'
+    llm = Scripted(draft('Disconnect the pump.', quote), audit('unsupported', entailed=False))
+    result = run(llm, lambda k: [hit(source)])
+    assert not result.answer.supported
+    payload = json.loads(llm.calls[1][1].content)
+    assert payload['sources'][0]['text'] == source
+    assert payload['draft']['claims'][0]['evidence'] == [{'source_id': 'S1', 'quote': quote}]
 
 
 @pytest.mark.parametrize('claim,supported', [

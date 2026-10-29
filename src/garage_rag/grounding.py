@@ -36,7 +36,7 @@ Source-only evidence cites the entire passage; otherwise inspect its exact quote
 For EVERY claim check its cited quotes against their full source passages:
 - Is the entire claim entailed, without reversing negation, adding facts or
   omitting essential conditions, warnings, model/year/market/equipment limits?
-  Reject unstated reasons/benefits, including plausible oil-drainage explanations.
+  Reject unstated reasons or benefits.
 - Does it apply to the specific question? Do not substitute related features,
   owner guidance for repair specifications, or one model for another.
 - Are numbers explicitly associated with the requested quantity and variant in
@@ -217,15 +217,6 @@ def numeric_evidence_safe(draft, context):
     """
     for claim in draft.claims:
         text = _without_step_labels(" ".join(claim.text.split()))
-        # A source-verified structural count is not a measured quantity. Do not
-        # turn other spelled-out values into digits or infer table cell mappings.
-        marker = r"\b(?:two (?:indicator )?marks|beiden Markierungen|двумя (?:метками|отметками))\b"
-        if any(re.search(marker, " ".join(e.quote.split()), re.I) for e in claim.evidence):
-            text = re.sub(
-                r"\b(?:two (?:indicator )?marks|zwei Markierungen|beiden Markierungen|"
-                r"двумя (?:метками|отметками)|2 (?:marks|Markierungen|метк\w*|отмет\w*))\b",
-                "", text, flags=re.I,
-            )
         numbers = {n.replace(",", ".") for n in numeric_values(text)}
         words = _number_words(text)
         if not numbers and not words:
@@ -262,10 +253,8 @@ def numeric_evidence_safe(draft, context):
 
 
 def _numeric_prose_parts(quote):
-    # Separate intact numbered procedure steps from unrelated tables on the same
-    # page. Figure identifiers are boundaries, never measured values or evidence.
-    quote = re.sub(r"(?<=[а-яё])И[ \t]*\n[ \t]*(?=[а-яё])", "", quote)
-    parts = re.split(r"(?m)(?=^\d+\.\s)|^\s*\d+[a-z]{2,}\d+\s*$", quote)
+    # Separate intact numbered procedure steps from unrelated tables in a quote.
+    parts = re.split(r"(?m)(?=^\d+\.\s)", quote)
     for part in parts:
         part = re.sub(r"^\d+\.\s+", "", part)
         if _unreliable_numeric_source(Document(page_content=part)) and not _dual_unit_prose_line(
