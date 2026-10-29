@@ -17,8 +17,6 @@ from garage_rag.index import Index
 def api_setup(tmp_path, pdf_path, tokenizer, embeddings, config, monkeypatch):
     from garage_rag import api, cli
 
-    # Existing parity/transport cases exercise the original answer workflows.
-    # Translation is enabled explicitly in its integration checks below.
     monkeypatch.setenv("GARAGE_RAG_TRANSLATE_QUERY", "false")
     directory = tmp_path / "index"
     with Index(directory, config) as index:
@@ -102,30 +100,38 @@ def without_timings(result):
 
 
 @pytest.mark.parametrize("entry", ["http", "cli"])
-def test_production_entry_translates_russian_search_by_default(
-    api_setup, monkeypatch, capsys, entry,
+@pytest.mark.parametrize("translation_setting", [None, "true", "false"])
+def test_production_entry_preserves_russian_search(
+    api_setup, monkeypatch, capsys, entry, translation_setting,
 ):
     from garage_rag import cli
 
     setup = api_setup
-    monkeypatch.delenv("GARAGE_RAG_TRANSLATE_QUERY")
+    if translation_setting is None:
+        monkeypatch.delenv("GARAGE_RAG_TRANSLATE_QUERY")
+    else:
+        monkeypatch.setenv("GARAGE_RAG_TRANSLATE_QUERY", translation_setting)
     queries = []
     make = cli.make_llm
 
-    def translating_model(**kwargs):
+    def russian_model(**kwargs):
         model = make(**kwargs)
         model.claim = "Проверяйте давление на холодных шинах."
         invoke = model.invoke
-        def translated(messages):
-            if json.loads(messages[1].content).keys() == {"question"}:
-                return SimpleNamespace(content=json.dumps({"query": "How do I check tires?"}))
+        def expanded(messages):
+            payload = json.loads(messages[1].content)
+            if set(payload) == {"question", "languages"}:
+                assert payload["languages"] == ["en"]
+                return SimpleNamespace(content=json.dumps({"queries": [
+                    {"language": "en", "query": "How do I check tires?"},
+                ]}))
             return invoke(messages)
-        model.invoke = translated
+        model.invoke = expanded
         return model
 
     from garage_rag import api
-    monkeypatch.setattr(cli, "make_llm", translating_model)
-    monkeypatch.setattr(api, "make_llm", translating_model)
+    monkeypatch.setattr(cli, "make_llm", russian_model)
+    monkeypatch.setattr(api, "make_llm", russian_model)
 
     # Capture the real query passed to the embedding adapter, keeping Qdrant real.
     from conftest import TinyEmbeddings
@@ -147,10 +153,14 @@ def test_production_entry_translates_russian_search_by_default(
         assert cli.main(["--index-dir", str(setup.directory), "ask", "Как проверить шины?",
                          "--workflow", "direct", "--json"]) == 0
         result = json.loads(capsys.readouterr().out)
-    assert queries == ["How do I check tires?"]
+    expanded = translation_setting != "false"
+    assert queries == (["Как проверить шины?", "How do I check tires?"]
+                       if expanded else ["Как проверить шины?"])
     assert result["supported"]
     assert result["language"] == "ru"
-    assert result["workflow"]["llm_calls"] == result["workflow"]["llm_call_limit"] == 2
+    assert result["workflow"]["llm_calls"] == result["workflow"]["llm_call_limit"] == (
+        2 if expanded else 1
+    )
 
 
 @pytest.mark.parametrize("mode", ["direct", "grounded"])

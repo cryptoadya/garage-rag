@@ -103,16 +103,51 @@ command and no planner, query rewriting, tools, conversation memory, checkpointe
 or remote graph service. Evaluation checkpoints are separate from graph state.
 
 Production CLI/API Direct/Grounded entry points wrap these primitives in
-`answering.run_answer`. Detected RU/DE questions use one Groq translation to
-prepare an English search query before entering the graph; the writer and auditor
-still receive the original question and answer-language selection. Expansion
-reuses that prepared query. English and uncertain-language questions skip this
-step. `GARAGE_RAG_TRANSLATE_QUERY=false` disables it. Translation is metered in
-the combined trace and shares provider quota state; malformed/truncated output,
-changed signed numbers or Latin identifiers stop before retrieval. Identifier
-case and equivalent Unicode/ASCII minus signs are accepted. No retries or
-fallbacks are added. Raw workflow/evaluation primitives and CLI `search` retain
-their original untranslated behavior.
+`answering.run_answer` and `retrieval.AnswerSearch`. Original questions always
+reach the writer/auditor. The adapter caches supported languages inferred locally
+from active passage text, including mixed passages; metadata is not authoritative.
+Substantive lines/sentences take precedence over short labels. If none can be
+classified, the full chunk is the fallback. The cache keys on active generations.
+These are hints, not guaranteed language labels or evidence filters.
+
+When source hints include languages other than the detected question language,
+`expand_queries` makes one metered Groq request for all missing languages (at most
+two), preserving numbers, identifiers and the original question. Same-language,
+unknown/empty corpora and ambiguous questions add no request. Malformed/truncated
+translations stop without retry/fallback. `GARAGE_RAG_TRANSLATE_QUERY=false`
+disables expansion; low-level callers without source hints retain original-only
+behavior. Translation requests include only the question and target languages.
+
+`Index.search_many` runs at most three queries in one active-filtered Qdrant batch.
+Duplicate chunks retain maximum raw cosine score. Expanded multi-language corpora
+reserve each query's first five hits before filling the remaining pool slots by
+maximum cosine, then rerank at most 20 candidates with the already pinned local
+mMARCO MiniLM cross-encoder. Each intact passage uses prepared questions in its observed
+language(s); uncertain passages use the available source-language questions.
+No passage is discarded by language. Keep the best local relevance score per
+candidate, then apply the requested top-k. Raw cosine/min-score eligibility and
+context limits remain unchanged. Mono-language and original-only paths retain
+their previous dense order and do not load the extra model.
+Corpus-language inspection does not build BM25 token statistics; those are built
+only when lexical search is requested and invalidated by active-generation changes.
+
+The local ranker is loaded lazily and reused by the adapter. It scores at most
+20 × 3 pairs and keeps its existing 512-token pair guard. If complete pairs do
+not fit, keep dense ordering; never truncate source/question text for ranking.
+Nonfinite/incomplete scores or other ranking errors stop retrieval safely.
+No Groq attempt, index migration, new dependency or model revision is added;
+this reuses the existing optional experimental reranker, with extra local CPU,
+memory and possibly a first-use weight download. The
+[matched multilingual matrix](benchmarks/multilingual-c3.md) measures its scope.
+
+One `search_calls` unit remains one retrieval batch, not one vector;
+Grounded's two rounds therefore allow at most six bounded vector queries. Recovery
+reuses translations. The [matched BMW comparison](benchmarks/multilingual-ru-en.md)
+records the original-only regression and the restored English-query results.
+No source language fields, embedding profiles/prefixes, manifest fingerprints or
+stored vectors change. Old indexes need no migration. Writers quote the actual
+source language and write claims in the requested answer language. Agentic keeps
+its existing autonomous search budget and uses observed source-language terms.
 
 ## Agentic retrieval (Phase 4A)
 
@@ -273,8 +308,8 @@ routes from live decisions, failures and separately reviewed answers.
 
 | Setting | Default / bound |
 | --- | --- |
-| Direct | One search, at most one answer completion |
-| RU/DE query translation (CLI/API Direct/Grounded) | At most one additional completion, enabled by default |
+| Direct | One search batch, at most one answer completion |
+| Cross-language expansion | At most one additional completion; none for same-language/unknown corpora |
 | Grounded `--max-llm-calls` | 4, configurable 1–4 attempted completions including audits |
 | Grounded `--max-searches` | 2, configurable 1–2 local searches |
 | Graph recursion limit | 16, fixed safety net; normal longest path is seven nodes |
@@ -286,8 +321,8 @@ A draft reserves budget for its mandatory audit. A one-call grounded budget
 therefore refuses without a completion. Normal acceptance uses two calls;
 recovery after draft refusal uses at most three, after audit insufficiency at
 most four. Direct mode ignores grounded budget flags. The default worst-case
-answer-completion allowance is 8,192 Groq tokens across four calls; a RU/DE
-translation raises the production total to at most 10,240 across five calls.
+answer-completion allowance is 8,192 Groq tokens across four calls; source-language
+expansion can add 2,048 tokens in one request, for 10,240 across five calls.
 
 Timeouts are HTTPX network-operation/inactivity limits, not whole-call deadlines;
 keepalive traffic or local loading/search can extend wall time. Provider/local

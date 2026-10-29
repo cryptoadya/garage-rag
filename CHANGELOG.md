@@ -5,6 +5,18 @@ is available in [Git commits](https://github.com/cryptoadya/garage-rag/commits/m
 
 ## [Unreleased]
 
+### Fixed
+
+- Preserve original EN/DE/RU questions and verbatim source-language citations.
+  Direct/Grounded add missing source-language queries in at most one Groq call,
+  retaining translation opt-out, validation, audit and quota guards. Existing
+  indexes need no migration.
+- Correct expanded mixed-language retrieval with the pinned local reranker:
+  reserve each query's top five within 20 candidates / 60 intact pairs. Model
+  loading is lazy; oversized pairs retain dense order. BM25 statistics are built
+  only for lexical search. See the [multilingual benchmark](docs/benchmarks/multilingual-c3.md)
+  for measured recall, top-one tradeoffs and added local CPU/memory cost.
+
 ## [0.5.0] - 2026-10-29
 
 ### Changed

@@ -1,9 +1,9 @@
 # Benchmark and historical evidence inventory
 
 `benchmarks/` contains versioned evaluation inputs; `docs/benchmarks/` contains
-published summaries and three frozen numeric artifacts. Keep their paths and
-bytes stable: tests and published results depend on them. New runs belong in
-ignored `output/`, with reviewed aggregate results published as Markdown.
+published summaries and frozen numeric comparison artifacts. Keep retained inputs
+and rankings stable: tests and published results depend on them. New runs belong
+in ignored `output/`; explicitly allowlist reviewed, source-text-free evidence.
 
 ## Retained JSON
 
@@ -17,8 +17,12 @@ ignored `output/`, with reviewed aggregate results published as Markdown.
 | [Phase 2A baseline results](phase2a-baseline.v1.json) | Published per-query ranks, timings, parameters and corpus/model bindings |
 | [Phase 2A tire audit](phase2a-tire-audit.v1.json) | Vector audit method and chunk/model identities supporting the baseline analysis |
 | [Phase 2B results](phase2b-results.v1.json) | Published candidate decision, comparisons and independent-process repeatability checks |
+| [Bosch C3 dataset](../../benchmarks/bosch_c3_multilingual.v1.json) | Frozen EN/DE/RU questions, source hash/pages and chunk evidence anchors |
+| [BMW multilingual results](multilingual-ru-en.v1.json) | All 42 paired rankings for old English, original Russian and expanded queries |
+| [Bosch multilingual results](multilingual-c3.v2.json) | All 288 paired original, previous, pre-audit and final rankings; supersedes duplicate v1 |
+| [Multilingual performance](multilingual-retrieval-performance.v1.json) | All 18 uncached process measurements and implementation hashes |
 
-The eight files have distinct contents and roles; none is a redundant run copy.
+These twelve files have distinct contents and roles; none is a redundant run copy.
 The separate [Aurora corpus fixture](../../tests/fixtures/corpus.json) generates
 synthetic PDFs for offline tests. BMW PDFs, indexes and model weights are not
 distributed; reproduction requires the permitted source PDF and pinned models.
@@ -33,6 +37,8 @@ distributed; reproduction requires the permitted source PDF and pinned models.
 | [Phase 3 archive inventory](phase3-archive.md) | Hashes and restoration instructions for previously removed public artifacts and private captures |
 | [Three-mode comparison](phase4b-comparison.md) | Consolidated results, failures, limits and immutable source-commit links |
 | [Frozen real-corpus protocol](phase4b-real-live-protocol.md) | Preregistered selection, corpus bindings, budgets and review criteria; historical proposal |
+| [BMW multilingual comparison](multilingual-ru-en.md) | RU→EN regression, corrected results and reproduction with existing datasets |
+| [Bosch multilingual comparison](multilingual-c3.md) | Final retrieval and performance results, limits and reproduction; consolidates the PR #12 audit |
 
 These reports provide different evidence. The Phase 4B report already replaces
 the long intermediate narrative with a summary and immutable Git links. The
@@ -52,7 +58,14 @@ This inventory does not revalidate the external private archives.
 - `data/`, `output/`, caches, environments and builds: ignored local material.
 
 The Python wheel contains the runtime package. The sdist also contains the
-public docs, tests, all eight benchmark JSON files, the synthetic corpus and
+public docs, tests, all twelve benchmark JSON files, the synthetic corpus and
 frontend sources/lockfile. The frontend is built separately. See
 [package checks](../testing.md#packaging-and-publication) and the
 [sdist allowlist](../../pyproject.toml).
+
+The three multilingual scripts stay separate because they measure different
+properties: `compare_multilingual_queries.py` reuses the frozen BMW index,
+`compare_multilingual_c3.py` builds the Bosch PDF layouts and evaluates retrieval,
+and `measure_multilingual_retrieval.py` measures one uncached fresh process.
+Their reports document private inputs and commands; no source PDFs, indexes,
+weights or local run directories are distributed.

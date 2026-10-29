@@ -23,12 +23,13 @@ If the sources do not support the specific requested fact or contradict each oth
 return {"supported": false, "claims": []}. Refuse questions outside the documentation too.
 Otherwise return JSON without Markdown or introductory text:
 {"supported": true, "claims": [{"text": "A claim in the required answer language",
-"evidence": [{"source_id": "S1", "quote": "Exact English quote from this source"}]}]}
+"evidence": [{"source_id": "S1", "quote": "Exact verbatim quote from this source"}]}]}
 Use at most 6 concise claims, each directly supported by its evidence.
 Write claim text without references, square brackets or page numbers.
 Copy each quote verbatim from the identified source text (at least 12 characters).
-Keep quotes in their original English; do not translate, insert ellipses or join
-separate sentences. Include the full necessary passage and applicability conditions.
+Sources may be EN/DE/RU or mixed. Keep quotes in their source language regardless
+of answer language. Never translate, add ellipses or join separate sentences.
+Include the full necessary passage and applicability conditions.
 Use only source_id values from sources. Page references will be added locally.
 """
 
@@ -219,7 +220,7 @@ def generate_candidate(question, context, llm, language):
 
 
 def answer(question, hits, llm, *, answer_language="auto", max_context_chars=12000):
-    """Original single-completion baseline, with unchanged prompt and local checks."""
+    """Original single-completion baseline, with shared prompt and local checks."""
     if not question.strip() or len(question) > 4000:
         raise ValueError("Question must contain 1–4000 characters")
     language = resolve_answer_language(question, answer_language)

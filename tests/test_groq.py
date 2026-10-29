@@ -279,13 +279,19 @@ def test_resume_restores_quota_and_retry_after_without_network(monkeypatch):
         ("ru", "Проверяйте давление на холодных шинах."),
     ],
 )
-def test_groq_wire_preserves_workflow_languages_and_citations(monkeypatch, mode, language, claim):
+@pytest.mark.parametrize("quote", [
+    "Check tire pressure when the tires are cold.",
+    "Prüfen Sie den Reifendruck bei kalten Reifen.",
+    "Проверяйте давление на холодных шинах.",
+])
+def test_groq_wire_preserves_workflow_languages_and_citations(
+    monkeypatch, mode, language, claim, quote,
+):
     from langchain_core.documents import Document
 
     from garage_rag.index import SearchHit
     from garage_rag.workflow import run_direct, run_workflow
 
-    quote = "Check tire pressure when the tires are cold."
     hit = SearchHit(
         Document(page_content=quote, metadata={"document": "manual.pdf", "pdf_page": 7}), 0.9
     )
@@ -691,3 +697,36 @@ def test_agentic_groq_structured_loop_changes_strategy_from_local_evidence(
         else [("dense", "Reifendruck prüfen")]
     )
     assert all("models" not in r and r["model"] == "openai/gpt-oss-120b" for r in requests)
+
+
+def test_groq_cross_language_expansion_shares_transport_and_usage(monkeypatch):
+    from test_multilingual import CLAIMS, QUESTIONS
+    from test_workflow import draft, hit
+
+    from garage_rag.answering import run_answer
+
+    requests, queries = [], []
+    def transport(request):
+        body = json.loads(request.content)
+        requests.append(body)
+        data = json.loads(body['messages'][1]['content'])
+        if 'languages' in data:
+            assert data == {'question': QUESTIONS['en'], 'languages': ['ru']}
+            value = {'queries': [{'language': 'ru', 'query': QUESTIONS['ru']}]}
+        else:
+            assert data['question'] == QUESTIONS['en']
+            value = draft(CLAIMS['de'], CLAIMS['ru'])
+        return success(json.dumps(value, ensure_ascii=False))
+    llm = model(monkeypatch, transport)
+    with llm.client:
+        result = run_answer(
+            QUESTIONS['en'], lambda q, k: queries.append(q) or [hit(CLAIMS['ru'])], llm,
+            mode='direct', answer_language='de', source_languages=('ru',),
+        )
+    assert result.answer.supported
+    assert result.answer.language == 'de'
+    assert queries == [(QUESTIONS['en'], QUESTIONS['ru'])]
+    assert len(requests) == result.trace.llm_calls == result.trace.llm_call_limit == 2
+    assert result.trace.input_tokens == 40
+    assert result.trace.output_tokens == 60
+    assert result.trace.public_dict()['token_usage_complete']

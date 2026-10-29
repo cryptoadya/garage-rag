@@ -16,7 +16,7 @@ line or commit it to Git.
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `GARAGE_RAG_PROVIDER` | `groq` | Only supported provider for all modes; `ask --provider groq` is optional |
-| `GARAGE_RAG_TRANSLATE_QUERY` | `true` | Direct/Grounded `ask`: one Groq call translates RU/DE search queries to English; `false` disables it |
+| `GARAGE_RAG_TRANSLATE_QUERY` | `true` | Add source-language queries in at most one Groq call when needed; `false` uses only the original question |
 | `GROQ_API_KEY` | Empty | Required for Groq generation |
 | `GROQ_FREE_PLAN_CONFIRMED` | `false` | Required local attestation of Groq Free Plan |
 | `GROQ_MODEL` | `openai/gpt-oss-120b` | Initial allowlisted Groq model; `--model` overrides it |
@@ -76,23 +76,48 @@ Use the same profile for `index`, `stats`, `search` and `ask`.
 See the [Phase 2B comparison and complete commands](benchmarks/phase2b-retrieval.md).
 Every profile retains raw dense cosine search and the original CLI limits.
 Do not transfer score thresholds between models without separate calibration.
-Direct/Grounded `ask` translates detected Russian/German questions to English
-before local retrieval. This addresses cross-language recall misses such as a
-short Russian question failing to retrieve an English section. The original
-question still goes to the answer writer/auditor, and answer-language selection
-does not determine the search language. English and ambiguous-language questions
-skip translation. No term dictionary, page hint or additional document content
-is injected. This does not guarantee retrieval quality.
+Direct/Grounded `ask` retains the original question for retrieval, writing and
+auditing. A cached local language heuristic reads active passages, including
+mixed passages, rather than trusting document language metadata. If it finds
+supported languages other than the question language, one metered Groq call
+translates the question into those languages. Same-language, empty/unknown
+corpora and ambiguous questions require no translation. Short labels/copyright
+names are excluded from segment-level hints; this remains a heuristic, not a language
+certificate; full-chunk fallback can still misclassify a language. New active
+generations invalidate the process-local cache.
 
-Translation adds at most one metered Groq attempt to the existing answer budget:
-Direct totals at most two, Grounded at most five by default. Both steps share
-provider quota state. Invalid/truncated translations and provider failures stop
-without retry or fallback; local checks reject changed numbers/Latin identifiers.
-Translation is enabled by default for CLI/API `ask`; set
-`GARAGE_RAG_TRANSLATE_QUERY=false` to use the original question for search.
-Historical evaluation primitives retain their original unmodified-query budgets.
+Each retrieval round makes one local Qdrant batch with at most three dense
+queries: original plus at most two translations. Duplicate chunks keep their
+maximum raw cosine score. For expanded corpora with multiple observed languages,
+the existing pinned local mMARCO MiniLM reranker orders at most 20 dense candidates
+using source-language questions, then applies top-k. Mixed passages can use more
+than one prepared question. Every passage remains intact and eligible; this is
+ranking, not a language filter. Min-score still filters raw dense cosine before
+reranking. Returned dense scores remain raw cosine, while mixed-answer ordering
+uses local relevance scores. Single-language corpora and original-only searches
+retain their previous dense ordering.
+
+The extra local model loads lazily on the first expanded mixed-language answer;
+its pinned weights may need downloading into the existing model cache. It adds
+local compute and memory, with no extra Groq attempt. At most 60 bounded local
+question/passage pairs are scored. If complete pairs cannot fit its existing
+512-token limit, retain dense ordering without truncating either question or
+source. Other reranker failures stop retrieval without provider retry/fallback.
+A recovery round reuses the same query set. Direct therefore uses at most two
+completions including expansion, Grounded at most five. Provider quota accounting
+is shared. Invalid/truncated translations or changed numbers/Latin identifiers
+stop without retries or fallback. `GARAGE_RAG_TRANSLATE_QUERY=false` disables
+expansion. Low-level callers without source-language hints retain original-only
+behavior. Source text is never sent to the translation request.
+
+The [matched BMW comparison](benchmarks/multilingual-ru-en.md) shows why replacing
+the original query with English and removing translation entirely are both
+insufficient. The [real EN/DE/RU PDF matrix](benchmarks/multilingual-c3.md) records the
+mixed-language cosine regression and the local reranking correction. Search
+quality is still model-dependent, including top-one ordering.
 CLI `search` remains dense. BM25 is also available to opt-in agentic retrieval;
-fusion and reranking remain offline comparison adapters.
+fusion remains an offline comparison adapter. Expanded mixed-language answers
+use the conditional local reranking described above.
 
 ## Search and answers
 
@@ -111,7 +136,7 @@ E5's 512-token input limit, including its query prefix and special tokens.
 and adds privacy-safe `workflow` counts, limits, timings, token usage and node events.
 `index --language en` describes the source document; `ask --answer-language`
 controls the answer. CLI diagnostics and the `PDF page N` citation label stay
-English. Quotes stay in their original English even in German or Russian answers.
+English. Quotes stay in their original source language regardless of the answer language.
 
 Automatic language selection uses local
 [Lingua confidence scores](https://github.com/pemistahl/lingua-py#113-confidence-values) after removing
@@ -121,17 +146,17 @@ falls back to English. These are heuristics relative to EN/DE/RU candidates,
 not calibrated probabilities. `Reifendruck?` selects German, while `BMW DDE ABS`
 and ambiguous `Motor?` fall back to English. Mixed-language input or unfamiliar
 jargon can be misclassified; choose `--answer-language en|de|ru` explicitly.
-Language detection makes no LLM call. Production Direct/Grounded `ask` then uses
-one translation call for detected RU/DE questions, unless explicitly disabled.
+Language detection itself is local. Expansion uses the question language,
+independently of the answer-language override.
 
 ## Generation failures
 
 Default `ask` uses bounded grounded answering: up to four completion attempts
 (including semantic audits) and two local searches. A normal accepted answer
 uses two completions. `--max-llm-calls 2 --max-searches 1` disables recovery;
-`--workflow direct` selects the one-answer-completion path. Detected RU/DE
-questions add at most one translation attempt before these answer budgets;
-`--max-llm-calls` controls answering/auditing, not that translation allowance.
+`--workflow direct` selects the one-answer-completion path. These budgets apply
+to answering/auditing. Cross-language expansion adds at most one separate
+attempt; it does not consume `--max-llm-calls`.
 Each completion
 has a 60-second network-operation timeout, not a total deadline. See
 [architecture](architecture.md) for routes, budgets and evidence boundaries.
@@ -146,7 +171,7 @@ See [billing and quota boundaries](providers.md).
 | Model unavailable | Check Groq availability; no alternate model or paid route is attempted |
 | `output_token_limit` | Increase `GROQ_MAX_TOKENS` within 512–4096, subject to quota guards |
 | `invalid_model_output` | Output failed format, language or evidence checks; inspect local retrieval before retrying |
-| `query_translation_error` | Query translation failed; inspect provider/quota settings or disable it explicitly; no automatic fallback is made |
+| `query_translation_error` | Source-language query expansion failed; no retry or fallback is made |
 | `invalid_audit_output` / `unsupported_claims` | Inspect evidence and applicability; the audit cannot certify truth |
 | `ambiguous_question` / `conflicting_sources` | Clarify the vehicle/conditions or resolve conflicting documents |
 | `unsafe_numeric_evidence` | Inspect the original PDF layout; do not infer table cells from extracted text |
@@ -165,7 +190,7 @@ Opt-in `--workflow agentic` uses model-selected local dense/BM25 tools, with
 defaults of six LLM attempts including writer/audit, four searches, 24,000 reserved
 tokens and twelve graph steps. `--max-total-tokens` changes its reservation cap
 (1–48,000); `--top-k` caps each tool at 1–5. Direct/grounded retain their existing
-answer budgets (plus the optional query translation) and ignore this agentic token flag.
+answer budgets plus optional one-call expansion and ignore this agentic token flag.
 With Groq, the per-call output budget
 is `GROQ_MAX_TOKENS`. See [agentic architecture](architecture.md#agentic-retrieval-phase-4a)
 for stopping rules and [live acceptance](providers.md#phase-4a-live-acceptance)

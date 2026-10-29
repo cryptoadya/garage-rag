@@ -124,8 +124,10 @@ def test_ask_language_through_cli(
         ],
     }
     def invoke(messages):
-        if json.loads(messages[1].content).keys() == {"question"}:
-            return SimpleNamespace(content=json.dumps({"query": "How do I check tire pressure?"}))
+        if json.loads(messages[1].content).keys() == {"question", "languages"}:
+            return SimpleNamespace(content=json.dumps({"queries": [
+                {"language": "en", "query": "How do I check tire pressure?"},
+            ]}))
         return SimpleNamespace(
             content=json.dumps(
                 response

@@ -1,0 +1,210 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-29",
+  "main_commit": "522a2afafaee7583725e2bc716eb9e97535960b0",
+  "pr_head_before_audit": "01c3d019c35b936491cd93aa96462624dadc5d2a",
+  "audited_source_sha256": {
+    "src/garage_rag/index.py": "91a2a9ffb241a9676ab695bcad643f699d520746a3af4b628c08ebc901fe5bdf",
+    "src/garage_rag/retrieval.py": "3fc639f10d4b4810a9976b86e8d8c0dd711e53bedfafd4db0f63de24528cc4e2"
+  },
+  "environment": {
+    "platform": "macOS-27.2-arm64-arm-64bit",
+    "python": "3.12.0",
+    "torch": "2.14.1",
+    "device": "cpu",
+    "threads": 4,
+    "HF_HUB_OFFLINE": true,
+    "TRANSFORMERS_OFFLINE": true
+  },
+  "protocol": {
+    "cold_repetitions": 3,
+    "warm_per_process": 7,
+    "order": "serial; main/pr order reversed in repetition two",
+    "cold_total": "From application imports through index open, source-language inspection (PR) and first retrieval; fresh process, cached weight files and uncontrolled OS filesystem cache",
+    "cold_search": "First retrieval after language inspection; includes lazy embedding/reranker loading and inference",
+    "warm": "Real retrieval with reused models and source-language cache; no query-vector or pair-score cache; frozen RU request, prepared source-language queries",
+    "memory": "Native process peak RSS from resource.getrusage(RUSAGE_SELF), macOS bytes converted to MiB; high-water marks including imports, weights and inference, not steady-state allocation",
+    "main_queries": "Frozen English equivalent, reproducing main RU-to-English retrieval stage",
+    "pr_queries": "Original RU plus missing observed corpus languages",
+    "provider_calls": 0,
+    "excluded": "Provider translation/writer/auditor, model downloads, PDF extraction and indexing"
+  },
+  "corpora": {
+    "mixed_pdf": {
+      "dataset": "benchmarks/bosch_c3_multilingual.v1.json",
+      "case_id": "overheat"
+    },
+    "mixed_within_page": {
+      "dataset": "benchmarks/bosch_c3_multilingual.v1.json",
+      "case_id": "overheat"
+    },
+    "bmw_en": {
+      "dataset": "benchmarks/bmw_e39_2002.v1.json",
+      "case_id": "pressure_label"
+    }
+  },
+  "index_config": {
+    "model": "intfloat/multilingual-e5-small",
+    "revision": "614241f622f53c4eeff9890bdc4f31cfecc418b3",
+    "dimension": 384,
+    "chunk_tokens": 384,
+    "overlap_tokens": 48,
+    "max_sequence_tokens": 512,
+    "query_prefix": "query: ",
+    "passage_prefix": "passage: ",
+    "normalize": true,
+    "pipeline_version": 1,
+    "libraries": {
+      "sentence-transformers": "6.2.0",
+      "transformers": "5.20.2",
+      "pypdf": "6.21.2",
+      "fonttools": "4.67.0"
+    }
+  },
+  "summary": [
+    {
+      "corpus": "mixed_pdf",
+      "variant": "main",
+      "chunks": 53,
+      "queries": 1,
+      "pairs": [],
+      "cold_total_median_ms": 6829.915624999558,
+      "cold_total_range_ms": [
+        6230.079874992953,
+        8497.130207993905
+      ],
+      "cold_search_median_ms": 6054.47504199401,
+      "source_language_median_ms": 0.0002500019036233425,
+      "warm_median_ms": 11.029916000552475,
+      "warm_p95_ms": 11.767459000111558,
+      "peak_cold_mib_max": 1480.328125,
+      "peak_warm_mib_max": 1480.328125,
+      "reranker_load_median_ms": 0.0,
+      "reranker_warm_predict_median_ms": null
+    },
+    {
+      "corpus": "mixed_pdf",
+      "variant": "pr",
+      "chunks": 53,
+      "queries": 3,
+      "pairs": [
+        20
+      ],
+      "cold_total_median_ms": 8659.095374998287,
+      "cold_total_range_ms": [
+        8467.592250002781,
+        8836.975375001202
+      ],
+      "cold_search_median_ms": 7911.7071670043515,
+      "source_language_median_ms": 80.49520799249876,
+      "warm_median_ms": 813.0767499969807,
+      "warm_p95_ms": 871.5064589923713,
+      "peak_cold_mib_max": 1763.96875,
+      "peak_warm_mib_max": 1763.96875,
+      "reranker_load_median_ms": 1056.4114579901798,
+      "reranker_warm_predict_median_ms": 754.2090000060853
+    },
+    {
+      "corpus": "mixed_within_page",
+      "variant": "main",
+      "chunks": 45,
+      "queries": 1,
+      "pairs": [],
+      "cold_total_median_ms": 7309.03879100515,
+      "cold_total_range_ms": [
+        7194.753040996147,
+        7477.915291994577
+      ],
+      "cold_search_median_ms": 6457.727415996487,
+      "source_language_median_ms": 0.0002500019036233425,
+      "warm_median_ms": 11.045666004065424,
+      "warm_p95_ms": 12.350874996627681,
+      "peak_cold_mib_max": 1480.515625,
+      "peak_warm_mib_max": 1480.515625,
+      "reranker_load_median_ms": 0.0,
+      "reranker_warm_predict_median_ms": null
+    },
+    {
+      "corpus": "mixed_within_page",
+      "variant": "pr",
+      "chunks": 45,
+      "queries": 3,
+      "pairs": [
+        30
+      ],
+      "cold_total_median_ms": 8947.670000008657,
+      "cold_total_range_ms": [
+        8945.546499991906,
+        9162.459166996996
+      ],
+      "cold_search_median_ms": 8269.377125005121,
+      "source_language_median_ms": 10.235583002213389,
+      "warm_median_ms": 1313.6797089973697,
+      "warm_p95_ms": 1342.0056250033667,
+      "peak_cold_mib_max": 1845.375,
+      "peak_warm_mib_max": 1845.375,
+      "reranker_load_median_ms": 1050.7483330002287,
+      "reranker_warm_predict_median_ms": 1246.2075840012403
+    },
+    {
+      "corpus": "bmw_en",
+      "variant": "main",
+      "chunks": 241,
+      "queries": 1,
+      "pairs": [],
+      "cold_total_median_ms": 6816.5599159983685,
+      "cold_total_range_ms": [
+        6526.899375006906,
+        7002.4647079990245
+      ],
+      "cold_search_median_ms": 6006.85970800987,
+      "source_language_median_ms": 0.00024998735170811415,
+      "warm_median_ms": 14.405084002646618,
+      "warm_p95_ms": 14.987165995989926,
+      "peak_cold_mib_max": 1484.140625,
+      "peak_warm_mib_max": 1484.140625,
+      "reranker_load_median_ms": 0.0,
+      "reranker_warm_predict_median_ms": null
+    },
+    {
+      "corpus": "bmw_en",
+      "variant": "pr",
+      "chunks": 241,
+      "queries": 2,
+      "pairs": [],
+      "cold_total_median_ms": 6505.609208004898,
+      "cold_total_range_ms": [
+        6432.448083010968,
+        6643.311250008992
+      ],
+      "cold_search_median_ms": 5585.134792010649,
+      "source_language_median_ms": 199.65704099740833,
+      "warm_median_ms": 29.31120799621567,
+      "warm_p95_ms": 29.628624994074926,
+      "peak_cold_mib_max": 1496.765625,
+      "peak_warm_mib_max": 1496.765625,
+      "reranker_load_median_ms": 0.0,
+      "reranker_warm_predict_median_ms": null
+    }
+  ],
+  "runs": [
+    {"corpus":"mixed_pdf","repetition":1,"variant":"main","platform":"macOS-27.2-arm64-arm-64bit","device":"cpu","python":"3.12.0","torch_threads":4,"chunks":53,"source_languages":[],"queries":1,"source_language_ms":0.0002500019036233425,"cold_search_ms":7254.7042919904925,"cold_total_ms":8497.130207993905,"warm_ms":[11.752833001082763,11.141332986881025,11.767459000111558,10.944416993879713,11.007458000676706,10.869125006138347,10.78604199574329],"warm_median_ms":11.007458000676706,"warm_max_ms":11.767459000111558,"process_peak_mib_before_search":117.109375,"process_peak_mib_cold":1435.90625,"process_peak_mib_warm":1435.90625,"reranker":{"reranker_load_ms":0.0,"reranker_predict_ms":[],"pairs":[]},"hits":5,"provider_calls":0},
+    {"corpus":"mixed_pdf","repetition":2,"variant":"main","platform":"macOS-27.2-arm64-arm-64bit","device":"cpu","python":"3.12.0","torch_threads":4,"chunks":53,"source_languages":[],"queries":1,"source_language_ms":0.0002500019036233425,"cold_search_ms":6054.47504199401,"cold_total_ms":6829.915624999558,"warm_ms":[11.421917006373405,11.0144170030253,11.029916000552475,14.365291994181462,11.344875005306676,11.159792004036717,11.146167002152652],"warm_median_ms":11.159792004036717,"warm_max_ms":14.365291994181462,"process_peak_mib_before_search":117.1875,"process_peak_mib_cold":1480.328125,"process_peak_mib_warm":1480.328125,"reranker":{"reranker_load_ms":0.0,"reranker_predict_ms":[],"pairs":[]},"hits":5,"provider_calls":0},
+    {"corpus":"mixed_pdf","repetition":3,"variant":"main","platform":"macOS-27.2-arm64-arm-64bit","device":"cpu","python":"3.12.0","torch_threads":4,"chunks":53,"source_languages":[],"queries":1,"source_language_ms":0.000333995558321476,"cold_search_ms":5558.737166997162,"cold_total_ms":6230.079874992953,"warm_ms":[11.44899999781046,10.975833007250912,11.290249996818602,10.955500009004027,10.957833001157269,10.945250003715046,11.009042005753145],"warm_median_ms":10.975833007250912,"warm_max_ms":11.44899999781046,"process_peak_mib_before_search":117.28125,"process_peak_mib_cold":1480.28125,"process_peak_mib_warm":1480.28125,"reranker":{"reranker_load_ms":0.0,"reranker_predict_ms":[],"pairs":[]},"hits":5,"provider_calls":0},
+    {"corpus":"mixed_pdf","repetition":1,"variant":"pr","platform":"macOS-27.2-arm64-arm-64bit","device":"cpu","python":"3.12.0","torch_threads":4,"chunks":53,"source_languages":["de","en","ru"],"queries":3,"source_language_ms":80.49520799249876,"cold_search_ms":7922.0301669993205,"cold_total_ms":8836.975375001202,"warm_ms":[806.8155419896357,806.9184579944704,798.2927920093061,814.3347910081502,805.3927919972921,800.0339159916621,1043.1777909980156],"warm_median_ms":806.8155419896357,"warm_max_ms":1043.1777909980156,"process_peak_mib_before_search":118.3125,"process_peak_mib_cold":1701.8125,"process_peak_mib_warm":1704.0625,"reranker":{"reranker_load_ms":1050.0266249873675,"reranker_predict_ms":[1097.3847080022097,747.8687080001691,749.2936250055209,740.0635419908212,756.4729590085335,746.5620409930125,741.7422919970704,985.0814590026857],"pairs":[20,20,20,20,20,20,20,20]},"hits":5,"provider_calls":0},
+    {"corpus":"mixed_pdf","repetition":2,"variant":"pr","platform":"macOS-27.2-arm64-arm-64bit","device":"cpu","python":"3.12.0","torch_threads":4,"chunks":53,"source_languages":["de","en","ru"],"queries":3,"source_language_ms":41.97274999751244,"cold_search_ms":7752.586959002656,"cold_total_ms":8467.592250002781,"warm_ms":[814.8537500092061,803.4622499981197,804.1367920086486,817.5370000099065,815.6315420055762,812.2911249956815,802.6055419904878],"warm_median_ms":812.2911249956815,"warm_max_ms":817.5370000099065,"process_peak_mib_before_search":118.171875,"process_peak_mib_cold":1763.96875,"process_peak_mib_warm":1763.96875,"reranker":{"reranker_load_ms":1056.4114579901798,"reranker_predict_ms":[1071.3294579909416,754.7521249944111,744.3190409976523,745.483124992461,759.2050000093877,757.0933329989202,753.3047920005629,742.3460830032127],"pairs":[20,20,20,20,20,20,20,20]},"hits":5,"provider_calls":0},
+    {"corpus":"mixed_pdf","repetition":3,"variant":"pr","platform":"macOS-27.2-arm64-arm-64bit","device":"cpu","python":"3.12.0","torch_threads":4,"chunks":53,"source_languages":["de","en","ru"],"queries":3,"source_language_ms":82.92337499733549,"cold_search_ms":7911.7071670043515,"cold_total_ms":8659.095374998287,"warm_ms":[822.7475830062758,840.5818750034086,847.4502080061939,813.0767499969807,798.4882909950102,817.1016669948585,871.5064589923713],"warm_median_ms":822.7475830062758,"warm_max_ms":871.5064589923713,"process_peak_mib_before_search":118.21875,"process_peak_mib_cold":1742.828125,"process_peak_mib_warm":1743.84375,"reranker":{"reranker_load_ms":1060.6073750095675,"reranker_predict_ms":[1074.6398330084048,763.6142499977723,781.9326660101069,789.4535829982487,754.2090000060853,740.3454160084948,759.083290991839,811.5912079956615],"pairs":[20,20,20,20,20,20,20,20]},"hits":5,"provider_calls":0},
+    {"corpus":"mixed_within_page","repetition":1,"variant":"main","platform":"macOS-27.2-arm64-arm-64bit","device":"cpu","python":"3.12.0","torch_threads":4,"chunks":45,"source_languages":[],"queries":1,"source_language_ms":0.00020899460650980473,"cold_search_ms":6394.3100000033155,"cold_total_ms":7194.753040996147,"warm_ms":[12.062958005117252,11.918749994947575,12.350874996627681,12.205790990265086,11.930833003134467,11.45462499698624,16.274334004265256],"warm_median_ms":12.062958005117252,"warm_max_ms":16.274334004265256,"process_peak_mib_before_search":116.984375,"process_peak_mib_cold":1480.265625,"process_peak_mib_warm":1480.265625,"reranker":{"reranker_load_ms":0.0,"reranker_predict_ms":[],"pairs":[]},"hits":5,"provider_calls":0},
+    {"corpus":"mixed_within_page","repetition":2,"variant":"main","platform":"macOS-27.2-arm64-arm-64bit","device":"cpu","python":"3.12.0","torch_threads":4,"chunks":45,"source_languages":[],"queries":1,"source_language_ms":0.00037500285543501377,"cold_search_ms":6651.7001669999445,"cold_total_ms":7477.915291994577,"warm_ms":[11.442165996413678,10.990416005370207,11.036583004170097,10.898124994128011,10.878540997509845,11.055832990678027,11.045666004065424],"warm_median_ms":11.036583004170097,"warm_max_ms":11.442165996413678,"process_peak_mib_before_search":117.25,"process_peak_mib_cold":1186.3125,"process_peak_mib_warm":1186.3125,"reranker":{"reranker_load_ms":0.0,"reranker_predict_ms":[],"pairs":[]},"hits":5,"provider_calls":0},
+    {"corpus":"mixed_within_page","repetition":3,"variant":"main","platform":"macOS-27.2-arm64-arm-64bit","device":"cpu","python":"3.12.0","torch_threads":4,"chunks":45,"source_languages":[],"queries":1,"source_language_ms":0.0002500019036233425,"cold_search_ms":6457.727415996487,"cold_total_ms":7309.03879100515,"warm_ms":[11.381667005480267,11.021041995263658,10.841582989087328,10.897500003920868,10.8562920067925,10.746166997705586,10.898667009314522],"warm_median_ms":10.897500003920868,"warm_max_ms":11.381667005480267,"process_peak_mib_before_search":117.109375,"process_peak_mib_cold":1480.515625,"process_peak_mib_warm":1480.515625,"reranker":{"reranker_load_ms":0.0,"reranker_predict_ms":[],"pairs":[]},"hits":5,"provider_calls":0},
+    {"corpus":"mixed_within_page","repetition":1,"variant":"pr","platform":"macOS-27.2-arm64-arm-64bit","device":"cpu","python":"3.12.0","torch_threads":4,"chunks":45,"source_languages":["de","en","ru"],"queries":3,"source_language_ms":9.579332996509038,"cold_search_ms":8491.939957995783,"cold_total_ms":9162.459166996996,"warm_ms":[1324.6030419977615,1318.9350419997936,1308.5449999925913,1309.4073749962263,1336.4172080036951,1313.4802499989746,1305.4007079917938],"warm_median_ms":1313.4802499989746,"warm_max_ms":1336.4172080036951,"process_peak_mib_before_search":118.0625,"process_peak_mib_cold":1758.84375,"process_peak_mib_warm":1760.75,"reranker":{"reranker_load_ms":1113.594334005029,"reranker_predict_ms":[1578.5836249997374,1251.740832987707,1250.9603750077076,1240.4681670013815,1241.5278749977006,1267.9455000034068,1244.7321660001762,1238.598333002301],"pairs":[30,30,30,30,30,30,30,30]},"hits":5,"provider_calls":0},
+    {"corpus":"mixed_within_page","repetition":2,"variant":"pr","platform":"macOS-27.2-arm64-arm-64bit","device":"cpu","python":"3.12.0","torch_threads":4,"chunks":45,"source_languages":["de","en","ru"],"queries":3,"source_language_ms":10.235583002213389,"cold_search_ms":8269.113582995487,"cold_total_ms":8947.670000008657,"warm_ms":[1334.0348749916302,1322.1053750021383,1305.3484999982174,1317.700582992984,1309.2402500042226,1301.0632500081556,1349.1185829916503],"warm_median_ms":1317.700582992984,"warm_max_ms":1349.1185829916503,"process_peak_mib_before_search":118.0,"process_peak_mib_cold":1759.703125,"process_peak_mib_warm":1759.703125,"reranker":{"reranker_load_ms":1050.7483330002287,"reranker_predict_ms":[1547.7753750019474,1265.8275420108112,1249.7608330013463,1238.3298339991597,1251.1261670006206,1241.6095410007983,1234.0374579944182,1282.1784170082537],"pairs":[30,30,30,30,30,30,30,30]},"hits":5,"provider_calls":0},
+    {"corpus":"mixed_within_page","repetition":3,"variant":"pr","platform":"macOS-27.2-arm64-arm-64bit","device":"cpu","python":"3.12.0","torch_threads":4,"chunks":45,"source_languages":["de","en","ru"],"queries":3,"source_language_ms":10.949125004117377,"cold_search_ms":8269.377125005121,"cold_total_ms":8945.546499991906,"warm_ms":[1308.2681660016533,1311.8414169875905,1323.227249988122,1313.6797089973697,1310.6607079971582,1342.0056250033667,1321.0513749945676],"warm_median_ms":1313.6797089973697,"warm_max_ms":1342.0056250033667,"process_peak_mib_before_search":117.953125,"process_peak_mib_cold":1845.375,"process_peak_mib_warm":1845.375,"reranker":{"reranker_load_ms":1050.4074579948792,"reranker_predict_ms":[1618.9962499920512,1239.2055840027751,1245.6133329978911,1256.6697920119623,1246.2075840012403,1243.8085839967243,1275.1590000116266,1254.1610000043875],"pairs":[30,30,30,30,30,30,30,30]},"hits":5,"provider_calls":0},
+    {"corpus":"bmw_en","repetition":1,"variant":"main","platform":"macOS-27.2-arm64-arm-64bit","device":"cpu","python":"3.12.0","torch_threads":4,"chunks":241,"source_languages":[],"queries":1,"source_language_ms":0.0002920132828876376,"cold_search_ms":6179.032583007938,"cold_total_ms":7002.4647079990245,"warm_ms":[14.987165995989926,14.470541995251551,14.378082996699959,14.465291998931207,14.285291006672196,14.229915992473252,14.345749994390644],"warm_median_ms":14.378082996699959,"warm_max_ms":14.987165995989926,"process_peak_mib_before_search":129.140625,"process_peak_mib_cold":1451.6875,"process_peak_mib_warm":1451.6875,"reranker":{"reranker_load_ms":0.0,"reranker_predict_ms":[],"pairs":[]},"hits":5,"provider_calls":0},
+    {"corpus":"bmw_en","repetition":2,"variant":"main","platform":"macOS-27.2-arm64-arm-64bit","device":"cpu","python":"3.12.0","torch_threads":4,"chunks":241,"source_languages":[],"queries":1,"source_language_ms":0.000166997779160738,"cold_search_ms":5850.791499993647,"cold_total_ms":6526.899375006906,"warm_ms":[14.73933299712371,15.01879199349787,14.680499996757135,14.525582999340259,14.542000004439615,14.398832994629629,14.405084002646618],"warm_median_ms":14.542000004439615,"warm_max_ms":15.01879199349787,"process_peak_mib_before_search":129.25,"process_peak_mib_cold":1352.828125,"process_peak_mib_warm":1352.828125,"reranker":{"reranker_load_ms":0.0,"reranker_predict_ms":[],"pairs":[]},"hits":5,"provider_calls":0},
+    {"corpus":"bmw_en","repetition":3,"variant":"main","platform":"macOS-27.2-arm64-arm-64bit","device":"cpu","python":"3.12.0","torch_threads":4,"chunks":241,"source_languages":[],"queries":1,"source_language_ms":0.00024998735170811415,"cold_search_ms":6006.85970800987,"cold_total_ms":6816.5599159983685,"warm_ms":[14.634374994784594,14.511249988572672,14.178333003656007,14.403749999473803,14.18687500699889,14.376291001099162,14.260458992794156],"warm_median_ms":14.376291001099162,"warm_max_ms":14.634374994784594,"process_peak_mib_before_search":129.296875,"process_peak_mib_cold":1484.140625,"process_peak_mib_warm":1484.140625,"reranker":{"reranker_load_ms":0.0,"reranker_predict_ms":[],"pairs":[]},"hits":5,"provider_calls":0},
+    {"corpus":"bmw_en","repetition":1,"variant":"pr","platform":"macOS-27.2-arm64-arm-64bit","device":"cpu","python":"3.12.0","torch_threads":4,"chunks":241,"source_languages":["en"],"queries":2,"source_language_ms":199.65704099740833,"cold_search_ms":5585.134792010649,"cold_total_ms":6505.609208004898,"warm_ms":[29.604791008750908,29.32395800598897,29.799791998811997,29.628624994074926,29.450041998643428,29.34116699907463,29.26291699986905],"warm_median_ms":29.450041998643428,"warm_max_ms":29.799791998811997,"process_peak_mib_before_search":130.46875,"process_peak_mib_cold":1496.765625,"process_peak_mib_warm":1496.765625,"reranker":{"reranker_load_ms":0.0,"reranker_predict_ms":[],"pairs":[]},"hits":5,"provider_calls":0},
+    {"corpus":"bmw_en","repetition":2,"variant":"pr","platform":"macOS-27.2-arm64-arm-64bit","device":"cpu","python":"3.12.0","torch_threads":4,"chunks":241,"source_languages":["en"],"queries":2,"source_language_ms":200.48724999651313,"cold_search_ms":5730.268667000928,"cold_total_ms":6643.311250008992,"warm_ms":[29.38829199410975,29.180333003751002,29.1447499912465,29.202459001680836,29.059833992505446,29.07395899819676,29.19662499334663],"warm_median_ms":29.180333003751002,"warm_max_ms":29.38829199410975,"process_peak_mib_before_search":130.296875,"process_peak_mib_cold":1496.46875,"process_peak_mib_warm":1496.46875,"reranker":{"reranker_load_ms":0.0,"reranker_predict_ms":[],"pairs":[]},"hits":5,"provider_calls":0},
+    {"corpus":"bmw_en","repetition":3,"variant":"pr","platform":"macOS-27.2-arm64-arm-64bit","device":"cpu","python":"3.12.0","torch_threads":4,"chunks":241,"source_languages":["en"],"queries":2,"source_language_ms":198.41745799931232,"cold_search_ms":5559.336999998777,"cold_total_ms":6432.448083010968,"warm_ms":[29.35954100394156,29.16400000685826,29.580709000583738,29.32570800476242,29.15291600220371,29.11550000135321,29.31120799621567],"warm_median_ms":29.31120799621567,"warm_max_ms":29.580709000583738,"process_peak_mib_before_search":130.3125,"process_peak_mib_cold":1496.375,"process_peak_mib_warm":1496.375,"reranker":{"reranker_load_ms":0.0,"reranker_predict_ms":[],"pairs":[]},"hits":5,"provider_calls":0}
+  ]
+}
