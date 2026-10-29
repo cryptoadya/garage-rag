@@ -60,6 +60,7 @@ class Retriever:
         self.method = method
         self.reranker = reranker
         self._active = None
+        self._lexical_generation = None
 
     def __getattr__(self, name):
         return getattr(self.index, name)
@@ -102,14 +103,16 @@ class Retriever:
                 ],
                 key=self.key,
             )
-            self._terms = [Counter(tokens(h.document.page_content)) for h in self._hits]
-            self._lengths = [sum(c.values()) for c in self._terms]
-            self._df = Counter(t for c in self._terms for t in c)
-            self._avg = sum(self._lengths) / max(1, len(points))
             self._active = active
 
     def _lexical(self, question):
         self._load_active()
+        if self._lexical_generation != self._active:
+            self._terms = [Counter(tokens(h.document.page_content)) for h in self._hits]
+            self._lengths = [sum(c.values()) for c in self._terms]
+            self._df = Counter(t for c in self._terms for t in c)
+            self._avg = sum(self._lengths) / max(1, len(self._hits))
+            self._lexical_generation = self._active
         scores = []
         query_terms = sorted(set(tokens(question)))
         for hit, terms, length in zip(self._hits, self._terms, self._lengths, strict=True):
@@ -239,7 +242,8 @@ class AnswerSearch(Retriever):
             return self.index.search(queries, self.embeddings, top_k, self.min_score)
         mixed = len(queries) > 1 and len(self.source_languages) > 1
         hits = self.index.search_many(queries, self.embeddings,
-                                      20 if mixed else top_k, self.min_score)
+                                      20 if mixed else top_k, self.min_score,
+                                      preserve_top_five=mixed)
         if mixed and hits:
             if self.reranker is None:
                 self.reranker = LocalReranker()

@@ -24,6 +24,10 @@ is available in [Git commits](https://github.com/cryptoadya/garage-rag/commits/m
   the local ranker's existing token cap. A real 288-combination EN/DE/RU PDF
   matrix removes all measured top-five losses of the prior maximum-cosine merge;
   model weights load lazily and add local compute/memory, without extra Groq calls.
+- Protect each expanded mixed-language query's top five before filling the bounded
+  20-candidate reranking pool. Build BM25 token statistics only for lexical search,
+  avoiding that work when inspecting corpus languages. The audited Bosch matrix
+  retains 261/288 top-five hits; top-one hits change from 141 to 138/288.
 
 ## [0.5.0] - 2026-10-29
 

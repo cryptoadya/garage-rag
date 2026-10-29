@@ -292,9 +292,10 @@ def test_answer_search_reranks_a_bounded_mixed_pool_before_applying_top_k(monkey
     right = hit('При перегреве зарядного устройства его выходная мощность '
                 'автоматически уменьшается.', 9)
     class DenseIndex:
-        def search_many(self, queries, embeddings, top_k, min_score):
+        def search_many(self, queries, embeddings, top_k, min_score, *, preserve_top_five):
             assert top_k == 20
             assert min_score == 0.7
+            assert preserve_top_five
             return [wrong, right]
     class Ranker:
         def predict(self, pairs, **kwargs):
@@ -311,7 +312,7 @@ def test_mixed_reranking_cannot_bypass_the_public_top_k_limit(top_k, monkeypatch
     from garage_rag.retrieval import AnswerSearch
 
     class DenseIndex:
-        def search_many(self, *args):
+        def search_many(self, *args, **kwargs):
             pytest.fail('Reject invalid top_k before retrieval')
     monkeypatch.setattr(AnswerSearch, 'source_languages', property(lambda self: ('en', 'ru')))
     with pytest.raises(ValueError, match='top_k'):
@@ -324,7 +325,7 @@ def test_local_reranker_failure_stops_without_another_provider_call_or_fallback(
     from garage_rag.retrieval import AnswerSearch
 
     class DenseIndex:
-        def search_many(self, *args):
+        def search_many(self, *args, **kwargs):
             return [hit()]
     class Ranker:
         calls = 0
@@ -368,3 +369,85 @@ def test_existing_local_ranker_pair_limit_is_preserved(length, expected):
     ranker = LocalReranker.__new__(LocalReranker)
     ranker.model = SimpleNamespace(tokenizer=lambda *args, **kwargs: {'input_ids': [0] * length})
     assert ranker.can_score([('Original full question', 'Original full source')]) is expected
+
+
+@pytest.mark.parametrize('branches', [2, 3])
+@pytest.mark.parametrize('top_k', [1, 5, 20])
+def test_mixed_pool_preserves_each_branch_top_five_before_reranking(
+    tmp_path, config, monkeypatch, branches, top_k,
+):
+    import math
+
+    from qdrant_client import models
+
+    from garage_rag.index import COLLECTION
+    from garage_rag.retrieval import AnswerSearch
+
+    questions = ('How do I check tire pressure?', 'Wie prüfe ich den Reifendruck?',
+                 'Как проверить давление в шинах?')[:branches]
+    text = ('Check tire pressure when the tires are cold.\n'
+            'Prüfen Sie den Reifendruck bei kalten Reifen.\n'
+            'Проверяйте давление в шинах, когда шины холодные.')
+    class Vectors:
+        def embed_query(self, question):
+            return [[1., 0., 0.], [0., 1., 0.], [0., 0., 1.]][questions.index(question)]
+    # All twenty results in branch zero have larger cosines than the entire
+    # lower-scoring branches. Their fifth hits must still reach the reranker.
+    required = {f'{branch}:{rank}' for branch in range(branches) for rank in range(5)}
+    target = f'{branches - 1}:4'
+    scored = []
+    class Ranker:
+        def predict(self, pairs, **kwargs):
+            scored.extend(pairs)
+            pool = {passage.rsplit(' ', 1)[-1] for _, passage in pairs}
+            assert required <= pool
+            assert len(pool) == 20
+            assert len(pairs) <= 60
+            return [10. if passage.endswith(' ' + target) else 0. for _, passage in pairs]
+    with Index(tmp_path / 'index', config) as index:
+        index.manifest['documents'] = {
+            'test.pdf': {'generation': 'active', 'chunks': branches * 20},
+        }
+        points = []
+        for branch in range(branches):
+            for rank in range(20):
+                cosine = (0.98, 0.78, 0.72)[branch] - rank * 0.001
+                vector = [0., 0., 0.]
+                vector[branch] = cosine
+                vector[1 if branch == 0 else 0] = math.sqrt(1 - cosine ** 2)
+                points.append(models.PointStruct(id=branch * 20 + rank, vector=vector, payload={
+                    'generation': 'active', 'text': f'{text} {branch}:{rank}',
+                    'metadata': {'document': 'test.pdf', 'content_sha256': 'test',
+                                 'pdf_page': branch + 1, 'chunk_index': rank},
+                }))
+        index.client.upsert(COLLECTION, points=points)
+        batches = []
+        batch_query = index.client.query_batch_points
+        def record(*args, **kwargs):
+            batches.append(kwargs['requests'])
+            return batch_query(*args, **kwargs)
+        monkeypatch.setattr(index.client, 'query_batch_points', record)
+        search = AnswerSearch(index, Vectors(), min_score=0.7, reranker=Ranker())
+        hits = search(questions, top_k)
+        assert len(hits) == top_k
+        assert hits[0].document.page_content.endswith(' ' + target)
+        assert hits[0].score == pytest.approx((0.78 if branches == 2 else 0.72) - 0.004)
+        assert len(batches) == 1 and len(batches[0]) == branches
+        assert all(request.limit == 20 and request.score_threshold == 0.7
+                   for request in batches[0])
+        assert len(scored) == (40 if branches == 2 else 60)
+
+
+def test_language_hints_do_not_build_bm25_state(
+    tmp_path, pdf_path, tokenizer, embeddings, config, monkeypatch,
+):
+    from garage_rag import retrieval
+
+    with Index(tmp_path / 'index', config) as index:
+        index.ingest(pdf_path, embeddings, tokenizer)
+        search = retrieval.AnswerSearch(index, embeddings)
+        with monkeypatch.context() as patch:
+            patch.setattr(retrieval, 'tokens', lambda text: pytest.fail('Unneeded BM25 tokens'))
+            assert search.source_languages == ('en',)
+        # Lexical retrieval must still be available after loading language hints.
+        assert search._lexical('coolant')[0].document.metadata['pdf_page'] == 2

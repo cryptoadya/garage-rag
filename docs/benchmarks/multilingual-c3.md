@@ -55,12 +55,12 @@ language order **DE / EN / RU**. The previous path is commit `53155b2`.
 
 Across all 288 cases:
 
-| Metric | Previous | Corrected |
-| --- | ---: | ---: |
-| hit@1 | 0.260417 | 0.489583 |
-| hit@5 | 0.812500 | 0.906250 |
-| hit@10 | 0.937500 | 0.979167 |
-| mrr@10 | 0.471941 | 0.665505 |
+| Metric | Previous | Initial reranker (`01c3d01`) | Audited candidate pool |
+| --- | ---: | ---: | ---: |
+| hit@1 | 0.260417 | 0.489583 | 0.479167 |
+| hit@5 | 0.812500 | 0.906250 | 0.906250 |
+| hit@10 | 0.937500 | 0.979167 | 0.979167 |
+| mrr@10 | 0.471941 | 0.665505 | 0.655088 |
 
 Top-five hits improve **234/288 → 261/288**. The prior merge lost ten hits that
 original-query search found and eighteen hits found by a source-native question.
@@ -76,7 +76,11 @@ in this development matrix; no per-topic weights or word dictionaries were added
 
 For expanded multi-language corpora, keep a maximum of 20 dense candidates and
 reuse `cross-encoder/mmarco-mMiniLMv2-L12-H384-v1`, pinned at
-`1427fd652930e4ba29e8149678df786c240d8825`. Score intact passages with their
+`1427fd652930e4ba29e8149678df786c240d8825`. Before trimming the pool, reserve
+the first five results of each query (at most 15 unique chunks), then fill the
+remaining slots in maximum-cosine order. Deduplicate by point ID and keep the
+maximum raw cosine. This protects branch top-five candidates **before** reranking;
+it cannot guarantee their rank after reranking. Score intact passages with their
 observed language's prepared question, or all available source-language questions
 when uncertain. Mixed passages can use multiple questions; retain the best local
 relevance score. No source is discarded by language, source IDs/pages/quotes stay
@@ -91,6 +95,24 @@ requests. Invalid/nonfinite scores and other local ranking failures stop safely.
 Single-language corpora and original-only searches retain their prior path and
 do not load the extra model. Groq preparation remains at most one request;
 writer/auditor quotas, numeric/citation gates and no-provider-retry rules persist.
+Corpus-language inspection loads active passages without constructing BM25 token
+counts, document frequencies or lengths; those are built lazily for lexical search.
+
+The final audit's real-Qdrant adversarial test gives all twenty hits in one branch
+higher cosine scores than every hit in the other branches. The initial pool loses
+all other branches' top five; the reserved pool retains them with two or three
+queries, including when only one final answer passage is requested. The reranking
+limit stays at 20 candidates / 60 intact pairs and one Qdrant batch.
+
+The same frozen 288-case matrix was rerun after that change. 82 complete ranking
+rows changed, including 15 metric rows. Top-five/top-ten hits and zero lost
+original/native top-five hits remain unchanged. Top-one hits fall **141 → 138**
+and MRR@10 **0.665505 → 0.655088** as newly admitted candidates compete in the
+same reranker. The original [v1 artifact](multilingual-c3.v1.json) is preserved;
+the [v2 artifact](multilingual-c3.v2.json) includes both `pre_audit` and current
+`corrected` rankings with unchanged labels. No new ranking model or fusion
+algorithm was introduced. Local performance is measured separately in the
+[final audit report](pr12-final-audit.md).
 
 The prior 42-question English BMW check was rerun separately: corrected RU+EN
 retrieval remains **40/42 at five**, with MRR@10 **0.828798** and no lost old EN
@@ -100,9 +122,10 @@ controls and limits.
 ## Remaining limits
 
 - Top-one ordering is not uniformly preserved. Aggregate top-one hits improve
-  **75 → 141**, but six old top-one hits (two needs in three languages) move to
-  annotated rank **2**: disposal in the partitioned corpus and small-battery mode
-  in the within-page mixed corpus. The latter still places a wrong numeric-mode
+  **75 → 138**, but nine old top-one hits (three corpus/need pairs in three
+  languages) move to annotated rank **2**: disposal in the partitioned corpus,
+  small-battery mode and disposal in the within-page mixed corpus. Small-battery
+  mode still places a wrong numeric-mode
   passage first. Correct evidence remains in top five; this is not a claim of
   perfect top-one precision, including for `--top-k 1`.
 - The fixed anchors are conservative, not exhaustive entailment labels. For
@@ -132,8 +155,9 @@ HF_HOME="$PWD/.cache/huggingface" HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
 The [dataset](../../benchmarks/bosch_c3_multilingual.v1.json) records questions,
 source pages and small evidence anchors. The [script](compare_multilingual_c3.py)
 constructs the corpus layouts without redistributing them and runs the actual
-retrieval adapter. The [paired ranking artifact](multilingual-c3.v1.json) retains
-source-free original/previous/corrected rankings, metrics and gold chunk IDs. Use
+retrieval adapter. The [current paired ranking artifact](multilingual-c3.v2.json)
+retains source-free original/previous/pre-audit/corrected rankings, metrics and
+gold chunk IDs; [v1](multilingual-c3.v1.json) remains the initial reranker record. Use
 `--previous-merge` with a different output filename to reproduce the previous
 maximum-cosine path (`53155b2`), or omit it for corrected ranking. All other
 inputs and labels are identical.

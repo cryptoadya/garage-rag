@@ -254,11 +254,13 @@ class Index:
             for point in result.points
         ]
 
-    def search_many(self, questions, embeddings, top_k=5, min_score=None):
+    def search_many(self, questions, embeddings, top_k=5, min_score=None, *,
+                    preserve_top_five=False):
         """One bounded Qdrant batch; merge duplicate chunks by maximum cosine.
 
         All branches use the same embedding profile and active generation filter.
         Scores remain raw cosine; no language dictionary or index migration.
+        Mixed reranking reserves every branch's top five inside its fixed pool.
         """
         if not isinstance(questions, (tuple, list)) or not 1 <= len(questions) <= 3:
             raise ValueError("Supply between one and three search queries")
@@ -266,6 +268,8 @@ class Index:
             raise ValueError("Question must contain 1–4000 characters")
         if type(top_k) is not int or not 1 <= top_k <= 20:
             raise ValueError("top_k must be between 1 and 20")
+        if preserve_top_five and top_k != 20:
+            raise ValueError("Preserving branch top five requires a 20-candidate pool")
         if min_score is not None and not -1 <= min_score <= 1:
             raise ValueError("min_score must be between -1 and 1")
         questions = tuple(dict.fromkeys(questions))
@@ -285,11 +289,23 @@ class Index:
             ) for vector in vectors
         ])
         merged = {}
+        reserved = set()
         for batch in batches:
+            if preserve_top_five:
+                reserved.update(point.id for point in batch.points[:5])
             for point in batch.points:
                 if point.id not in merged or point.score > merged[point.id].score:
                     merged[point.id] = point
-        points = sorted(merged.values(), key=lambda p: (-p.score, str(p.id)))[:top_k]
+        ordered = sorted(merged.values(), key=lambda p: (-p.score, str(p.id)))
+        # At most three branches reserve <=15 unique chunks. Fill the remaining
+        # slots by the previous maximum-cosine order, then retain that order for
+        # deterministic ties and the oversized-pair dense fallback.
+        selected = reserved
+        for point in ordered:
+            if len(selected) >= top_k:
+                break
+            selected.add(point.id)
+        points = [point for point in ordered if point.id in selected]
         return [SearchHit(Document(page_content=p.payload["text"],
                                    metadata=p.payload["metadata"]), p.score) for p in points]
 

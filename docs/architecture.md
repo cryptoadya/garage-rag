@@ -120,13 +120,16 @@ behavior. Translation requests include only the question and target languages.
 
 `Index.search_many` runs at most three queries in one active-filtered Qdrant batch.
 Duplicate chunks retain maximum raw cosine score. Expanded multi-language corpora
-then rerank at most 20 candidates with the already pinned local mMARCO MiniLM
-cross-encoder. Each intact passage uses prepared questions in its observed
+reserve each query's first five hits before filling the remaining pool slots by
+maximum cosine, then rerank at most 20 candidates with the already pinned local
+mMARCO MiniLM cross-encoder. Each intact passage uses prepared questions in its observed
 language(s); uncertain passages use the available source-language questions.
 No passage is discarded by language. Keep the best local relevance score per
 candidate, then apply the requested top-k. Raw cosine/min-score eligibility and
 context limits remain unchanged. Mono-language and original-only paths retain
 their previous dense order and do not load the extra model.
+Corpus-language inspection does not build BM25 token statistics; those are built
+only when lexical search is requested and invalidated by active-generation changes.
 
 The local ranker is loaded lazily and reused by the adapter. It scores at most
 20 × 3 pairs and keeps its existing 512-token pair guard. If complete pairs do

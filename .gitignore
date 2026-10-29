@@ -12,6 +12,9 @@
 !/docs/benchmarks/phase2a-baseline.v1.json
 !/docs/benchmarks/phase2a-tire-audit.v1.json
 !/docs/benchmarks/phase2b-results.v1.json
+# Reviewed, source-text-free evidence for the multilingual final audit.
+!/docs/benchmarks/multilingual-c3.v2.json
+!/docs/benchmarks/multilingual-retrieval-performance.v1.json
 __pycache__/
 *.py[cod]
 .DS_Store
