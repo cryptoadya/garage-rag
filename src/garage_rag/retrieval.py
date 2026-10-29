@@ -8,6 +8,7 @@ from langchain_core.documents import Document
 from qdrant_client import models
 
 from .index import COLLECTION, SearchHit
+from .language import LANGUAGES, detect_language
 from .profiles import RERANK_MODEL, RERANK_REVISION
 
 
@@ -66,7 +67,7 @@ class Retriever:
         m = hit.document.metadata
         return (m["content_sha256"], m["document"], m["pdf_page"], m["chunk_index"])
 
-    def _lexical(self, question):
+    def _load_active(self):
         active = tuple(sorted(r["generation"] for r in self.manifest["documents"].values()))
         if active != self._active:
             points = []
@@ -104,6 +105,9 @@ class Retriever:
             self._df = Counter(t for c in self._terms for t in c)
             self._avg = sum(self._lengths) / max(1, len(points))
             self._active = active
+
+    def _lexical(self, question):
+        self._load_active()
         scores = []
         query_terms = sorted(set(tokens(question)))
         for hit, terms, length in zip(self._hits, self._terms, self._lengths, strict=True):
@@ -156,3 +160,46 @@ class Retriever:
             raise ValueError("Invalid reranker scores")
         hits = [SearchHit(h.document, float(s)) for h, s in zip(dense, values, strict=True)]
         return sorted(hits, key=lambda h: (-h.score, self.key(h)))[:top_k]
+
+
+def passage_languages(texts):
+    """Conservative local hints from actual text, including mixed passages.
+
+    Metadata is not authoritative. Short/ambiguous segments add no language.
+    These hints choose query expansion, never filter or alter source evidence.
+    """
+    found = set()
+    for text in texts:
+        # Prefer substantive sentences/lines over copyright names and short labels.
+        segments = [s for s in re.split(r"[\n.!?]+", text)
+                    if len(re.findall(r"[^\W_]+", s)) >= 6]
+        languages = {detect_language(s) for s in segments} - {None}
+        if not languages:
+            languages = {detect_language(text)} - {None}
+        found.update(languages)
+        if len(found) == len(LANGUAGES):
+            break
+    return tuple(sorted(found))
+
+
+class AnswerSearch(Retriever):
+    """Original or <=3 dense queries in one local batch, with maximum cosine merge."""
+
+    def __init__(self, index, embeddings, min_score=None):
+        super().__init__(index)
+        self.embeddings = embeddings
+        self.min_score = min_score
+        self._language_generation = None
+
+    @property
+    def source_languages(self):
+        self._load_active()
+        if self._language_generation != self._active:
+            self._languages = passage_languages(h.document.page_content for h in self._hits)
+            self._language_generation = self._active
+        return self._languages
+
+    def __call__(self, queries, top_k):
+        if isinstance(queries, str):
+            return self.index.search(queries, self.embeddings, top_k, self.min_score)
+        return self.index.search_many(queries, self.embeddings, top_k, self.min_score)

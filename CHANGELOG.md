@@ -7,10 +7,13 @@ is available in [Git commits](https://github.com/cryptoadya/garage-rag/commits/m
 
 ### Fixed
 
-- Search EN/DE/RU and mixed-language PDFs with the original question through the
-  existing multilingual embeddings. Remove the automatic English translation and
-  its extra Groq call; legacy translation settings remain accepted without rewriting.
-  Existing indexes, metadata and embedding fingerprints require no migration.
+- Retain the original EN/DE/RU search query and add translations into missing
+  source languages in at most one metered Groq call, based on locally inferred
+  passage languages. Same-language questions need no translation. One bounded
+  Qdrant batch merges at most three queries by maximum cosine without changing
+  old index manifests, vectors or embedding fingerprints. Keep the existing
+  translation opt-out and validation/quota/no-retry guards. A matched 42-question
+  BMW comparison restores English-query hit@5 from 21/42 original-only to 40/42.
 - Copy citations in each passage's original language independently of question and
   answer language. Remove English-only assumptions from writer and Agentic search
   guidance while retaining citation, language, numeric, audit and Groq quota guards.

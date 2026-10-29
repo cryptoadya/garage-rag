@@ -17,6 +17,7 @@ from .generation import GenerationError, make_llm
 from .index import Index
 from .ingestion import PDFValidationError
 from .profiles import profile_config
+from .retrieval import AnswerSearch
 from .workflow import WorkflowLimits
 
 
@@ -192,8 +193,7 @@ def main(argv=None):
                             print("No matching passages in the active index.")
                 else:
 
-                    def search(query, k):
-                        return index.search(query, embeddings, k, args.min_score)
+                    search = AnswerSearch(index, embeddings, args.min_score)
 
                     if args.workflow == "agentic":
                         print(
@@ -213,12 +213,15 @@ def main(argv=None):
                             allow_lexical=args.min_score is None,
                         )
                     else:
+                        source_languages = search.source_languages if translate_queries else ()
                         answer_calls = 1 if args.workflow == "direct" else limits.max_llm_calls
                         search_calls = 1 if args.workflow == "direct" else limits.max_searches
                         print(
                             f"{args.workflow.title()} answering: at most {answer_calls} "
                             "completion attempts "
-                            f"and {search_calls} local searches"
+                            f"and {search_calls} local search batches"
+                            + (" plus at most one source-language expansion"
+                               if translate_queries else "")
                             + "; no automatic API retries.",
                             file=sys.stderr,
                         )
@@ -231,6 +234,7 @@ def main(argv=None):
                             answer_language=args.answer_language,
                             limits=limits if args.workflow == "grounded" else None,
                             translate_query=translate_queries,
+                            source_languages=source_languages,
                         )
                     if run.error:
                         raise GenerationError(

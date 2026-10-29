@@ -22,11 +22,15 @@ weights and live API calls. Qdrant persistence/retrieval and LangGraph execution
 are real; model responses and HTTP transports are controlled fixtures.
 Production-entry tests cover unchanged EN/DE/RU search queries, reopened legacy
 indexes, original question/answer language, call/token telemetry and legacy
-translation settings. Language-combination tests cover EN/DE/RU and mixed source
+translation settings. Expansion tests cover same-language zero-call behavior,
+actual-text language hints/cache invalidation, maximum-cosine batch merging and
+strict translation validation. Language-combination tests cover EN/DE/RU and mixed source
 passages in all three workflows, plus rejection of translated/invented quotes,
 wrong sources/pages and unsupported numeric claims. Groq HTTP transport fixtures
 also cover German and Russian evidence. These offline checks do not establish
-live provider answer quality or multilingual retrieval recall.
+live provider answer quality or general multilingual retrieval recall. See the
+[matched real BMW retrieval comparison](benchmarks/multilingual-ru-en.md) for the
+measured RU→EN regression and corrected rankings.
 
 If the checkout contains private historical graph captures, their replay also
 requires the pinned Groq tokenizer in the local cache. Set

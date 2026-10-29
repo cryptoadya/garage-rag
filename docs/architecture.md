@@ -103,16 +103,31 @@ command and no planner, query rewriting, tools, conversation memory, checkpointe
 or remote graph service. Evaluation checkpoints are separate from graph state.
 
 Production CLI/API Direct/Grounded entry points wrap these primitives in
-`answering.run_answer`. The original question is used for multilingual retrieval,
-writing and auditing, including retrieval expansion. Source language metadata is
-optional descriptive data, not a query-routing rule. Existing manifests, vectors,
-embedding profiles, prefixes and fingerprints are unchanged, so old indexes need
-no migration. The legacy `GARAGE_RAG_TRANSLATE_QUERY` boolean and Python
-`translate_query` argument remain accepted but cannot enable English rewriting.
-No translation completion, retry or fallback is added. Writers copy evidence in
-its source language while writing claims in the requested answer language.
-Agentic dense search starts from the original question; reformulation and BM25
-use terms/languages observed in passages, without assuming English sources.
+`answering.run_answer` and `retrieval.AnswerSearch`. Original questions always
+reach the writer/auditor. The adapter caches supported languages inferred locally
+from active passage text, including mixed passages; metadata is not authoritative.
+Substantive lines/sentences take precedence over short labels. If none can be
+classified, the full chunk is the fallback. The cache keys on active generations.
+These are hints, not guaranteed language labels or evidence filters.
+
+When source hints include languages other than the detected question language,
+`expand_queries` makes one metered Groq request for all missing languages (at most
+two), preserving numbers, identifiers and the original question. Same-language,
+unknown/empty corpora and ambiguous questions add no request. Malformed/truncated
+translations stop without retry/fallback. `GARAGE_RAG_TRANSLATE_QUERY=false`
+disables expansion; low-level callers without source hints retain original-only
+behavior. Translation requests include only the question and target languages.
+
+`Index.search_many` runs at most three queries in one active-filtered Qdrant batch.
+Duplicate chunks retain maximum raw cosine score, with unchanged top-k, threshold
+and context limits. One `search_calls` unit is one retrieval batch, not one vector;
+Grounded's two rounds therefore allow at most six bounded vector queries. Recovery
+reuses translations. The [matched BMW comparison](benchmarks/multilingual-ru-en.md)
+records the original-only regression and the restored English-query results.
+No source language fields, embedding profiles/prefixes, manifest fingerprints or
+stored vectors change. Old indexes need no migration. Writers quote the actual
+source language and write claims in the requested answer language. Agentic keeps
+its existing autonomous search budget and uses observed source-language terms.
 
 ## Agentic retrieval (Phase 4A)
 
@@ -273,7 +288,8 @@ routes from live decisions, failures and separately reviewed answers.
 
 | Setting | Default / bound |
 | --- | --- |
-| Direct | One search, at most one answer completion |
+| Direct | One search batch, at most one answer completion |
+| Cross-language expansion | At most one additional completion; none for same-language/unknown corpora |
 | Grounded `--max-llm-calls` | 4, configurable 1–4 attempted completions including audits |
 | Grounded `--max-searches` | 2, configurable 1–2 local searches |
 | Graph recursion limit | 16, fixed safety net; normal longest path is seven nodes |
@@ -285,7 +301,8 @@ A draft reserves budget for its mandatory audit. A one-call grounded budget
 therefore refuses without a completion. Normal acceptance uses two calls;
 recovery after draft refusal uses at most three, after audit insufficiency at
 most four. Direct mode ignores grounded budget flags. The default worst-case
-answer-completion allowance is 8,192 Groq tokens across four calls for all languages.
+answer-completion allowance is 8,192 Groq tokens across four calls; source-language
+expansion can add 2,048 tokens in one request, for 10,240 across five calls.
 
 Timeouts are HTTPX network-operation/inactivity limits, not whole-call deadlines;
 keepalive traffic or local loading/search can extend wall time. Provider/local

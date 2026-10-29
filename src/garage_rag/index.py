@@ -254,6 +254,45 @@ class Index:
             for point in result.points
         ]
 
+    def search_many(self, questions, embeddings, top_k=5, min_score=None):
+        """One bounded Qdrant batch; merge duplicate chunks by maximum cosine.
+
+        All branches use the same embedding profile and active generation filter.
+        Scores remain raw cosine; no language dictionary or index migration.
+        """
+        if not isinstance(questions, (tuple, list)) or not 1 <= len(questions) <= 3:
+            raise ValueError("Supply between one and three search queries")
+        if any(not isinstance(q, str) or not q.strip() or len(q) > 4000 for q in questions):
+            raise ValueError("Question must contain 1–4000 characters")
+        if type(top_k) is not int or not 1 <= top_k <= 20:
+            raise ValueError("top_k must be between 1 and 20")
+        if min_score is not None and not -1 <= min_score <= 1:
+            raise ValueError("min_score must be between -1 and 1")
+        questions = tuple(dict.fromkeys(questions))
+        if len(questions) == 1:
+            return self.search(questions[0], embeddings, top_k, min_score)
+        active = [r["generation"] for r in self.manifest["documents"].values()]
+        if not active:
+            return []
+        vectors = [embeddings.embed_query(q) for q in questions]
+        self._validate_vectors(vectors, len(questions))
+        batches = self.client.query_batch_points(COLLECTION, requests=[
+            models.QueryRequest(
+                query=vector, limit=top_k, score_threshold=min_score, with_payload=True,
+                filter=models.Filter(must=[models.FieldCondition(
+                    key="generation", match=models.MatchAny(any=active),
+                )]),
+            ) for vector in vectors
+        ])
+        merged = {}
+        for batch in batches:
+            for point in batch.points:
+                if point.id not in merged or point.score > merged[point.id].score:
+                    merged[point.id] = point
+        points = sorted(merged.values(), key=lambda p: (-p.score, str(p.id)))[:top_k]
+        return [SearchHit(Document(page_content=p.payload["text"],
+                                   metadata=p.payload["metadata"]), p.score) for p in points]
+
     def stats(self):
         documents = self.manifest["documents"]
         return {

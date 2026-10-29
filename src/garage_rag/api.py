@@ -25,6 +25,7 @@ from .generation import make_llm
 from .index import Index
 from .ingestion import PDFValidationError
 from .profiles import profile_config
+from .retrieval import AnswerSearch
 from .workflow import WorkflowResult
 
 MAX_PDF_BYTES = 50 * 1024 * 1024
@@ -124,13 +125,13 @@ def create_app(
     """Uvicorn factory; importing this module opens no storage or provider client."""
     busy = Lock()
     ready = False
-    index = embeddings = llm = None
+    index = embeddings = llm = answer_search = None
     pdf_root = None
     translate_queries = False
 
     @asynccontextmanager
     async def lifespan(app):
-        nonlocal ready, index, embeddings, llm, pdf_root, translate_queries
+        nonlocal ready, index, embeddings, llm, pdf_root, translate_queries, answer_search
         resources = ExitStack()
         try:
             # Match CLI privacy/cache settings; only read the explicit local .env.
@@ -157,6 +158,7 @@ def create_app(
             resources.callback(llm.client.__exit__, None, None, None)
             index = resources.enter_context(Index(directory, settings, allow_cross_thread=True))
             embeddings = E5Embeddings(settings, device)
+            answer_search = AnswerSearch(index, embeddings)
         except Exception:
             try:
                 resources.close()
@@ -175,7 +177,7 @@ def create_app(
             except Exception:
                 raise RuntimeError("RAG resource cleanup failed.") from None
             finally:
-                index = embeddings = llm = None
+                index = embeddings = llm = answer_search = None
 
     app = FastAPI(title="GarageRAG", lifespan=lifespan)
 
@@ -344,11 +346,12 @@ def create_app(
             try:
                 run = run_answer(
                     request.question,
-                    lambda query, k: index.search(query, embeddings, k),
+                    answer_search,
                     llm,
                     mode=request.mode,
                     answer_language=request.language,
                     translate_query=translate_queries,
+                    source_languages=answer_search.source_languages if translate_queries else (),
                 )
                 result = run.public_dict()
                 result["claims"] = structured_claims(run)

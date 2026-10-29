@@ -198,6 +198,12 @@ def test_source_question_and_answer_languages_are_independent(
     if mode == "agentic":
         responses.insert(0, control())
         responses.insert(0, tool(query=QUESTIONS[question_language], top_k=1))
+    targets = sorted(set(source_languages) - {question_language})
+    expanded = mode != "agentic" and bool(targets)
+    if expanded:
+        responses.insert(0, reply({"queries": [
+            {"language": lang, "query": QUESTIONS[lang]} for lang in targets
+        ]}))
     model = WorkflowModel(*responses)
     queries = []
     def search(*args):
@@ -209,14 +215,18 @@ def test_source_question_and_answer_languages_are_independent(
                              answer_language=answer_language, top_k=1)
     else:
         result = run_answer(QUESTIONS[question_language], search, model, mode=mode,
-                            answer_language=answer_language, top_k=1)
+                            answer_language=answer_language, top_k=1,
+                            source_languages=source_languages)
     assert result.answer.supported, result.answer.reason
     assert result.answer.language == answer_language
     assert CLAIMS[answer_language] in result.answer.text
     assert f'"{quote}"' in result.answer.text
     assert "mehrsprachig.pdf, PDF page 7" in result.answer.text
-    assert queries == [QUESTIONS[question_language]]
-    assert result.trace.llm_calls == {"direct": 1, "grounded": 2, "agentic": 4}[mode]
+    assert queries == [
+        (QUESTIONS[question_language], *(QUESTIONS[lang] for lang in targets))
+        if expanded else QUESTIONS[question_language]
+    ]
+    assert result.trace.llm_calls == {"direct": 1, "grounded": 2, "agentic": 4}[mode] + expanded
 
 
 @pytest.mark.parametrize("source_language", ["de", "ru"])

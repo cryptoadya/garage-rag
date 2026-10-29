@@ -697,3 +697,36 @@ def test_agentic_groq_structured_loop_changes_strategy_from_local_evidence(
         else [("dense", "Reifendruck prüfen")]
     )
     assert all("models" not in r and r["model"] == "openai/gpt-oss-120b" for r in requests)
+
+
+def test_groq_cross_language_expansion_shares_transport_and_usage(monkeypatch):
+    from test_multilingual import CLAIMS, QUESTIONS
+    from test_workflow import draft, hit
+
+    from garage_rag.answering import run_answer
+
+    requests, queries = [], []
+    def transport(request):
+        body = json.loads(request.content)
+        requests.append(body)
+        data = json.loads(body['messages'][1]['content'])
+        if 'languages' in data:
+            assert data == {'question': QUESTIONS['en'], 'languages': ['ru']}
+            value = {'queries': [{'language': 'ru', 'query': QUESTIONS['ru']}]}
+        else:
+            assert data['question'] == QUESTIONS['en']
+            value = draft(CLAIMS['de'], CLAIMS['ru'])
+        return success(json.dumps(value, ensure_ascii=False))
+    llm = model(monkeypatch, transport)
+    with llm.client:
+        result = run_answer(
+            QUESTIONS['en'], lambda q, k: queries.append(q) or [hit(CLAIMS['ru'])], llm,
+            mode='direct', answer_language='de', source_languages=('ru',),
+        )
+    assert result.answer.supported
+    assert result.answer.language == 'de'
+    assert queries == [(QUESTIONS['en'], QUESTIONS['ru'])]
+    assert len(requests) == result.trace.llm_calls == result.trace.llm_call_limit == 2
+    assert result.trace.input_tokens == 40
+    assert result.trace.output_tokens == 60
+    assert result.trace.public_dict()['token_usage_complete']

@@ -117,6 +117,16 @@ def test_production_entry_preserves_russian_search(
     def russian_model(**kwargs):
         model = make(**kwargs)
         model.claim = "Проверяйте давление на холодных шинах."
+        invoke = model.invoke
+        def expanded(messages):
+            payload = json.loads(messages[1].content)
+            if set(payload) == {"question", "languages"}:
+                assert payload["languages"] == ["en"]
+                return SimpleNamespace(content=json.dumps({"queries": [
+                    {"language": "en", "query": "How do I check tires?"},
+                ]}))
+            return invoke(messages)
+        model.invoke = expanded
         return model
 
     from garage_rag import api
@@ -143,10 +153,14 @@ def test_production_entry_preserves_russian_search(
         assert cli.main(["--index-dir", str(setup.directory), "ask", "Как проверить шины?",
                          "--workflow", "direct", "--json"]) == 0
         result = json.loads(capsys.readouterr().out)
-    assert queries == ["Как проверить шины?"]
+    expanded = translation_setting != "false"
+    assert queries == (["Как проверить шины?", "How do I check tires?"]
+                       if expanded else ["Как проверить шины?"])
     assert result["supported"]
     assert result["language"] == "ru"
-    assert result["workflow"]["llm_calls"] == result["workflow"]["llm_call_limit"] == 1
+    assert result["workflow"]["llm_calls"] == result["workflow"]["llm_call_limit"] == (
+        2 if expanded else 1
+    )
 
 
 @pytest.mark.parametrize("mode", ["direct", "grounded"])

@@ -89,14 +89,14 @@ def test_empty_retrieval_needs_no_provider_call(question):
 
 
 @pytest.mark.parametrize("setting", [None, "true", "false"])
-def test_legacy_translation_setting_never_enables_english_rewriting(monkeypatch, setting):
+def test_translation_setting_controls_source_aware_expansion(monkeypatch, setting):
     from garage_rag.answering import query_translation_enabled
 
     if setting is None:
         monkeypatch.delenv("GARAGE_RAG_TRANSLATE_QUERY", raising=False)
     else:
         monkeypatch.setenv("GARAGE_RAG_TRANSLATE_QUERY", setting)
-    assert not query_translation_enabled()
+    assert query_translation_enabled() == (setting != "false")
 
 
 def test_translation_setting_rejects_typos(monkeypatch):
