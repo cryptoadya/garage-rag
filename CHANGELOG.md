@@ -47,6 +47,16 @@ is available in [Git commits](https://github.com/cryptoadya/garage-rag/commits/m
 
 ### Fixed
 
+- Render supported web answers once from structured claims, with compact PDF-page
+  links and grouped, collapsible evidence. Keep full filenames and verbatim quotes
+  in source details instead of duplicating the answer and inline citation text.
+- Direct/Grounded CLI/API questions in Russian/German first translate the search
+  query to English, addressing cross-language retrieval misses in English manuals.
+  Preserve the original question, answer language, citation checks and answer
+  budgets; account for one additional bounded Groq attempt in workflow telemetry.
+  Reject invalid translations without retry/fallback. Local CLI search and
+  historical evaluation primitives remain unchanged; translation can be disabled
+  with `GARAGE_RAG_TRANSLATE_QUERY=false`.
 - PDF uploads distinguish invalid source PDFs (422) from local indexing and
   embedding validation failures (500), retaining existing CLI PDF diagnostics.
 - Local web UI text contrast for hints, source metadata, loading and refusal states.

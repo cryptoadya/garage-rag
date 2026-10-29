@@ -18,13 +18,14 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from pypdf.errors import PdfReadError
 from starlette.concurrency import run_in_threadpool
 
+from .answering import query_translation_enabled, run_answer
 from .config import IndexConfig
 from .embeddings import E5Embeddings
 from .generation import make_llm
 from .index import Index
 from .ingestion import PDFValidationError
 from .profiles import profile_config
-from .workflow import WorkflowResult, run_direct, run_workflow
+from .workflow import WorkflowResult
 
 MAX_PDF_BYTES = 50 * 1024 * 1024
 
@@ -125,14 +126,16 @@ def create_app(
     ready = False
     index = embeddings = llm = None
     pdf_root = None
+    translate_queries = True
 
     @asynccontextmanager
     async def lifespan(app):
-        nonlocal ready, index, embeddings, llm, pdf_root
+        nonlocal ready, index, embeddings, llm, pdf_root, translate_queries
         resources = ExitStack()
         try:
             # Match CLI privacy/cache settings; only read the explicit local .env.
             load_dotenv(Path.cwd() / ".env", override=False)
+            translate_queries = query_translation_enabled()
             os.environ["LANGSMITH_TRACING"] = "false"
             os.environ["LANGCHAIN_TRACING_V2"] = "false"
             os.environ.setdefault("HF_HUB_DISABLE_TELEMETRY", "1")
@@ -339,12 +342,13 @@ def create_app(
             raise HTTPException(503, "Server is busy.", headers={"Retry-After": "1"})
         try:
             try:
-                runner = run_direct if request.mode == "direct" else run_workflow
-                run = runner(
+                run = run_answer(
                     request.question,
-                    lambda k: index.search(request.question, embeddings, k),
+                    lambda query, k: index.search(query, embeddings, k),
                     llm,
+                    mode=request.mode,
                     answer_language=request.language,
+                    translate_query=translate_queries,
                 )
                 result = run.public_dict()
                 result["claims"] = structured_claims(run)

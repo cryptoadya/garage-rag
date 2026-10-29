@@ -79,18 +79,20 @@ h3 { font-size: 18px; font-weight: 500; letter-spacing: -0.4px; margin: 0 0 10px
 .result-meta { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 9px; font-size: 10px; color: var(--text-muted); margin-bottom: 24px; }
 .answer-badge, .refusal-badge { border-radius: 4px; padding: 4px 8px; background: #e9f0e3; color: #55704b; }
 .refusal-badge { background: #f3eadb; color: #795a35; }
-.answer-text { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 14px; line-height: 1.9; color: #374c40; }
-.sources { border-top: 1px solid #e2e8dc; margin-top: 32px; padding-top: 22px; }
-.sources h3 { font-size: 12px; font-weight: 600; }
-.sources h3 span { font-size: 10px; color: var(--text-muted); padding-left: 6px; }
-.sources ol { list-style: none; padding: 0; margin: 15px 0 0; }
-.sources li { display: flex; gap: 13px; border: 1px solid #e1e7db; border-radius: 6px; padding: 12px; margin-top: 8px; scroll-margin-top: 24px; }
-.source-number { color: var(--text-muted); font-size: 10px; padding-top: 2px; }
-.sources li div { min-width: 0; }
-.sources li p { font-size: 12px; font-weight: 500; margin: 0; overflow-wrap: anywhere; }
-.sources li div > span { font-size: 10px; color: var(--text-muted); }
-.citation { margin-top: 12px; }
-.citation blockquote { margin: 6px 0 0; border-left: 2px solid #9bb898; padding-left: 10px; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; line-height: 1.7; }
+.answer-text { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 15px; line-height: 1.85; color: #374c40; }
+.answer-claim + .answer-claim { margin-top: 22px; }
+.answer-claim p { margin: 0 0 8px; }
+.claim-references { display: flex; flex-wrap: wrap; gap: 6px; }
+.sources { border-top: 1px solid #e2e8dc; margin-top: 26px; padding-top: 16px; }
+.sources summary { cursor: pointer; width: fit-content; font-size: 12px; font-weight: 550; color: #52634f; padding: 5px 0; }
+.sources summary > span { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 4px; background: #edf1e8; font-size: 11px; font-variant-numeric: tabular-nums; }
+.source-pages { margin-top: 12px; }
+.source-page { border: 1px solid #e1e7db; background: #f7f9f4; border-radius: 8px; padding: 14px; }
+.source-page + .source-page { margin-top: 10px; }
+.source-page-heading { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; font-size: 11px; }
+.source-page-heading > span:first-child { font-weight: 600; white-space: nowrap; }
+.source-document { color: var(--text-muted); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.source-page blockquote { margin: 12px 0 0; border-left: 2px solid #9bb898; padding-left: 12px; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; line-height: 1.75; }
 .source-note { font-size: 10px; color: var(--text-muted); line-height: 1.7; }
 .refusal-reason { font-size: 11px; color: #75634a; overflow-wrap: anywhere; }
 .site-footer { display: flex; justify-content: space-between; gap: 20px; margin: 24px 0 40px; color: var(--text-muted); font-size: 10px; }
@@ -133,7 +135,8 @@ h3 { font-size: 18px; font-weight: 500; letter-spacing: -0.4px; margin: 0 0 10px
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
 
-.citation-link { background: transparent; border: 0; color: #224b3f; text-decoration: underline; padding: 4px 0; font-size: 12px; }
+.citation-link { display: inline-flex; align-items: center; gap: 5px; background: #edf3e9; border: 1px solid #dae5d4; border-radius: 5px; color: #224b3f; padding: 3px 8px; font-size: 11px; line-height: 1.6; font-weight: 550; font-variant-numeric: tabular-nums; }
+.citation-link:hover { background: #e0eadb; border-color: #b8ccb0; }
 .pdf-viewer { width: min(1100px, 96vw); max-width: 96vw; height: 92dvh; max-height: 96dvh; border: 1px solid #d5dfd2; border-radius: 12px; padding: 20px; color: #253d36; background: #fdfefb; }
 .pdf-viewer::backdrop { background: #152c2477; }
 .pdf-viewer[open] { display: flex; flex-direction: column; gap: 14px; }

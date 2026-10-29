@@ -6,7 +6,8 @@ import pytest
 from garage_rag.cli import main
 
 
-def test_missing_index_is_reported_without_creating_one(tmp_path, capsys):
+def test_missing_index_is_reported_without_creating_one(tmp_path, capsys, monkeypatch):
+    monkeypatch.setattr("garage_rag.cli.load_dotenv", lambda *a, **kw: None)
     directory = tmp_path / "missing"
     assert main(["--index-dir", str(directory), "stats"]) == 2
     assert not directory.exists()
@@ -122,8 +123,10 @@ def test_ask_language_through_cli(
             }
         ],
     }
-    llm = SimpleNamespace(
-        invoke=lambda messages: SimpleNamespace(
+    def invoke(messages):
+        if json.loads(messages[1].content).keys() == {"question"}:
+            return SimpleNamespace(content=json.dumps({"query": "How do I check tire pressure?"}))
+        return SimpleNamespace(
             content=json.dumps(
                 response
                 if "evidence auditor" not in messages[0].content
@@ -141,10 +144,14 @@ def test_ask_language_through_cli(
                 }
             ),
             response_metadata={"finish_reason": "length" if truncated else "stop"},
-        ),
+        )
+
+    llm = SimpleNamespace(
+        invoke=invoke,
         client=SimpleNamespace(__exit__=lambda *a: None),
     )
     monkeypatch.setattr("garage_rag.cli.load_dotenv", lambda *a, **kw: None)
+    monkeypatch.setenv("GARAGE_RAG_TRANSLATE_QUERY", "true")
     monkeypatch.setattr("garage_rag.cli.make_llm", lambda **kw: llm)
     monkeypatch.setattr("garage_rag.cli.IndexConfig", lambda **kw: config)
     monkeypatch.setattr("garage_rag.cli.E5Embeddings", lambda *a, **kw: embeddings)

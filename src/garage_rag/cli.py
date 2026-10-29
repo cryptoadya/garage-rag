@@ -10,13 +10,14 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 from .agentic import AgenticLimits, LocalSearch, run_agentic
+from .answering import query_translation_enabled, run_answer
 from .config import IndexConfig
 from .embeddings import E5Embeddings
 from .generation import GenerationError, make_llm
 from .index import Index
 from .ingestion import PDFValidationError
 from .profiles import profile_config
-from .workflow import WorkflowLimits, run_direct, run_workflow
+from .workflow import WorkflowLimits
 
 
 def parser():
@@ -128,6 +129,7 @@ def main(argv=None):
             raise ValueError("No index found; run garage-rag index first")
         # Validate mode-specific caps before provider construction or local loading.
         if args.command == "ask":
+            translate_queries = query_translation_enabled()
             args.provider = args.provider or os.environ.get("GARAGE_RAG_PROVIDER", "groq")
             if args.workflow == "agentic":
                 limits = AgenticLimits(
@@ -190,8 +192,8 @@ def main(argv=None):
                             print("No matching passages in the active index.")
                 else:
 
-                    def search(k):
-                        return index.search(args.question, embeddings, k, args.min_score)
+                    def search(query, k):
+                        return index.search(query, embeddings, k, args.min_score)
 
                     if args.workflow == "agentic":
                         print(
@@ -210,28 +212,26 @@ def main(argv=None):
                             limits=limits,
                             allow_lexical=args.min_score is None,
                         )
-                    elif args.workflow == "direct":
-                        run = run_direct(
-                            args.question,
-                            search,
-                            llm,
-                            top_k=args.top_k,
-                            answer_language=args.answer_language,
-                        )
                     else:
+                        answer_calls = 1 if args.workflow == "direct" else limits.max_llm_calls
+                        search_calls = 1 if args.workflow == "direct" else limits.max_searches
                         print(
-                            f"Grounded answering: at most {limits.max_llm_calls} "
+                            f"{args.workflow.title()} answering: at most {answer_calls} "
                             "completion attempts "
-                            f"and {limits.max_searches} local searches; no automatic API retries.",
+                            f"and {search_calls} local searches"
+                            + (" plus one RU/DE query translation" if translate_queries else "")
+                            + "; no automatic API retries.",
                             file=sys.stderr,
                         )
-                        run = run_workflow(
+                        run = run_answer(
                             args.question,
                             search,
                             llm,
+                            mode=args.workflow,
                             top_k=args.top_k,
                             answer_language=args.answer_language,
-                            limits=limits,
+                            limits=limits if args.workflow == "grounded" else None,
+                            translate_query=translate_queries,
                         )
                     if run.error:
                         raise GenerationError(

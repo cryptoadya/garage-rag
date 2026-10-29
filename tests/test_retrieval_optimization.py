@@ -215,6 +215,7 @@ def test_selected_profile_ask_preserves_language_and_verified_citations(
         client=SimpleNamespace(__exit__=lambda *a: None),
     )
     monkeypatch.setattr("garage_rag.cli.load_dotenv", lambda *a, **kw: None)
+    monkeypatch.setenv("GARAGE_RAG_TRANSLATE_QUERY", "false")
     monkeypatch.setattr("garage_rag.cli.profile_config", lambda *a, **kw: config)
     monkeypatch.setattr("garage_rag.cli.E5Embeddings", lambda *a, **kw: embeddings)
     monkeypatch.setattr("garage_rag.cli.make_llm", lambda **kw: llm)

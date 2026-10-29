@@ -20,6 +20,10 @@ Tests generate PDFs from the original fictional [Aurora corpus](../tests/fixture
 A local tokenizer and deterministic vectors avoid private BMW material, downloaded
 weights and live API calls. Qdrant persistence/retrieval and LangGraph execution
 are real; model responses and HTTP transports are controlled fixtures.
+Production-entry tests additionally cover RU/DE query translation, preservation
+of the original question/answer language, combined call/token telemetry, and
+fail-closed malformed/truncated translations. Raw workflow fixtures keep the
+historical no-translation baseline explicit.
 
 If the checkout contains private historical graph captures, their replay also
 requires the pinned Groq tokenizer in the local cache. Set

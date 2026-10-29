@@ -104,7 +104,7 @@ export default function App() {
           </section>
 
           <section className="answer-panel" aria-labelledby="answer-heading" aria-busy={loading}>
-            <div className="panel-heading"><span className="step">02</span><h2 id="answer-heading">The answer</h2><span className="panel-tag">WITH SOURCES</span></div>
+            <div className="panel-heading"><span className="step">02</span><h2 id="answer-heading">The answer</h2></div>
 
             {result.status === 'idle' ? (
               <div className="empty-state">

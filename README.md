@@ -65,7 +65,10 @@ garage-rag ask 'How do I check the engine oil level?' --workflow direct
 ```
 
 Grounded is the default, with at most four completion attempts and two local
-searches. Direct uses one completion. For Groq setup, quotas and experimental
+searches. Direct uses one answer completion. Russian/German questions first use
+one additional Groq call to translate only the search query to English; the
+answer keeps the requested language. Set `GARAGE_RAG_TRANSLATE_QUERY=false` to
+disable this step. For Groq setup, quotas and experimental
 Agentic usage, see [providers](docs/providers.md) and [CLI usage](docs/usage.md).
 
 ### HTTP API

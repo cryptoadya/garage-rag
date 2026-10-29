@@ -10,6 +10,13 @@ from garage_rag.telemetry import MeteredLLM, RunTrace
 HTTP_CLIENT = httpx.Client
 
 
+@pytest.fixture(autouse=True)
+def default_byte_accounting(monkeypatch):
+    # Wire/quota fixtures must not inherit the developer's local tokenizer opt-in.
+    # Tokenizer-specific tests override this explicitly below.
+    monkeypatch.setenv("GROQ_TOKEN_ACCOUNTING", "bytes")
+
+
 def model(monkeypatch, handler):
     monkeypatch.setenv("GROQ_FREE_PLAN_CONFIRMED", "true")
     constructor = HTTP_CLIENT
@@ -197,6 +204,7 @@ def test_groq_rejects_unsupported_configuration(monkeypatch, setting, value):
 
 
 def test_quota_preflight_never_sends_oversized_request(monkeypatch):
+    monkeypatch.setenv("GROQ_TOKEN_ACCOUNTING", "bytes")
     requests = []
     llm = model(monkeypatch, lambda r: requests.append(r) or success())
     with llm.client, pytest.raises(GenerationError, match="TPM"):
@@ -465,6 +473,7 @@ def test_native_tools_reject_remote_or_modified_definitions_before_http(monkeypa
 
 
 def test_native_tool_quota_reserves_schema_arguments_and_results(monkeypatch):
+    monkeypatch.setenv("GROQ_TOKEN_ACCOUNTING", "bytes")
     from langchain_core.messages import AIMessage, ToolMessage
 
     from garage_rag.local_tools import TOOLS

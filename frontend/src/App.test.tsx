@@ -59,13 +59,16 @@ describe('Ask your manual', () => {
     });
     const result = await screen.findByRole('region', { name: 'Answer' });
     expect(result).toHaveTextContent('Check the tires when they are cold.');
-    expect(result).toHaveTextContent('"Check tire pressure when the tires are cold."');
     const sources = within(result).getByRole('region', { name: /Sources/ });
-    expect(sources).toHaveTextContent('Check the tires when they are cold.');
+    expect(sources).not.toHaveTextContent(answer.claims[0].text);
     expect(sources).toHaveTextContent('aurora.pdf');
     expect(sources).toHaveTextContent('PDF page 1');
     expect(sources).toHaveTextContent('Check tire pressure when the tires are cold.');
-    expect(result.querySelector('.answer-text')?.textContent).toBe(answer.text);
+    expect(result.querySelector('.answer-claim p')?.textContent).toBe(answer.claims[0].text);
+    expect(within(result).getAllByText(answer.claims[0].text)).toHaveLength(1);
+    expect(result.querySelector('.answer-text')).not.toHaveTextContent('[aurora.pdf');
+    expect(within(result).getByRole('button', { name: 'Open aurora.pdf at PDF page 1' }))
+      .toHaveTextContent('PDF · 1');
   });
 
   it.each(['auto', 'en', 'de', 'ru'])('forwards Direct mode and %s language', async (language) => {
@@ -155,12 +158,12 @@ describe('Ask your manual', () => {
     expect(screen.getByRole('button', { name: 'Ask GarageRAG' })).toBeEnabled();
   });
 
-  it('keeps response markup inert and preserves multiline text and repeated citations', async () => {
+  it('keeps structured markup inert and preserves multiline quotes without repeating evidence', async () => {
     const text = '<script>alert(1)</script>\n[aurora.pdf, PDF page 1] "First line\nsecond line"\n\nAnother claim.\n[aurora.pdf, PDF page 1] "Another quote"';
     const citation = { source_id: 'S1', document: 'manual [EN], <img src=x>.pdf',
       pdf_page: 7, quote: 'First line\nsecond line <script>alert(1)</script>' };
     stubAsk(vi.fn().mockResolvedValue(respond({ ...answer, text, claims: [
-      { text: 'First claim.', citations: [citation, { ...citation, source_id: 'S2',
+      { text: 'First claim.\n<script>alert(1)</script>', citations: [citation, { ...citation, source_id: 'S2',
         document: 'other.pdf', pdf_page: 2, quote: 'Another quote' }] },
       { text: 'Another claim.', citations: [citation] },
     ] })));
@@ -170,17 +173,18 @@ describe('Ask your manual', () => {
     expect(result).toHaveTextContent('<script>alert(1)</script>');
     expect(result.querySelector('script')).toBeNull();
     expect(result.querySelector('img')).toBeNull();
-    expect(result.querySelector('.answer-text')?.textContent).toBe(text);
+    expect(result.querySelector('.answer-text')).toHaveTextContent('First claim.');
+    expect(result.querySelector('.answer-text')).not.toHaveTextContent('[aurora.pdf');
     const sources = within(result).getByRole('region', { name: /Sources/ });
-    const claims = within(sources).getAllByRole('listitem');
-    expect(claims).toHaveLength(2);
-    expect(claims[0]).toHaveTextContent('First claim.');
-    expect(claims[0]).toHaveTextContent('other.pdf');
-    expect(claims[0]).toHaveTextContent('PDF page 2');
-    expect(claims[1]).toHaveTextContent('Another claim.');
-    expect(claims[1]).not.toHaveTextContent('other.pdf');
-    expect(claims[1]).toHaveTextContent('PDF page 7');
-    expect(claims[1].querySelector('blockquote')?.textContent).toBe(citation.quote);
+    const pages = sources.querySelectorAll('.source-page');
+    expect(pages).toHaveLength(2);
+    expect(pages[0]).toHaveTextContent(citation.document);
+    expect(pages[0]).toHaveTextContent('PDF page 7');
+    expect(pages[0].querySelector('blockquote')?.textContent).toBe(citation.quote);
+    expect(pages[1]).toHaveTextContent('other.pdf');
+    expect(pages[1]).toHaveTextContent('PDF page 2');
+    expect(within(result).getAllByText('Another claim.')).toHaveLength(1);
+    expect(sources).not.toHaveTextContent('Another claim.');
     expect(sources).not.toHaveTextContent('aurora.pdf');
   });
 
@@ -245,5 +249,6 @@ it.each([404, 503])('handles PDF HTTP %s without retrying or losing the answer',
   expect(screen.queryByTitle('Original PDF')).not.toBeInTheDocument();
   expect(fetch.mock.calls.filter(([url]) => url.startsWith('/api/documents/pdf?'))).toHaveLength(1);
   await userEvent.click(screen.getByRole('button', { name: 'Close PDF' }));
-  expect(screen.getByRole('region', { name: 'Answer' }).querySelector('.answer-text')?.textContent).toBe(answer.text);
+  expect(screen.getByRole('region', { name: 'Answer' }).querySelector('.answer-claim p')?.textContent)
+    .toBe(answer.claims[0].text);
 });
