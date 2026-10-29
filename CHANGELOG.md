@@ -17,6 +17,13 @@ is available in [Git commits](https://github.com/cryptoadya/garage-rag/commits/m
 - Copy citations in each passage's original language independently of question and
   answer language. Remove English-only assumptions from writer and Agentic search
   guidance while retaining citation, language, numeric, audit and Groq quota guards.
+- Correct mixed-language candidate ordering: reuse the pinned local MiniLM
+  reranker for expanded mixed corpora, with at most 20 intact candidates and
+  source-language questions. Keep monolingual/dense paths, index compatibility,
+  citation checks and Groq call budgets. Preserve dense order for pairs exceeding
+  the local ranker's existing token cap. A real 288-combination EN/DE/RU PDF
+  matrix removes all measured top-five losses of the prior maximum-cosine merge;
+  model weights load lazily and add local compute/memory, without extra Groq calls.
 
 ## [0.5.0] - 2026-10-29
 

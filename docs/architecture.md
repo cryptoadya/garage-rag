@@ -119,8 +119,25 @@ disables expansion; low-level callers without source hints retain original-only
 behavior. Translation requests include only the question and target languages.
 
 `Index.search_many` runs at most three queries in one active-filtered Qdrant batch.
-Duplicate chunks retain maximum raw cosine score, with unchanged top-k, threshold
-and context limits. One `search_calls` unit is one retrieval batch, not one vector;
+Duplicate chunks retain maximum raw cosine score. Expanded multi-language corpora
+then rerank at most 20 candidates with the already pinned local mMARCO MiniLM
+cross-encoder. Each intact passage uses prepared questions in its observed
+language(s); uncertain passages use the available source-language questions.
+No passage is discarded by language. Keep the best local relevance score per
+candidate, then apply the requested top-k. Raw cosine/min-score eligibility and
+context limits remain unchanged. Mono-language and original-only paths retain
+their previous dense order and do not load the extra model.
+
+The local ranker is loaded lazily and reused by the adapter. It scores at most
+20 × 3 pairs and keeps its existing 512-token pair guard. If complete pairs do
+not fit, keep dense ordering; never truncate source/question text for ranking.
+Nonfinite/incomplete scores or other ranking errors stop retrieval safely.
+No Groq attempt, index migration, new dependency or model revision is added;
+this reuses the existing optional experimental reranker, with extra local CPU,
+memory and possibly a first-use weight download. The
+[matched multilingual matrix](benchmarks/multilingual-c3.md) measures its scope.
+
+One `search_calls` unit remains one retrieval batch, not one vector;
 Grounded's two rounds therefore allow at most six bounded vector queries. Recovery
 reuses translations. The [matched BMW comparison](benchmarks/multilingual-ru-en.md)
 records the original-only regression and the restored English-query results.

@@ -36,11 +36,13 @@ class LocalReranker:
             max_length=512,
         )
 
+    def can_score(self, pairs):
+        return all(len(self.model.tokenizer(q, p, truncation=False)["input_ids"]) <= 512
+                   for q, p in pairs)
+
     def predict(self, pairs, **kwargs):
-        for question, passage in pairs:
-            ids = self.model.tokenizer(question, passage, truncation=False)["input_ids"]
-            if len(ids) > 512:
-                raise ValueError("Question and passage exceed the reranker 512-token limit")
+        if not self.can_score(pairs):
+            raise ValueError("Question and passage exceed the reranker 512-token limit")
         return self.model.predict(pairs, **kwargs)
 
 
@@ -182,11 +184,42 @@ def passage_languages(texts):
     return tuple(sorted(found))
 
 
-class AnswerSearch(Retriever):
-    """Original or <=3 dense queries in one local batch, with maximum cosine merge."""
+def rerank_multilingual(hits, queries, source_languages, reranker):
+    """Local relevance ranking with source-language questions; source text stays intact.
 
-    def __init__(self, index, embeddings, min_score=None):
-        super().__init__(index)
+    Cosines from different languages are not calibrated relevance probabilities.
+    Use the existing pinned cross-encoder on <=20 candidates and <=3 questions
+    per candidate, retaining raw dense scores and applying no evidence filter.
+    """
+    native = {detect_language(q): q for q in queries
+              if detect_language(q) in source_languages}
+    fallback = list(native.values()) or list(queries)
+    pairs, owners = [], []
+    for i, hit in enumerate(hits):
+        languages = passage_languages([hit.document.page_content])
+        questions = [native[lang] for lang in languages if lang in native] or fallback
+        for question in questions:
+            pairs.append((question, hit.document.page_content))
+            owners.append(i)
+    # A long but valid dense query must not acquire a smaller input limit here.
+    # Retain complete dense sources if the optional local stage cannot fit them.
+    can_score = getattr(reranker, "can_score", None)
+    if can_score is not None and not can_score(pairs):
+        return hits
+    values = reranker.predict(pairs, batch_size=16, show_progress_bar=False)
+    if len(values) != len(pairs) or not all(math.isfinite(float(v)) for v in values):
+        raise ValueError("Invalid reranker scores")
+    scores = {}
+    for owner, value in zip(owners, values, strict=True):
+        scores[owner] = max(scores.get(owner, -math.inf), float(value))
+    return [hits[i] for i in sorted(scores, key=lambda i: (-scores[i], i))]
+
+
+class AnswerSearch(Retriever):
+    """Bounded dense query batches; locally rerank expanded mixed-language results."""
+
+    def __init__(self, index, embeddings, min_score=None, *, reranker=None):
+        super().__init__(index, reranker=reranker)
         self.embeddings = embeddings
         self.min_score = min_score
         self._language_generation = None
@@ -200,6 +233,15 @@ class AnswerSearch(Retriever):
         return self._languages
 
     def __call__(self, queries, top_k):
+        if type(top_k) is not int or not 1 <= top_k <= 20:
+            raise ValueError("top_k must be between 1 and 20")
         if isinstance(queries, str):
             return self.index.search(queries, self.embeddings, top_k, self.min_score)
-        return self.index.search_many(queries, self.embeddings, top_k, self.min_score)
+        mixed = len(queries) > 1 and len(self.source_languages) > 1
+        hits = self.index.search_many(queries, self.embeddings,
+                                      20 if mixed else top_k, self.min_score)
+        if mixed and hits:
+            if self.reranker is None:
+                self.reranker = LocalReranker()
+            hits = rerank_multilingual(hits, queries, self.source_languages, self.reranker)
+        return hits[:top_k]

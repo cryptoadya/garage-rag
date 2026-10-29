@@ -69,7 +69,10 @@ search batches. Direct uses one answer completion. Both retain the original
 question. If local source text indicates another language, one Groq call adds
 translations into those corpus languages (at most two); same-language questions
 need none. Each retrieval round merges at most three dense queries in one local
-batch. Claims use the requested answer language; quotes keep the source language.
+batch. Expanded mixed-language results also use the existing pinned local MiniLM
+reranker over at most 20 candidates; its weights load on the first mixed answer.
+This adds local CPU/memory use and may download cached weights, without another
+Groq call. Claims use the requested answer language; quotes keep the source language.
 Existing indexes need no reindexing. For Groq setup, quotas and experimental
 Agentic usage, see [providers](docs/providers.md) and [CLI usage](docs/usage.md).
 

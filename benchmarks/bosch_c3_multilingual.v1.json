@@ -1,0 +1,378 @@
+{
+  "schema_version": 1,
+  "source": {
+    "url": "https://images-eu.ssl-images-amazon.com/images/I/D1FMkfX7UqS.pdf",
+    "sha256": "815fa55ce112b1813dae37c2ae72742660310bfb1b5b37125adf6d2e45aac99e",
+    "pages": 214,
+    "publisher": "Robert Bosch GmbH",
+    "edition": "C3, 12.2011",
+    "sections": {
+      "de": [
+        3,
+        12
+      ],
+      "en": [
+        13,
+        22
+      ],
+      "ru": [
+        183,
+        192
+      ]
+    }
+  },
+  "review": "Agent-authored questions and evidence anchors checked against original multilingual source, not retrieval candidates; no independent human gold. Anchors define retrieval evidence chunks, not complete answer certification.",
+  "cases": [
+    {
+      "id": "connection",
+      "questions": {
+        "en": "When should the C3 mains power cord be connected relative to the battery terminals?",
+        "de": "Wann wird beim C3 das Netzkabel im Verhältnis zu den Batterieklemmen angeschlossen?",
+        "ru": "Когда следует подключать сетевой кабель C3 относительно подключения клемм аккумулятора?"
+      },
+      "evidence": {
+        "de": {
+          "original_pdf_page": 9,
+          "all_anchors": [
+            "erst dann"
+          ]
+        },
+        "en": {
+          "original_pdf_page": 19,
+          "all_anchors": [
+            "Only then"
+          ]
+        },
+        "ru": {
+          "original_pdf_page": 189,
+          "all_anchors": [
+            "Только после этого"
+          ]
+        }
+      }
+    },
+    {
+      "id": "disconnect",
+      "questions": {
+        "en": "What should be disconnected first when removing the C3 charger from the battery?",
+        "de": "Was muss beim Trennen des C3 Ladegeräts von der Batterie zuerst abgezogen werden?",
+        "ru": "Что нужно отсоединить первым при отключении зарядного устройства C3 от аккумулятора?"
+      },
+      "evidence": {
+        "de": {
+          "original_pdf_page": 9,
+          "all_anchors": [
+            "immer erst"
+          ]
+        },
+        "en": {
+          "original_pdf_page": 19,
+          "all_anchors": [
+            "Always start"
+          ]
+        },
+        "ru": {
+          "original_pdf_page": 189,
+          "all_anchors": [
+            "Всегда сначала"
+          ]
+        }
+      }
+    },
+    {
+      "id": "memory",
+      "questions": {
+        "en": "Does the C3 resume its last charging mode after mains reconnection with the same battery type?",
+        "de": "Setzt der C3 nach erneutem Netzanschluss bei gleichem Batterietyp den letzten Lademodus fort?",
+        "ru": "Возобновляет ли C3 последний режим зарядки после подключения к сети при том же типе аккумулятора?"
+      },
+      "evidence": {
+        "de": {
+          "original_pdf_page": 9,
+          "all_anchors": [
+            "gleichem Batterietyp"
+          ]
+        },
+        "en": {
+          "original_pdf_page": 19,
+          "all_anchors": [
+            "same type"
+          ]
+        },
+        "ru": {
+          "original_pdf_page": 189,
+          "all_anchors": [
+            "том же"
+          ]
+        }
+      }
+    },
+    {
+      "id": "small_battery",
+      "questions": {
+        "en": "Which C3 mode is intended for a normal 12 V battery with capacity below 14 Ah?",
+        "de": "Welcher C3 Modus ist für eine normale 12 V Batterie mit einer Kapazität unter 14 Ah vorgesehen?",
+        "ru": "Какой режим C3 предназначен для обычного аккумулятора 12 V емкостью менее 14 Ah?"
+      },
+      "evidence": {
+        "de": {
+          "original_pdf_page": 10,
+          "all_anchors": [
+            "Mode 2",
+            "unter 14 Ah"
+          ]
+        },
+        "en": {
+          "original_pdf_page": 20,
+          "all_anchors": [
+            "Mode 2",
+            "less"
+          ]
+        },
+        "ru": {
+          "original_pdf_page": 190,
+          "all_anchors": [
+            "Режим 2",
+            "менее"
+          ]
+        }
+      }
+    },
+    {
+      "id": "agm",
+      "questions": {
+        "en": "Which C3 charging mode is intended for cold batteries or many AGM batteries?",
+        "de": "Welcher C3 Lademodus ist für kalte Batterien oder viele AGM Batterien vorgesehen?",
+        "ru": "Какой режим зарядки C3 предназначен для холодных аккумуляторов или многих аккумуляторов AGM?"
+      },
+      "evidence": {
+        "de": {
+          "original_pdf_page": 10,
+          "all_anchors": [
+            "Mode 4",
+            "AGM"
+          ]
+        },
+        "en": {
+          "original_pdf_page": 20,
+          "all_anchors": [
+            "Mode 4",
+            "AGM"
+          ]
+        },
+        "ru": {
+          "original_pdf_page": 191,
+          "all_anchors": [
+            "Режим 4",
+            "AGM"
+          ]
+        }
+      }
+    },
+    {
+      "id": "pulse_manual",
+      "questions": {
+        "en": "Can pulse charging on the C3 be selected manually?",
+        "de": "Kann die Impulsladung beim C3 manuell ausgewählt werden?",
+        "ru": "Можно ли вручную выбрать импульсный заряд на C3?"
+      },
+      "evidence": {
+        "de": {
+          "original_pdf_page": 11,
+          "all_anchors": [
+            "nicht manuel"
+          ]
+        },
+        "en": {
+          "original_pdf_page": 21,
+          "all_anchors": [
+            "cannot be selected manually"
+          ]
+        },
+        "ru": {
+          "original_pdf_page": 191,
+          "all_anchors": [
+            "невозможно выбрать"
+          ]
+        }
+      }
+    },
+    {
+      "id": "standby_protection",
+      "questions": {
+        "en": "Does the C3 enter standby on an open circuit or reversed battery polarity?",
+        "de": "Schaltet der C3 bei offenem Stromkreis oder verpolter Batterie in den Standby Betrieb?",
+        "ru": "Переключается ли C3 в режим ожидания при открытой цепи или неправильной полярности аккумулятора?"
+      },
+      "evidence": {
+        "de": {
+          "original_pdf_page": 11,
+          "all_anchors": [
+            "Offener Stromkreis",
+            "verpolter Anschluss"
+          ]
+        },
+        "en": {
+          "original_pdf_page": 21,
+          "all_anchors": [
+            "Open circuit",
+            "Reverse polarity"
+          ]
+        },
+        "ru": {
+          "original_pdf_page": 191,
+          "all_anchors": [
+            "Открытая цепь",
+            "Неправильная полярность"
+          ]
+        }
+      }
+    },
+    {
+      "id": "overheat",
+      "questions": {
+        "en": "What happens to the C3 output power if the charger becomes too hot?",
+        "de": "Was passiert mit der Ausgangsleistung des C3, wenn das Ladegerät zu heiß wird?",
+        "ru": "Что происходит с выходной мощностью C3, если зарядное устройство перегревается?"
+      },
+      "evidence": {
+        "de": {
+          "original_pdf_page": 11,
+          "all_anchors": [
+            "Ausgangs",
+            "verringert"
+          ]
+        },
+        "en": {
+          "original_pdf_page": 21,
+          "all_anchors": [
+            "output power",
+            "reduced"
+          ]
+        },
+        "ru": {
+          "original_pdf_page": 191,
+          "all_anchors": [
+            "выходная мощность",
+            "уменьшает"
+          ]
+        }
+      }
+    },
+    {
+      "id": "cleaning",
+      "questions": {
+        "en": "How should the C3 plastic surfaces be cleaned, and may solvents be used?",
+        "de": "Wie sollen die Kunststoffoberflächen des C3 gereinigt werden, und dürfen Lösungsmittel verwendet werden?",
+        "ru": "Как очищать пластмассовые поверхности C3 и можно ли использовать растворители?"
+      },
+      "evidence": {
+        "de": {
+          "original_pdf_page": 11,
+          "all_anchors": [
+            "trockenen Tuch",
+            "Lösungsmittel"
+          ]
+        },
+        "en": {
+          "original_pdf_page": 21,
+          "all_anchors": [
+            "dry cloth",
+            "solvents"
+          ]
+        },
+        "ru": {
+          "original_pdf_page": 191,
+          "all_anchors": [
+            "сухой салфеткой",
+            "растворите"
+          ]
+        }
+      }
+    },
+    {
+      "id": "disposal",
+      "questions": {
+        "en": "May the C3 be disposed of together with household refuse?",
+        "de": "Darf das C3 Ladegerät zusammen mit dem Hausmüll entsorgt werden?",
+        "ru": "Можно ли выбрасывать зарядное устройство C3 вместе с бытовым мусором?"
+      },
+      "evidence": {
+        "de": {
+          "original_pdf_page": 12,
+          "all_anchors": [
+            "Hausmüll"
+          ]
+        },
+        "en": {
+          "original_pdf_page": 21,
+          "all_anchors": [
+            "household refuse"
+          ]
+        },
+        "ru": {
+          "original_pdf_page": 192,
+          "all_anchors": [
+            "бытовой мусор"
+          ]
+        }
+      }
+    },
+    {
+      "id": "warranty_receipt",
+      "questions": {
+        "en": "What purchase document should be kept for a C3 warranty claim?",
+        "de": "Welcher Kaufbeleg soll für einen Garantieanspruch beim C3 aufbewahrt werden?",
+        "ru": "Какой документ о покупке нужно сохранить для обращения по гарантии на C3?"
+      },
+      "evidence": {
+        "de": {
+          "original_pdf_page": 12,
+          "all_anchors": [
+            "Kassenbon"
+          ]
+        },
+        "en": {
+          "original_pdf_page": 22,
+          "all_anchors": [
+            "receipt"
+          ]
+        },
+        "ru": {
+          "original_pdf_page": 192,
+          "all_anchors": [
+            "кассовый чек"
+          ]
+        }
+      }
+    },
+    {
+      "id": "repair_spares",
+      "questions": {
+        "en": "Who may repair the C3, and what kind of spare parts must be used?",
+        "de": "Wer darf den C3 reparieren, und welche Ersatzteile müssen dabei verwendet werden?",
+        "ru": "Кто может ремонтировать C3 и какие запасные части должны использоваться?"
+      },
+      "evidence": {
+        "de": {
+          "original_pdf_page": 12,
+          "all_anchors": [
+            "Originalersatzteilen"
+          ]
+        },
+        "en": {
+          "original_pdf_page": 22,
+          "all_anchors": [
+            "genuine spare parts"
+          ]
+        },
+        "ru": {
+          "original_pdf_page": 192,
+          "all_anchors": [
+            "оригинальных запчастей"
+          ]
+        }
+      }
+    }
+  ]
+}

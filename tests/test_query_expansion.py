@@ -208,3 +208,163 @@ def test_grounded_budget_without_audit_capacity_needs_no_translation():
     assert result.answer.reason == 'llm_budget_exhausted'
     assert result.trace.llm_calls == 0
     assert queries == ['Как проверить шины?']
+
+
+def test_mixed_reranking_uses_native_questions_and_preserves_original_sources():
+    from langchain_core.documents import Document
+
+    from garage_rag.index import SearchHit
+    from garage_rag.retrieval import rerank_multilingual
+
+    wrong = SearchHit(Document(
+        page_content='Das Ladegerät ist für verschiedene Batterien und Fahrzeuge vorgesehen.',
+        metadata={'document': 'de.pdf', 'pdf_page': 3},
+    ), 0.94)
+    right = SearchHit(Document(
+        page_content=('При перегреве зарядного устройства его выходная мощность '
+                      'автоматически уменьшается.'),
+        metadata={'document': 'ru.pdf', 'pdf_page': 9},
+    ), 0.79)
+    questions = ('What happens to the output power if the charger overheats?',
+                 'Was passiert mit der Ausgangsleistung, wenn das Ladegerät überhitzt?',
+                 'Что происходит с выходной мощностью при перегреве зарядного устройства?')
+    class Ranker:
+        def predict(self, pairs, **kwargs):
+            assert pairs == [(questions[1], wrong.document.page_content),
+                             (questions[2], right.document.page_content)]
+            return [-2.0, 4.0]
+    result = rerank_multilingual([wrong, right], questions, ('de', 'ru'), Ranker())
+    assert result == [right, wrong]
+    assert result[0] is right
+    assert result[0].score == 0.79  # raw cosine remains available; order is semantic relevance
+
+
+@pytest.mark.parametrize('scores', [[], [float('nan')], [float('inf')], [1.0, 2.0]])
+def test_mixed_reranking_rejects_incomplete_or_nonfinite_scores(scores):
+    from test_workflow import hit
+
+    from garage_rag.retrieval import rerank_multilingual
+
+    class Ranker:
+        def predict(self, pairs, **kwargs):
+            return scores
+    with pytest.raises(ValueError, match='reranker scores'):
+        rerank_multilingual([hit()], ('How do I check tires?', 'Wie prüfe ich die Reifen?'),
+                            ('en',), Ranker())
+
+
+def test_mixed_passage_reranking_uses_all_its_observed_languages():
+    from test_workflow import hit
+
+    from garage_rag.retrieval import rerank_multilingual
+
+    mixed = hit('Check tire pressure when the tires are cold.\n'
+                'Prüfen Sie den Reifendruck bei kalten Reifen.')
+    english = 'How do I check tire pressure?'
+    german = 'Wie prüfe ich den Reifendruck?'
+    class Ranker:
+        def predict(self, pairs, **kwargs):
+            assert {q for q, _ in pairs} == {english, german}
+            assert len(pairs) == 2
+            return [0.0, 1.0]
+    assert rerank_multilingual([mixed], (english, german), ('en', 'de'), Ranker()) == [mixed]
+
+
+def test_monolingual_search_never_loads_the_additional_local_ranker(
+    tmp_path, pdf_path, tokenizer, embeddings, config, monkeypatch,
+):
+    from garage_rag.retrieval import AnswerSearch
+
+    monkeypatch.setattr('garage_rag.retrieval.LocalReranker',
+                        lambda: pytest.fail('No reranker for a monolingual corpus'))
+    with Index(tmp_path / 'index', config) as index:
+        index.ingest(pdf_path, embeddings, tokenizer)
+        hits = AnswerSearch(index, embeddings)(('Как проверить шины?', 'How to check tires?'), 2)
+        assert hits[0].document.metadata['pdf_page'] == 1
+
+
+def test_answer_search_reranks_a_bounded_mixed_pool_before_applying_top_k(monkeypatch):
+    from test_workflow import hit
+
+    from garage_rag.retrieval import AnswerSearch
+
+    wrong = hit('Check the power cable before connecting the charger to the battery.', 3)
+    right = hit('При перегреве зарядного устройства его выходная мощность '
+                'автоматически уменьшается.', 9)
+    class DenseIndex:
+        def search_many(self, queries, embeddings, top_k, min_score):
+            assert top_k == 20
+            assert min_score == 0.7
+            return [wrong, right]
+    class Ranker:
+        def predict(self, pairs, **kwargs):
+            return [-1.0, 3.0]
+    monkeypatch.setattr(AnswerSearch, 'source_languages', property(lambda self: ('en', 'ru')))
+    search = AnswerSearch(DenseIndex(), None, min_score=0.7, reranker=Ranker())
+    result = search(('What happens if the charger overheats?',
+                     'Что происходит при перегреве зарядного устройства?'), 1)
+    assert result == [right]
+
+
+@pytest.mark.parametrize('top_k', [0, 21, True])
+def test_mixed_reranking_cannot_bypass_the_public_top_k_limit(top_k, monkeypatch):
+    from garage_rag.retrieval import AnswerSearch
+
+    class DenseIndex:
+        def search_many(self, *args):
+            pytest.fail('Reject invalid top_k before retrieval')
+    monkeypatch.setattr(AnswerSearch, 'source_languages', property(lambda self: ('en', 'ru')))
+    with pytest.raises(ValueError, match='top_k'):
+        AnswerSearch(DenseIndex(), None)(('English question', 'Русский вопрос'), top_k)
+
+
+def test_local_reranker_failure_stops_without_another_provider_call_or_fallback(monkeypatch):
+    from test_workflow import hit
+
+    from garage_rag.retrieval import AnswerSearch
+
+    class DenseIndex:
+        def search_many(self, *args):
+            return [hit()]
+    class Ranker:
+        calls = 0
+        def predict(self, pairs, **kwargs):
+            self.calls += 1
+            raise ValueError('Question and passage exceed the reranker 512-token limit')
+    monkeypatch.setattr(AnswerSearch, 'source_languages', property(lambda self: ('en', 'ru')))
+    ranker = Ranker()
+    model = Replies({'queries': [{'language': 'ru', 'query': 'Как проверить шины?'}]})
+    result = run_answer('How do I check tires?',
+                        AnswerSearch(DenseIndex(), None, reranker=ranker), model, mode='direct',
+                        source_languages=('en', 'ru'))
+    assert result.answer.reason == 'retrieval_error'
+    assert not result.answer.supported
+    assert result.trace.llm_calls == 1
+    assert len(model.messages) == 1
+    assert ranker.calls == 1
+
+
+def test_oversized_reranker_pairs_keep_dense_order_without_truncation_or_a_new_call():
+    from test_workflow import hit
+
+    from garage_rag.retrieval import rerank_multilingual
+
+    hits = [hit(), hit('Another original source passage with its full conditions.', 2)]
+    class Ranker:
+        def can_score(self, pairs):
+            assert len(pairs) == 2
+            return False
+        def predict(self, *args, **kwargs):
+            pytest.fail('Never score a truncated question or passage')
+    assert rerank_multilingual(hits, ('How do I check tires?',), ('en',), Ranker()) is hits
+
+
+@pytest.mark.parametrize('length, expected', [(512, True), (513, False)])
+def test_existing_local_ranker_pair_limit_is_preserved(length, expected):
+    from types import SimpleNamespace
+
+    from garage_rag.retrieval import LocalReranker
+
+    ranker = LocalReranker.__new__(LocalReranker)
+    ranker.model = SimpleNamespace(tokenizer=lambda *args, **kwargs: {'input_ids': [0] * length})
+    assert ranker.can_score([('Original full question', 'Original full source')]) is expected

@@ -30,7 +30,13 @@ wrong sources/pages and unsupported numeric claims. Groq HTTP transport fixtures
 also cover German and Russian evidence. These offline checks do not establish
 live provider answer quality or general multilingual retrieval recall. See the
 [matched real BMW retrieval comparison](benchmarks/multilingual-ru-en.md) for the
-measured RU→EN regression and corrected rankings.
+measured RU→EN regression and corrected rankings. The
+[real Bosch multilingual matrix](benchmarks/multilingual-c3.md) additionally covers
+288 question/corpus combinations, independently anchored evidence chunks,
+monolingual and mixed PDFs/collections, and zero live provider calls. Unit tests
+inject local relevance scores, so ordinary offline CI needs no reranker weights;
+they cover source-language pair selection, bounded candidates, unchanged source
+objects, invalid score rejection, top-k and long-pair dense preservation.
 
 If the checkout contains private historical graph captures, their replay also
 requires the pinned Groq tokenizer in the local cache. Set

@@ -88,7 +88,21 @@ generations invalidate the process-local cache.
 
 Each retrieval round makes one local Qdrant batch with at most three dense
 queries: original plus at most two translations. Duplicate chunks keep their
-maximum raw cosine score; top-k and min-score still apply to the merged output.
+maximum raw cosine score. For expanded corpora with multiple observed languages,
+the existing pinned local mMARCO MiniLM reranker orders at most 20 dense candidates
+using source-language questions, then applies top-k. Mixed passages can use more
+than one prepared question. Every passage remains intact and eligible; this is
+ranking, not a language filter. Min-score still filters raw dense cosine before
+reranking. Returned dense scores remain raw cosine, while mixed-answer ordering
+uses local relevance scores. Single-language corpora and original-only searches
+retain their previous dense ordering.
+
+The extra local model loads lazily on the first expanded mixed-language answer;
+its pinned weights may need downloading into the existing model cache. It adds
+local compute and memory, with no extra Groq attempt. At most 60 bounded local
+question/passage pairs are scored. If complete pairs cannot fit its existing
+512-token limit, retain dense ordering without truncating either question or
+source. Other reranker failures stop retrieval without provider retry/fallback.
 A recovery round reuses the same query set. Direct therefore uses at most two
 completions including expansion, Grounded at most five. Provider quota accounting
 is shared. Invalid/truncated translations or changed numbers/Latin identifiers
@@ -98,9 +112,12 @@ behavior. Source text is never sent to the translation request.
 
 The [matched BMW comparison](benchmarks/multilingual-ru-en.md) shows why replacing
 the original query with English and removing translation entirely are both
-insufficient. Search quality is still model-dependent.
+insufficient. The [real EN/DE/RU PDF matrix](benchmarks/multilingual-c3.md) records the
+mixed-language cosine regression and the local reranking correction. Search
+quality is still model-dependent, including top-one ordering.
 CLI `search` remains dense. BM25 is also available to opt-in agentic retrieval;
-fusion and reranking remain offline comparison adapters.
+fusion remains an offline comparison adapter. Expanded mixed-language answers
+use the conditional local reranking described above.
 
 ## Search and answers
 
