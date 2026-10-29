@@ -219,7 +219,6 @@ def main(argv=None):
                             f"{args.workflow.title()} answering: at most {answer_calls} "
                             "completion attempts "
                             f"and {search_calls} local searches"
-                            + (" plus one RU/DE query translation" if translate_queries else "")
                             + "; no automatic API retries.",
                             file=sys.stderr,
                         )

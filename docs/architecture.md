@@ -103,16 +103,16 @@ command and no planner, query rewriting, tools, conversation memory, checkpointe
 or remote graph service. Evaluation checkpoints are separate from graph state.
 
 Production CLI/API Direct/Grounded entry points wrap these primitives in
-`answering.run_answer`. Detected RU/DE questions use one Groq translation to
-prepare an English search query before entering the graph; the writer and auditor
-still receive the original question and answer-language selection. Expansion
-reuses that prepared query. English and uncertain-language questions skip this
-step. `GARAGE_RAG_TRANSLATE_QUERY=false` disables it. Translation is metered in
-the combined trace and shares provider quota state; malformed/truncated output,
-changed signed numbers or Latin identifiers stop before retrieval. Identifier
-case and equivalent Unicode/ASCII minus signs are accepted. No retries or
-fallbacks are added. Raw workflow/evaluation primitives and CLI `search` retain
-their original untranslated behavior.
+`answering.run_answer`. The original question is used for multilingual retrieval,
+writing and auditing, including retrieval expansion. Source language metadata is
+optional descriptive data, not a query-routing rule. Existing manifests, vectors,
+embedding profiles, prefixes and fingerprints are unchanged, so old indexes need
+no migration. The legacy `GARAGE_RAG_TRANSLATE_QUERY` boolean and Python
+`translate_query` argument remain accepted but cannot enable English rewriting.
+No translation completion, retry or fallback is added. Writers copy evidence in
+its source language while writing claims in the requested answer language.
+Agentic dense search starts from the original question; reformulation and BM25
+use terms/languages observed in passages, without assuming English sources.
 
 ## Agentic retrieval (Phase 4A)
 
@@ -274,7 +274,6 @@ routes from live decisions, failures and separately reviewed answers.
 | Setting | Default / bound |
 | --- | --- |
 | Direct | One search, at most one answer completion |
-| RU/DE query translation (CLI/API Direct/Grounded) | At most one additional completion, enabled by default |
 | Grounded `--max-llm-calls` | 4, configurable 1–4 attempted completions including audits |
 | Grounded `--max-searches` | 2, configurable 1–2 local searches |
 | Graph recursion limit | 16, fixed safety net; normal longest path is seven nodes |
@@ -286,8 +285,7 @@ A draft reserves budget for its mandatory audit. A one-call grounded budget
 therefore refuses without a completion. Normal acceptance uses two calls;
 recovery after draft refusal uses at most three, after audit insufficiency at
 most four. Direct mode ignores grounded budget flags. The default worst-case
-answer-completion allowance is 8,192 Groq tokens across four calls; a RU/DE
-translation raises the production total to at most 10,240 across five calls.
+answer-completion allowance is 8,192 Groq tokens across four calls for all languages.
 
 Timeouts are HTTPX network-operation/inactivity limits, not whole-call deadlines;
 keepalive traffic or local loading/search can extend wall time. Provider/local

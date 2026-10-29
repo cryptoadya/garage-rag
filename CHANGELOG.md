@@ -5,6 +5,16 @@ is available in [Git commits](https://github.com/cryptoadya/garage-rag/commits/m
 
 ## [Unreleased]
 
+### Fixed
+
+- Search EN/DE/RU and mixed-language PDFs with the original question through the
+  existing multilingual embeddings. Remove the automatic English translation and
+  its extra Groq call; legacy translation settings remain accepted without rewriting.
+  Existing indexes, metadata and embedding fingerprints require no migration.
+- Copy citations in each passage's original language independently of question and
+  answer language. Remove English-only assumptions from writer and Agentic search
+  guidance while retaining citation, language, numeric, audit and Groq quota guards.
+
 ## [0.5.0] - 2026-10-29
 
 ### Changed

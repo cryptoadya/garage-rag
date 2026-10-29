@@ -3,8 +3,8 @@
 [![CI](https://github.com/cryptoadya/garage-rag/actions/workflows/ci.yml/badge.svg)](https://github.com/cryptoadya/garage-rag/actions/workflows/ci.yml)
 
 A local-first RAG CLI, HTTP API and web UI for automotive documentation. Ask in
-**English, German or Russian**, search an English PDF locally, and generate
-answers with verbatim evidence and locally verified PDF page references.
+**English, German or Russian**, search EN/DE/RU or mixed-language PDFs locally,
+and generate answers with verbatim evidence and locally verified PDF page references.
 
 ## Features
 
@@ -33,8 +33,8 @@ test -f .env || cp .env.example .env
 mkdir -p data/private
 ```
 
-Supply an English text-based PDF you have permission to use. The initial corpus
-is the [2002 BMW 5 Series owner's manual](https://www.ge39.com/files/2002Manual-5ser.pdf)
+Supply an EN/DE/RU or mixed-language text-based PDF you have permission to use.
+The initial corpus is the [2002 BMW 5 Series owner's manual](https://www.ge39.com/files/2002Manual-5ser.pdf)
 for E39 525i/530i/540i models. Save your own copy at the path below;
 **the manual is not distributed here**.
 
@@ -65,10 +65,10 @@ garage-rag ask 'How do I check the engine oil level?' --workflow direct
 ```
 
 Grounded is the default, with at most four completion attempts and two local
-searches. Direct uses one answer completion. Russian/German questions first use
-one additional Groq call to translate only the search query to English; the
-answer keeps the requested language. Set `GARAGE_RAG_TRANSLATE_QUERY=false` to
-disable this step. For Groq setup, quotas and experimental
+searches. Direct uses one answer completion. Both search with the original
+question using multilingual embeddings, without a translation call. Claims use
+the requested answer language; quotes keep their original source language.
+Existing indexes need no reindexing. For Groq setup, quotas and experimental
 Agentic usage, see [providers](docs/providers.md) and [CLI usage](docs/usage.md).
 
 ### HTTP API

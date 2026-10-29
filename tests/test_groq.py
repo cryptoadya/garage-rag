@@ -279,13 +279,19 @@ def test_resume_restores_quota_and_retry_after_without_network(monkeypatch):
         ("ru", "Проверяйте давление на холодных шинах."),
     ],
 )
-def test_groq_wire_preserves_workflow_languages_and_citations(monkeypatch, mode, language, claim):
+@pytest.mark.parametrize("quote", [
+    "Check tire pressure when the tires are cold.",
+    "Prüfen Sie den Reifendruck bei kalten Reifen.",
+    "Проверяйте давление на холодных шинах.",
+])
+def test_groq_wire_preserves_workflow_languages_and_citations(
+    monkeypatch, mode, language, claim, quote,
+):
     from langchain_core.documents import Document
 
     from garage_rag.index import SearchHit
     from garage_rag.workflow import run_direct, run_workflow
 
-    quote = "Check tire pressure when the tires are cold."
     hit = SearchHit(
         Document(page_content=quote, metadata={"document": "manual.pdf", "pdf_page": 7}), 0.9
     )

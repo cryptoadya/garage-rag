@@ -38,7 +38,7 @@ TOOLS = [
         ("dense_search", "Read local active Qdrant passages by multilingual semantic similarity."),
         (
             "lexical_search",
-            "Read local active passages by BM25 exact terms, e.g. English identifiers.",
+            "Read local active passages by BM25 exact terms, in any source language.",
         ),
     ]
 ]

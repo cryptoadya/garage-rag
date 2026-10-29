@@ -214,3 +214,41 @@ def test_structured_schema_reserved_and_native_history_rejected_before_http(monk
                 [*messages, tool(), ToolMessage(content="{}", tool_call_id="c1")]
             )
     assert requests == []
+
+
+@pytest.mark.parametrize("source_language", ["en", "de", "ru"])
+def test_groq_structured_multilingual_search_writer_and_auditor(monkeypatch, source_language):
+    from test_multilingual import CLAIMS, QUESTIONS
+
+    # Use the default byte quota guards and real Groq wire format without live calls.
+    monkeypatch.setenv("GROQ_TOKEN_ACCOUNTING", "bytes")
+    question = QUESTIONS["de"]
+    quote = CLAIMS[source_language]
+    requests, searches = [], []
+
+    def transport(request):
+        body = json.loads(request.content)
+        requests.append(body)
+        if body["response_format"]["type"] == "json_schema":
+            value = (
+                decision("search", method="dense", query=question, top_k=1)
+                if len(requests) == 1 else decision("finalize")
+            )
+        else:
+            value = json.dumps(
+                audit() if "evidence auditor" in body["messages"][0]["content"]
+                else draft(CLAIMS["ru"], quote), ensure_ascii=False,
+            )
+        return success(value)
+
+    llm = model(monkeypatch, transport)
+    with llm.client:
+        result = run_agentic(
+            question, lambda *args: searches.append(args) or [hit(quote)], llm,
+            answer_language="ru", top_k=1,
+        )
+    assert result.answer.supported
+    assert result.answer.language == "ru"
+    assert quote in result.answer.text
+    assert searches == [("dense", question, 1)]
+    assert result.trace.llm_calls == len(requests) == 4

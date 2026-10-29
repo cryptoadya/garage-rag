@@ -126,7 +126,7 @@ def create_app(
     ready = False
     index = embeddings = llm = None
     pdf_root = None
-    translate_queries = True
+    translate_queries = False
 
     @asynccontextmanager
     async def lifespan(app):

@@ -171,3 +171,103 @@ def test_override_applies_to_no_context_refusal(language):
     result = answer(QUESTIONS["en"], [], None, answer_language=language)
     assert result.text == REFUSALS[language]
     assert result.language == language
+
+
+@pytest.mark.parametrize("source_languages", [("en",), ("de",), ("ru",), ("en", "de", "ru")])
+@pytest.mark.parametrize("question_language", QUESTIONS)
+@pytest.mark.parametrize("answer_language", QUESTIONS)
+@pytest.mark.parametrize("mode", ["direct", "grounded", "agentic"])
+def test_source_question_and_answer_languages_are_independent(
+    source_languages, question_language, answer_language, mode,
+):
+    from conftest import Model as WorkflowModel
+    from conftest import control, reply, tool
+    from test_workflow import audit
+
+    from garage_rag.agentic import run_agentic
+    from garage_rag.answering import run_answer
+
+    # No language metadata: old indexes and mixed passages must work from text.
+    quote = "\n".join(CLAIMS[lang] for lang in source_languages)
+    hit = SearchHit(Document(page_content=quote, metadata={
+        "document": "mehrsprachig.pdf", "pdf_page": 7, "chunk_index": 0,
+    }), 0.9)
+    value = draft(answer_language)
+    value["claims"][0]["evidence"][0]["quote"] = quote
+    responses = [reply(value), reply(audit())]
+    if mode == "agentic":
+        responses.insert(0, control())
+        responses.insert(0, tool(query=QUESTIONS[question_language], top_k=1))
+    model = WorkflowModel(*responses)
+    queries = []
+    def search(*args):
+        queries.append(args[-2])
+        return [hit]
+
+    if mode == "agentic":
+        result = run_agentic(QUESTIONS[question_language], search, model,
+                             answer_language=answer_language, top_k=1)
+    else:
+        result = run_answer(QUESTIONS[question_language], search, model, mode=mode,
+                            answer_language=answer_language, top_k=1)
+    assert result.answer.supported, result.answer.reason
+    assert result.answer.language == answer_language
+    assert CLAIMS[answer_language] in result.answer.text
+    assert f'"{quote}"' in result.answer.text
+    assert "mehrsprachig.pdf, PDF page 7" in result.answer.text
+    assert queries == [QUESTIONS[question_language]]
+    assert result.trace.llm_calls == {"direct": 1, "grounded": 2, "agentic": 4}[mode]
+
+
+@pytest.mark.parametrize("source_language", ["de", "ru"])
+@pytest.mark.parametrize("corruption", ["translation", "source", "page", "number"])
+def test_non_english_evidence_still_fails_closed(source_language, corruption):
+    from test_workflow import Scripted, audit
+
+    from garage_rag.answering import run_answer
+
+    quote = CLAIMS[source_language]
+    hits = [SearchHit(Document(page_content=quote, metadata={
+        "document": "original.pdf", "pdf_page": 4,
+    }), 0.9)]
+    value = draft("en")
+    evidence = value["claims"][0]["evidence"][0]
+    evidence["quote"] = quote
+    if corruption == "translation":
+        evidence["quote"] = CLAIMS["en"]
+    elif corruption == "source":
+        evidence["source_id"] = "S99"
+    elif corruption == "page":
+        evidence["pdf_page"] = 99
+    else:
+        value["claims"][0]["text"] += " Inflate to 9.9 bar."
+    result = run_answer(QUESTIONS["ru"], lambda q, k: hits, Scripted(value, audit()),
+                        answer_language="en")
+    assert not result.answer.supported
+    assert result.answer.reason == (
+        "unsafe_numeric_evidence" if corruption == "number" else "invalid_model_output"
+    )
+    assert result.trace.llm_calls == 1
+
+
+@pytest.mark.parametrize("mode", ["direct", "grounded"])
+def test_mixed_document_collection_keeps_each_quote_and_page(mode):
+    from test_workflow import Scripted, audit
+
+    from garage_rag.answering import run_answer
+
+    hits = [SearchHit(Document(page_content=CLAIMS[lang], metadata={
+        "document": f"{lang}.pdf", "pdf_page": page,
+        # Deliberately stale metadata must not make the writer translate evidence.
+        "language": "en",
+    }), 0.9) for page, lang in enumerate(QUESTIONS, 1)]
+    value = draft("ru")
+    value["claims"][0]["evidence"] = [
+        {"source_id": f"S{page}", "quote": CLAIMS[lang]}
+        for page, lang in enumerate(QUESTIONS, 1)
+    ]
+    result = run_answer(QUESTIONS["de"], lambda q, k: hits, Scripted(value, audit()),
+                        mode=mode, answer_language="ru")
+    assert result.answer.supported
+    for page, lang in enumerate(QUESTIONS, 1):
+        assert f'[{lang}.pdf, PDF page {page}] "{CLAIMS[lang]}"' in result.answer.text

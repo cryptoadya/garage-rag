@@ -20,10 +20,13 @@ Tests generate PDFs from the original fictional [Aurora corpus](../tests/fixture
 A local tokenizer and deterministic vectors avoid private BMW material, downloaded
 weights and live API calls. Qdrant persistence/retrieval and LangGraph execution
 are real; model responses and HTTP transports are controlled fixtures.
-Production-entry tests additionally cover RU/DE query translation, preservation
-of the original question/answer language, combined call/token telemetry, and
-fail-closed malformed/truncated translations. Raw workflow fixtures keep the
-historical no-translation baseline explicit.
+Production-entry tests cover unchanged EN/DE/RU search queries, reopened legacy
+indexes, original question/answer language, call/token telemetry and legacy
+translation settings. Language-combination tests cover EN/DE/RU and mixed source
+passages in all three workflows, plus rejection of translated/invented quotes,
+wrong sources/pages and unsupported numeric claims. Groq HTTP transport fixtures
+also cover German and Russian evidence. These offline checks do not establish
+live provider answer quality or multilingual retrieval recall.
 
 If the checkout contains private historical graph captures, their replay also
 requires the pinned Groq tokenizer in the local cache. Set
@@ -75,7 +78,7 @@ explicitly authorized live scope. See [local UI setup](usage.md#local-web-ui).
 
 ## Optional manual checks
 
-Follow the [quick start](../README.md#quick-start) with a permitted English PDF.
+Follow the [quick start](../README.md#quick-start) with a permitted EN/DE/RU or mixed-language PDF.
 Repeat indexing to check reuse; inspect `stats` and `search --json` before `ask`.
 For explicitly authorized live checks, compare EN/DE/RU answers and an answer-language
 override with the exact sent evidence and original PDF. Also inspect refusal for

@@ -16,7 +16,7 @@ from an existing `.env`; no re-indexing is needed.
 
 ```bash
 garage-rag ask 'How do I check tire pressure?' --provider groq --workflow grounded
-# Direct uses one answer completion, plus one RU/DE search-query translation:
+# Direct uses one answer completion in every question/source language:
 garage-rag ask 'Как проверить давление в шинах?' --provider groq --workflow direct
 ```
 

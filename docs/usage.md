@@ -16,7 +16,7 @@ line or commit it to Git.
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `GARAGE_RAG_PROVIDER` | `groq` | Only supported provider for all modes; `ask --provider groq` is optional |
-| `GARAGE_RAG_TRANSLATE_QUERY` | `true` | Direct/Grounded `ask`: one Groq call translates RU/DE search queries to English; `false` disables it |
+| `GARAGE_RAG_TRANSLATE_QUERY` | `false` | Deprecated compatibility setting; `true` and `false` both keep the original search query |
 | `GROQ_API_KEY` | Empty | Required for Groq generation |
 | `GROQ_FREE_PLAN_CONFIRMED` | `false` | Required local attestation of Groq Free Plan |
 | `GROQ_MODEL` | `openai/gpt-oss-120b` | Initial allowlisted Groq model; `--model` overrides it |
@@ -76,21 +76,13 @@ Use the same profile for `index`, `stats`, `search` and `ask`.
 See the [Phase 2B comparison and complete commands](benchmarks/phase2b-retrieval.md).
 Every profile retains raw dense cosine search and the original CLI limits.
 Do not transfer score thresholds between models without separate calibration.
-Direct/Grounded `ask` translates detected Russian/German questions to English
-before local retrieval. This addresses cross-language recall misses such as a
-short Russian question failing to retrieve an English section. The original
-question still goes to the answer writer/auditor, and answer-language selection
-does not determine the search language. English and ambiguous-language questions
-skip translation. No term dictionary, page hint or additional document content
-is injected. This does not guarantee retrieval quality.
-
-Translation adds at most one metered Groq attempt to the existing answer budget:
-Direct totals at most two, Grounded at most five by default. Both steps share
-provider quota state. Invalid/truncated translations and provider failures stop
-without retry or fallback; local checks reject changed numbers/Latin identifiers.
-Translation is enabled by default for CLI/API `ask`; set
-`GARAGE_RAG_TRANSLATE_QUERY=false` to use the original question for search.
-Historical evaluation primitives retain their original unmodified-query budgets.
+Direct/Grounded `ask` uses the original question for multilingual dense retrieval,
+writing and auditing. EN/DE/RU documents and mixed-language passages need no
+language classification or reindexing. Missing, unknown or outdated document
+language metadata does not determine the query language. This does not guarantee
+retrieval quality; inspect passages for short or ambiguous queries.
+`GARAGE_RAG_TRANSLATE_QUERY=true|false` is accepted for existing configurations,
+but neither value enables a translation call.
 CLI `search` remains dense. BM25 is also available to opt-in agentic retrieval;
 fusion and reranking remain offline comparison adapters.
 
@@ -111,7 +103,7 @@ E5's 512-token input limit, including its query prefix and special tokens.
 and adds privacy-safe `workflow` counts, limits, timings, token usage and node events.
 `index --language en` describes the source document; `ask --answer-language`
 controls the answer. CLI diagnostics and the `PDF page N` citation label stay
-English. Quotes stay in their original English even in German or Russian answers.
+English. Quotes stay in their original source language regardless of the answer language.
 
 Automatic language selection uses local
 [Lingua confidence scores](https://github.com/pemistahl/lingua-py#113-confidence-values) after removing
@@ -121,17 +113,15 @@ falls back to English. These are heuristics relative to EN/DE/RU candidates,
 not calibrated probabilities. `Reifendruck?` selects German, while `BMW DDE ABS`
 and ambiguous `Motor?` fall back to English. Mixed-language input or unfamiliar
 jargon can be misclassified; choose `--answer-language en|de|ru` explicitly.
-Language detection makes no LLM call. Production Direct/Grounded `ask` then uses
-one translation call for detected RU/DE questions, unless explicitly disabled.
+Language detection selects only the answer language and makes no LLM call.
 
 ## Generation failures
 
 Default `ask` uses bounded grounded answering: up to four completion attempts
 (including semantic audits) and two local searches. A normal accepted answer
 uses two completions. `--max-llm-calls 2 --max-searches 1` disables recovery;
-`--workflow direct` selects the one-answer-completion path. Detected RU/DE
-questions add at most one translation attempt before these answer budgets;
-`--max-llm-calls` controls answering/auditing, not that translation allowance.
+`--workflow direct` selects the one-answer-completion path. These budgets apply
+to all question and source languages, with no separate translation allowance.
 Each completion
 has a 60-second network-operation timeout, not a total deadline. See
 [architecture](architecture.md) for routes, budgets and evidence boundaries.
@@ -146,7 +136,6 @@ See [billing and quota boundaries](providers.md).
 | Model unavailable | Check Groq availability; no alternate model or paid route is attempted |
 | `output_token_limit` | Increase `GROQ_MAX_TOKENS` within 512–4096, subject to quota guards |
 | `invalid_model_output` | Output failed format, language or evidence checks; inspect local retrieval before retrying |
-| `query_translation_error` | Query translation failed; inspect provider/quota settings or disable it explicitly; no automatic fallback is made |
 | `invalid_audit_output` / `unsupported_claims` | Inspect evidence and applicability; the audit cannot certify truth |
 | `ambiguous_question` / `conflicting_sources` | Clarify the vehicle/conditions or resolve conflicting documents |
 | `unsafe_numeric_evidence` | Inspect the original PDF layout; do not infer table cells from extracted text |
@@ -165,7 +154,7 @@ Opt-in `--workflow agentic` uses model-selected local dense/BM25 tools, with
 defaults of six LLM attempts including writer/audit, four searches, 24,000 reserved
 tokens and twelve graph steps. `--max-total-tokens` changes its reservation cap
 (1–48,000); `--top-k` caps each tool at 1–5. Direct/grounded retain their existing
-answer budgets (plus the optional query translation) and ignore this agentic token flag.
+answer budgets and ignore this agentic token flag.
 With Groq, the per-call output budget
 is `GROQ_MAX_TOKENS`. See [agentic architecture](architecture.md#agentic-retrieval-phase-4a)
 for stopping rules and [live acceptance](providers.md#phase-4a-live-acceptance)
