@@ -305,6 +305,24 @@ def test_no_evidence_is_a_normal_answer(api_setup, monkeypatch, mode):
         assert api_setup.models[0].calls == 0
 
 
+@pytest.mark.parametrize('cooldown,seconds', [(3601, 3601), (10.9, 11)])
+def test_quota_exhaustion_exposes_safe_retry_after(api_setup, cooldown, seconds):
+    from garage_rag.generation import GenerationError
+
+    with TestClient(api_setup.app) as client:
+        def limited(messages):
+            error = GenerationError("private payload must not be displayed")
+            error.status_code = 429
+            error.rate_limits = {"retry_after_seconds": cooldown}
+            raise error
+
+        api_setup.models[0].invoke = limited
+        response = client.post("/ask", json={"question": "tires?"})
+        assert response.status_code == 429
+        assert response.headers["retry-after"] == str(seconds)
+        assert response.json() == {"detail": f"Groq quota reached. Try again in {seconds} seconds."}
+
+
 def test_citations_preserve_claim_order_multiple_sources_and_exact_quotes(api_setup, monkeypatch):
     from langchain_core.documents import Document
 

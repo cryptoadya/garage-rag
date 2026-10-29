@@ -138,7 +138,10 @@ def run_answer(question, search, llm, *, mode="grounded", top_k=5,
     trace.events.append(NodeEvent("translate_query", "expanded",
                                   (time.perf_counter() - started) * 1000, 0))
     run = runner(question, lambda k: search(queries, k), llm, **kwargs)
-    for name in ("llm_calls", "search_calls", "input_tokens", "output_tokens", "usage_records"):
+    for name in (
+        "llm_calls", "search_calls", "input_tokens", "output_tokens", "usage_records",
+        "quota_wait_ms",
+    ):
         setattr(trace, name, getattr(trace, name) + getattr(run.trace, name))
     trace.events.extend(run.trace.events)
     trace.provider_errors.extend(run.trace.provider_errors)

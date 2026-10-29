@@ -15,6 +15,7 @@ def default_byte_accounting(monkeypatch):
     # Wire/quota fixtures must not inherit the developer's local tokenizer opt-in.
     # Tokenizer-specific tests override this explicitly below.
     monkeypatch.setenv("GROQ_TOKEN_ACCOUNTING", "bytes")
+    monkeypatch.setenv("GROQ_MAX_QUOTA_WAIT_SECONDS", "0")
 
 
 def model(monkeypatch, handler):

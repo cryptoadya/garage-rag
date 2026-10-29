@@ -48,6 +48,7 @@ class WorkflowResult:
 
 
 class State(TypedDict, total=False):
+    revision: bool
     context: Context
     candidate: Candidate
     reason: str
@@ -133,7 +134,9 @@ def run_workflow(question, search, llm, *, top_k=5, answer_language="auto", limi
         if limits.max_llm_calls - trace.llm_calls < 2:
             return {"reason": "llm_budget_exhausted", "route": "finish"}
         try:
-            candidate = generate_candidate(question, state["context"], model, language)
+            candidate = generate_candidate(
+                question, state["context"], model, language, revision=state.get("revision", False),
+            )
         except GenerationError as exc:
             return {"reason": "generation_error", "error": str(exc), "route": "finish"}
         if not candidate.answer.supported:
@@ -165,6 +168,10 @@ def run_workflow(question, search, llm, *, top_k=5, answer_language="auto", limi
                 "reason": "audited_evidence",
                 "route": "finish",
             }
+        if not review.complete and review.decision == "unsupported":
+            if not state.get("revision") and limits.max_llm_calls - trace.llm_calls >= 2:
+                return {"revision": True, "reason": "incomplete_answer", "route": "draft"}
+            return {"reason": "incomplete_answer", "route": "finish"}
         if review.decision == "insufficient":
             return missing("insufficient_evidence")
         reasons = {
@@ -209,7 +216,7 @@ def run_workflow(question, search, llm, *, top_k=5, answer_language="auto", limi
     graph.add_conditional_edges("retrieve", lambda s: s["route"], ["draft", "finish"])
     graph.add_conditional_edges("expand", lambda s: s["route"], ["draft", "finish"])
     graph.add_conditional_edges("draft", lambda s: s["route"], ["audit", "expand", "finish"])
-    graph.add_conditional_edges("audit", lambda s: s["route"], ["expand", "finish"])
+    graph.add_conditional_edges("audit", lambda s: s["route"], ["draft", "expand", "finish"])
     graph.add_edge("finish", END)
     try:
         # Disable tracing for the WHOLE graph, including private state and all LLM calls.

@@ -70,7 +70,8 @@ flowchart TD
     A -- All claims supported and answer complete --> O
     D -- Insufficient evidence --> E{Grounded expansion available?}
     A -- Insufficient context --> E
-    A -- Unsupported, ambiguous, conflicting or invalid --> F
+    A -- Incomplete unsupported draft; revision budget available --> D
+    A -- Other unsupported, ambiguous, conflicting or invalid --> F
     E -- No --> F
     E -- Yes, once --> X[Same search query at top-20; retain prior passages]
     X -- New passage fits --> D
@@ -79,16 +80,33 @@ flowchart TD
 
 Context contains at most eight whole passages within a 12,000-character JSON
 budget. Every source ID maps to exactly the text sent. Pydantic requires strict
-JSON, at most six claims and evidence per claim. Local checks reject unknown IDs,
+JSON, at most six claims and four evidence entries per claim. Direct/Grounded
+writers select source IDs; the server copies the corresponding whole original
+passages as quotes, keeping the existing public citation fields. Local checks reject unknown IDs,
 quotes absent after whitespace normalization, translated evidence, wrong-language
 claims, bracketed references and truncated output. PDF citations come from local
-metadata. Direct mode finishes after these checks, without semantic auditing.
+metadata. Legacy quote-bearing outputs still undergo strict quote validation.
+For a unique match differing only by the legacy Cyrillic font's broken
+line-end hyphen, the quote is restored to its exact original source span; changed
+numbers or other text remain invalid. Direct mode finishes without semantic auditing.
+For oil-level procedures, a recognized complete source step requiring the engine
+to be stopped at operating temperature is retained explicitly in the answer.
+This local rule neither infers temperatures nor overrides a contradictory claim;
+language, source and quote validation run before and after retaining the condition.
+Numeric checks isolate numbered steps and figure boundaries from unrelated table
+rows. A source-confirmed structural marker count is distinct from a measured value;
+table values cannot be established by a nearby valid procedure step. Known layout
+flags and replacement-character damage still block numerical use. Full-passage
+quotes are represented by source IDs in audit requests to avoid duplicating text;
+the local/public quote remains unchanged.
 
 Grounded mode applies a numeric gate and a separate completion auditing every
 claim's entailment, applicability, essential conditions, numerical relationships,
 conflicts and whole-question completeness. Unique, complete claim coverage and
-all checks true are required. Malformed or inconsistent audits refuse; no repair
-completion occurs. An auditor cannot override a failed local check.
+all checks true are required. An incomplete `unsupported` draft can be revised once
+against the same full context when two calls remain, then must pass another audit.
+The existing four-completion ceiling is unchanged. Malformed/inconsistent audits
+refuse without repair. An auditor cannot override a failed local check.
 
 Only a draft's `insufficient_evidence` or an audit's `insufficient` verdict can
 trigger one expansion. It uses the same initial search query and score filter at top-20,
