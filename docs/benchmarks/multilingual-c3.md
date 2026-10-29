@@ -98,7 +98,7 @@ writer/auditor quotas, numeric/citation gates and no-provider-retry rules persis
 Corpus-language inspection loads active passages without constructing BM25 token
 counts, document frequencies or lengths; those are built lazily for lexical search.
 
-The final audit's real-Qdrant adversarial test gives all twenty hits in one branch
+The real-Qdrant adversarial regression test gives all twenty hits in one branch
 higher cosine scores than every hit in the other branches. The initial pool loses
 all other branches' top five; the reserved pool retains them with two or three
 queries, including when only one final answer passage is requested. The reranking
@@ -108,11 +108,12 @@ The same frozen 288-case matrix was rerun after that change. 82 complete ranking
 rows changed, including 15 metric rows. Top-five/top-ten hits and zero lost
 original/native top-five hits remain unchanged. Top-one hits fall **141 → 138**
 and MRR@10 **0.665505 → 0.655088** as newly admitted candidates compete in the
-same reranker. The original [v1 artifact](multilingual-c3.v1.json) is preserved;
-the [v2 artifact](multilingual-c3.v2.json) includes both `pre_audit` and current
-`corrected` rankings with unchanged labels. No new ranking model or fusion
-algorithm was introduced. Local performance is measured separately in the
-[final audit report](pr12-final-audit.md).
+same reranker. The [paired artifact](multilingual-c3.v2.json) is the single
+retained Bosch result: it includes `original`, `previous`, `pre_audit` and current
+`corrected` rankings with unchanged labels. Its `pre_audit` rows exactly preserve
+the initial reranker record from commit `01c3d019c35b936491cd93aa96462624dadc5d2a`;
+the duplicate v1 file is available in that commit's Git history. No new ranking
+model or fusion algorithm was introduced. Local performance is measured below.
 
 The prior 42-question English BMW check was rerun separately: corrected RU+EN
 retrieval remains **40/42 at five**, with MRR@10 **0.828798** and no lost old EN
@@ -157,7 +158,84 @@ source pages and small evidence anchors. The [script](compare_multilingual_c3.py
 constructs the corpus layouts without redistributing them and runs the actual
 retrieval adapter. The [current paired ranking artifact](multilingual-c3.v2.json)
 retains source-free original/previous/pre-audit/corrected rankings, metrics and
-gold chunk IDs; [v1](multilingual-c3.v1.json) remains the initial reranker record. Use
+gold chunk IDs. Use
 `--previous-merge` with a different output filename to reproduce the previous
 maximum-cosine path (`53155b2`), or omit it for corrected ranking. All other
-inputs and labels are identical.
+inputs and labels are identical. The script emits `original` and `expanded`
+rows for the selected path; compare current `expanded` rows with the frozen
+artifact's `corrected` rows. Historical `previous` and `pre_audit` rows remain
+comparison evidence, not newly measured results. To rerun the pre-audit path,
+extract `src` at `01c3d019c35b936491cd93aa96462624dadc5d2a` and set `PYTHONPATH`
+to that extracted `src` when running the same script without `--previous-merge`.
+
+## Cold/warm latency and native process memory
+
+Same macOS 27.2 arm64 host, Python 3.12.0, CPU, four numerical-library threads,
+same pinned E5 Small and local mMARCO MiniLM revisions, same persisted indexes.
+Three fresh processes per variant/corpus, seven warm calls per process (21 warm
+samples); serial execution, main/PR order reversed in the second repetition.
+No query-vector or reranker-score cache. Frozen RU questions use the existing EN
+translation on main and RU plus missing corpus languages on the audited PR.
+This compares the actual different local paths, not equal numbers of vectors.
+
+Cold total starts before application imports and includes index open, PR corpus
+language inspection, lazy model loading from cached weight files and first search.
+It is process-cold, not machine-cold: OS filesystem cache is uncontrolled.
+Model downloads, PDF indexing and all provider translation/writer/auditor calls
+are excluded. Warm timing includes real query embedding, Qdrant and any local
+reranking with already loaded models. Peak RSS uses native `getrusage`, including
+PyTorch/native allocations, and is the maximum process high-water mark among the
+three runs; it is not an incremental or steady-state memory estimate.
+
+| Corpus / path | Queries / scored pairs | Cold total median, s | Warm median / p95, ms | Peak RSS, MiB |
+| --- | ---: | ---: | ---: | ---: |
+| Bosch mixed PDF, main | 1 / 0 | 6.830 | 11.03 / 11.77 | 1480.3 |
+| Bosch mixed PDF, audited PR | 3 / 20 | 8.659 | 813.08 / 871.51 | 1764.0 |
+| Bosch within-page mixing, main | 1 / 0 | 7.309 | 11.05 / 12.35 | 1480.5 |
+| Bosch within-page mixing, audited PR | 3 / 30 | 8.948 | 1313.68 / 1342.01 | 1845.4 |
+| English BMW, main | 1 / 0 | 6.817 | 14.41 / 14.99 | 1484.1 |
+| English BMW, audited PR | 2 / 0 | 6.506 | 29.31 / 29.63 | 1496.8 |
+
+The mixed-PDF index has 53 chunks; within-page mixing has 45; BMW has 241.
+For the two mixed cases, the reranker alone loads in a median **1.05–1.06 s**;
+warm `predict` takes **754 ms** / **1246 ms** respectively. Native source-language
+questions give 20 / 30 pairs for these particular requests; the 60-pair bound is
+exercised by the adversarial test, not claimed as a measured worst-case latency.
+Language inspection takes median 80.5 / 10.2 / 199.7 ms for mixed PDF / within-page
+mixing / BMW. BMW never loads the extra model. Its warm cost approximately doubles
+because it embeds RU and EN; its slightly lower cold measurement is not evidence
+of a speedup. Cold totals vary with initialization and filesystem cache; complete
+ranges, stage timings and all 18 raw runs are in the
+[performance artifact](multilingual-retrieval-performance.v1.json).
+
+The local reranker is a material CPU/memory cost despite the bounded pool: warm
+mixed retrieval is about **74× / 119×** the main dense path on these small corpora,
+with maximum observed peak RSS differences of **284 / 365 MiB**. These figures
+do not establish a latency bound for larger corpora, longer queries, different
+thread counts or the maximum 60 pairs. Candidate admission remains bounded;
+there is no silent performance-equivalence claim or speculative replacement.
+
+### Reproduce performance measurements
+
+Use [measure_multilingual_retrieval.py](measure_multilingual_retrieval.py), the
+same private indexes from the Bosch reproduction and the unchanged BMW index.
+Create a questions JSON object from `cases[id=overheat].questions` in the Bosch
+dataset or `cases[id=pressure_label].questions` in the BMW dataset. For example:
+
+```bash
+mkdir -p /private/tmp/pr12-main
+git archive 522a2afafaee7583725e2bc716eb9e97535960b0 src | tar -x -C /private/tmp/pr12-main
+HF_HOME="$PWD/.cache/huggingface" HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
+  GROQ_API_KEY= LANGSMITH_TRACING=false OMP_NUM_THREADS=4 MKL_NUM_THREADS=4 \
+  OPENBLAS_NUM_THREADS=4 VECLIB_MAXIMUM_THREADS=4 \
+  .venv/bin/python docs/benchmarks/measure_multilingual_retrieval.py \
+  --variant pr --source-dir "$PWD/src" --index-dir /path/to/index-mixed_pdf \
+  --questions /path/to/overheat-questions.json --warm-runs 7 \
+  --output /private/tmp/mixed-pr-1.json
+```
+
+For main, replace `--variant pr --source-dir "$PWD/src"` with
+`--variant main --source-dir /private/tmp/pr12-main/src` and change the output
+filename. Run three separate processes per variant/corpus, serially, alternating
+the variant order. The source hashes in the artifact identify the audited local
+implementation without requiring a merge or release.

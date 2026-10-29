@@ -64,7 +64,8 @@ cached pinned model, run from the repository root:
 
 ```bash
 HF_HOME="$PWD/.cache/huggingface" HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
-  LANGSMITH_TRACING=false .venv/bin/python docs/benchmarks/compare_multilingual_queries.py
+  LANGSMITH_TRACING=false .venv/bin/python docs/benchmarks/compare_multilingual_queries.py \
+  --output /private/tmp/multilingual-ru-en.json
 ```
 
 The [script](compare_multilingual_queries.py) verifies source hash, single-document

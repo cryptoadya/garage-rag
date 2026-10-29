@@ -7,27 +7,15 @@ is available in [Git commits](https://github.com/cryptoadya/garage-rag/commits/m
 
 ### Fixed
 
-- Retain the original EN/DE/RU search query and add translations into missing
-  source languages in at most one metered Groq call, based on locally inferred
-  passage languages. Same-language questions need no translation. One bounded
-  Qdrant batch merges at most three queries by maximum cosine without changing
-  old index manifests, vectors or embedding fingerprints. Keep the existing
-  translation opt-out and validation/quota/no-retry guards. A matched 42-question
-  BMW comparison restores English-query hit@5 from 21/42 original-only to 40/42.
-- Copy citations in each passage's original language independently of question and
-  answer language. Remove English-only assumptions from writer and Agentic search
-  guidance while retaining citation, language, numeric, audit and Groq quota guards.
-- Correct mixed-language candidate ordering: reuse the pinned local MiniLM
-  reranker for expanded mixed corpora, with at most 20 intact candidates and
-  source-language questions. Keep monolingual/dense paths, index compatibility,
-  citation checks and Groq call budgets. Preserve dense order for pairs exceeding
-  the local ranker's existing token cap. A real 288-combination EN/DE/RU PDF
-  matrix removes all measured top-five losses of the prior maximum-cosine merge;
-  model weights load lazily and add local compute/memory, without extra Groq calls.
-- Protect each expanded mixed-language query's top five before filling the bounded
-  20-candidate reranking pool. Build BM25 token statistics only for lexical search,
-  avoiding that work when inspecting corpus languages. The audited Bosch matrix
-  retains 261/288 top-five hits; top-one hits change from 141 to 138/288.
+- Preserve original EN/DE/RU questions and verbatim source-language citations.
+  Direct/Grounded add missing source-language queries in at most one Groq call,
+  retaining translation opt-out, validation, audit and quota guards. Existing
+  indexes need no migration.
+- Correct expanded mixed-language retrieval with the pinned local reranker:
+  reserve each query's top five within 20 candidates / 60 intact pairs. Model
+  loading is lazy; oversized pairs retain dense order. BM25 statistics are built
+  only for lexical search. See the [multilingual benchmark](docs/benchmarks/multilingual-c3.md)
+  for measured recall, top-one tradeoffs and added local CPU/memory cost.
 
 ## [0.5.0] - 2026-10-29
 
