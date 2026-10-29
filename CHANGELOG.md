@@ -5,6 +5,8 @@ is available in [Git commits](https://github.com/cryptoadya/garage-rag/commits/m
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-29
+
 ### Changed
 
 - Phase 5E: Groq is the sole LLM provider for CLI, API and all modes. Remove the
@@ -74,8 +76,8 @@ is available in [Git commits](https://github.com/cryptoadya/garage-rag/commits/m
   the workflow returns a sanitized generic error.
 
 Agentic remains experimental; Direct/Grounded are primary. See the
-[consolidated comparison](docs/benchmarks/phase4b-comparison.md) for results and
-limitations. These changes prepare 0.5.0; no release is published here.
+[consolidated comparison](https://github.com/cryptoadya/garage-rag/blob/v0.5.0/docs/benchmarks/phase4b-comparison.md)
+for results and limitations.
 
 ## [0.4.0] - 2026-10-26
 
@@ -184,7 +186,8 @@ limitations. These changes prepare 0.5.0; no release is published here.
   and quote validation, and local PDF page references.
 - Synthetic test corpus, automated tests, CI and MIT-licensed project code.
 
-[Unreleased]: https://github.com/cryptoadya/garage-rag/compare/v0.4.0...main
+[Unreleased]: https://github.com/cryptoadya/garage-rag/compare/v0.5.0...main
+[0.5.0]: https://github.com/cryptoadya/garage-rag/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/cryptoadya/garage-rag/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/cryptoadya/garage-rag/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/cryptoadya/garage-rag/compare/v0.1.0...v0.2.0
