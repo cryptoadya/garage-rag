@@ -7,6 +7,21 @@ is available in [Git commits](https://github.com/cryptoadya/garage-rag/commits/m
 
 ### Fixed
 
+- Pace Groq calls before sending against RPM/RPD/TPM/TPD and observed reset
+  headers, waiting up to 65 seconds per completion for short quota windows.
+  Expose long cooldowns as HTTP 429 with `Retry-After`, distinguish oversized
+  requests, and record quota wait separately from HTTP time. No HTTP retries.
+- Accept intact German/Russian numeric prose for Grounded semantic review while
+  retaining damaged-table and value-substitution rejection. Request complete
+  procedures and bounded evidence; Grounded can revise an incomplete draft once
+  within its existing four-call budget, with a mandatory second audit.
+  Direct/Grounded require source IDs and verified source-language quote excerpts;
+  source references alone cannot substitute whole chunks for missing quotes.
+  No procedure-specific claim rewriting or PDF-font-specific quote repair occurs.
+  Verify numbered numeric prose independently of unrelated table rows and recognize
+  wrapped US dual units. Spelled-out counts retain conservative rejection without
+  object-specific exceptions. Avoid resending
+  whole source quotations inside audit drafts when the source is already included.
 - Preserve original EN/DE/RU questions and verbatim source-language citations.
   Direct/Grounded add missing source-language queries in at most one Groq call,
   retaining translation opt-out, validation, audit and quota guards. Existing

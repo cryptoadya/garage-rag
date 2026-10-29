@@ -23,7 +23,9 @@ garage-rag ask 'Как проверить давление в шинах?' --pro
 `GARAGE_RAG_PROVIDER` defaults to `groq`; unsupported values fail closed.
 `GROQ_MODEL` defaults to `openai/gpt-oss-120b`, currently the only allowlisted Groq
 model. `GROQ_MAX_TOKENS` is 2,048 by default, integer 512–4096, including reasoning.
-There is no automatic output repair/retry. Truncated JSON remains a refusal.
+Malformed/truncated JSON is not retried or repaired. Grounded may revise an
+incomplete supported draft once, followed by another audit, within its existing
+four-completion ceiling; this does not retry an HTTP request.
 
 The HTTP adapter uses the fixed `https://api.groq.com/openai/v1/chat/completions`
 endpoint, JSON object mode, temperature zero and `service_tier=on_demand`.
@@ -52,8 +54,12 @@ budget before sending. Successful responses replace the token reservation with
 reported prompt+completion usage; failed/interrupted calls retain it. This upper
 estimate can stop a long prompt before the provider would; it never trims sources,
 reduces top-k or changes retrieval to fit. Lowering the explicitly chosen output
-budget or waiting is manual. A prompt larger than the conservative single-request
-TPM allowance needs a separately reviewed token-accounting improvement.
+budget is manual. Before each completion, the adapter waits for local minute
+windows and observed provider reset headers, including waits between translation,
+draft and audit. `GROQ_MAX_QUOTA_WAIT_SECONDS` bounds each pre-send wait (default
+65 seconds, range 0–120; 0 retains immediate quota stops). No sources are trimmed.
+Requests exceeding a single-request allowance fail before HTTP and return 413
+through the API; waiting cannot make an oversized request fit.
 
 Groq headers have specific meanings: `*-requests` describes **RPD**, while
 `*-tokens` describes **TPM**. They do not prove RPM/TPD balances. Numeric remaining,
@@ -61,9 +67,17 @@ limit and reset observations are retained in traces. Server limits can lower loc
 caps. RPM/TPD use conservative local accounting; other processes/organizations'
 usage is governed by the API, not known to this process. Separate `ask` invocations
 have separate local histories; run comparisons sequentially in one evaluator.
+The documented text-model limits have no hourly window; ASH is for audio. Some
+organizations additionally have ITPM/OTPM limits that these combined-token headers
+do not expose. Their exact values must be checked in Console; they cannot be
+inferred from TPM. External organization usage can still produce a provider 429.
 
 Every API request has one HTTP attempt. A 429 stops the run, retains HTTP status
-and numeric `Retry-After` (seconds or HTTP date) and does not sleep/retry/switch.
+and numeric `Retry-After` (seconds or HTTP date) and never retries that HTTP request.
+Later explicit requests respect that cooldown. Waits longer than the configured
+bound, including daily exhaustion, return API HTTP 429 with a safe explanation
+and `Retry-After`, rather than a generic generation 502. `workflow.quota_wait_ms`
+reports pre-send waiting separately from provider HTTP duration.
 Quota reset durations are also observed. Resume preserves a known cooldown and
 quota reservations; a missing Retry-After uses a conservative 60-second stop,
 not a claim about the actual daily reset. Authentication, request/model, billing,

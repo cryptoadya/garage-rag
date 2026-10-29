@@ -22,6 +22,7 @@ class RunTrace:
     output_tokens: int = 0
     usage_records: int = 0
     elapsed_ms: float = 0
+    quota_wait_ms: float = 0
     events: list[NodeEvent] = field(default_factory=list)
     provider_errors: list[dict] = field(default_factory=list)
     rate_limits: list[dict] = field(default_factory=list)
@@ -66,6 +67,9 @@ class MeteredLLM:
                 self.trace.provider_errors[-1].update(safe_limits(limits))
             raise
         limits = getattr(response, "response_metadata", {}).get("rate_limits")
+        wait = getattr(response, "response_metadata", {}).get("quota_wait_ms", 0)
+        if isinstance(wait, (int, float)) and 0 <= wait < float("inf"):
+            self.trace.quota_wait_ms += wait
         if isinstance(limits, dict):
             self.trace.rate_limits.append(safe_limits(limits))
         usage = getattr(response, "usage_metadata", None)

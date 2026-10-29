@@ -6,7 +6,7 @@ from dataclasses import asdict, dataclass
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from .generation import Draft, GenerationError
-from .grounding import AUDIT_PROMPT
+from .grounding import AUDIT_PROMPT, audit_payload
 
 
 @dataclass(frozen=True)
@@ -29,11 +29,7 @@ def audit_messages(question, context, draft):
         SystemMessage(content=AUDIT_PROMPT),
         HumanMessage(
             content=json.dumps(
-                {
-                    "question": question,
-                    "sources": json.loads(context.text),
-                    "draft": draft,
-                },
+                audit_payload(question, context, draft),
                 ensure_ascii=False,
             )
         ),

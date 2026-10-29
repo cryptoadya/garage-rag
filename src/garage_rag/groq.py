@@ -88,6 +88,12 @@ class GroqLLM:
             raise GenerationError("GROQ_MAX_TOKENS must be an integer from 512 to 4096") from None
         if not 512 <= self.max_tokens <= 4096:
             raise GenerationError("GROQ_MAX_TOKENS must be an integer from 512 to 4096")
+        try:
+            self.max_quota_wait = float(os.environ.get("GROQ_MAX_QUOTA_WAIT_SECONDS", "65"))
+            if not math.isfinite(self.max_quota_wait) or not 0 <= self.max_quota_wait <= 120:
+                raise ValueError
+        except ValueError:
+            raise GenerationError("GROQ_MAX_QUOTA_WAIT_SECONDS must be from 0 to 120") from None
         key = (api_key or os.environ.get("GROQ_API_KEY", "")).strip()
         if not key:
             raise GenerationError("Set GROQ_API_KEY in .env; local search needs no API key")
@@ -116,6 +122,7 @@ class GroqLLM:
         self.rate_limits = {}
         self._history = []
         self._blocked = False
+        self._rate_limit_stop = False
         self._headers_at = 0.0
         self._resume_after = 0.0
         self.quota_observer = None
@@ -191,6 +198,68 @@ class GroqLLM:
     def invoke(self, messages):
         return self._invoke(messages)
 
+    def _quota_error(self, name, delay):
+        error = GenerationError(f"Groq {name} quota reached; try again after the cooldown")
+        error.status_code = 429
+        error.rate_limits = {**self.rate_limits, "retry_after_seconds": math.ceil(delay)}
+        return error
+
+    def _wait_for_quota(self, reserve):
+        """Pace BEFORE sending; never retry a failed HTTP request or wait for a day."""
+        began = time.monotonic()
+        while True:
+            now = time.monotonic()
+            self._history = [e for e in self._history if now - e[0] < 86400]
+            if self._blocked:
+                if not self._rate_limit_stop:
+                    raise GenerationError(
+                        "Groq quota/error stop; resume manually after checking limits"
+                    )
+                if time.time() >= self._resume_after:
+                    self._blocked = False
+            delays = []
+            if time.time() < self._resume_after:
+                delays.append((self._resume_after - time.time(), "reported"))
+            # Check daily windows first, so a daily exhaustion is never mistaken
+            # for a short TPM wait. Failed/unknown usage keeps its reservation.
+            for name, window, cap, tokens in (
+                ("RPD", 86400, min(1000, self.rate_limits.get("rpd_limit", 1000)), False),
+                ("TPD", 86400, 200000, True),
+                ("RPM", 60, 30, False),
+                ("TPM", 60, min(8000, self.rate_limits.get("tpm_limit", 8000)), True),
+            ):
+                required = reserve if tokens else 1
+                if required > cap:
+                    error = GenerationError(f"Groq single-request {name} allowance exceeded")
+                    error.status_code = 413
+                    raise error
+                entries = sorted(e for e in self._history if now - e[0] < window)
+                used = sum(e[1] for e in entries) if tokens else len(entries)
+                for started, count in entries:
+                    if used + required <= cap:
+                        break
+                    used -= count if tokens else 1
+                    delay = max(0, started + window - now) + 0.05
+                    # Last expired entry needed to provide sufficient headroom.
+                    if used + required <= cap:
+                        if window > 60:
+                            raise self._quota_error(name, delay)
+                        delays.append((delay, name))
+            for name, required in (("rpd", 1), ("tpm", reserve)):
+                remaining = self.rate_limits.get(f"{name}_remaining")
+                reset = self.rate_limits.get(
+                    f"{name}_reset_seconds", 86400 if name == "rpd" else 60,
+                )
+                delay = reset - (now - self._headers_at)
+                if remaining is not None and remaining < required and delay > 0:
+                    delays.append((delay + 0.05, name.upper()))
+            if not delays:
+                return (time.monotonic() - began) * 1000
+            delay, name = max(delays)
+            if delay > self.max_quota_wait - (now - began):
+                raise self._quota_error(name, delay)
+            time.sleep(min(delay, 30))
+
     def _invoke(self, messages, tools=None, tool_choice="auto", response_format=None):
         payload = wire_messages(messages, tools)
         # UTF-8 bytes bound byte-level tokenizer text tokens conservatively. Include
@@ -198,30 +267,13 @@ class GroqLLM:
         if response_format and tools:
             raise GenerationError("Structured outputs cannot be combined with native tools")
         reserve = self.request_reservation(messages, response_format or tools)
+        quota_wait_ms = self._wait_for_quota(reserve)
         now = time.monotonic()
-        self._history = [entry for entry in self._history if now - entry[0] < 86400]
-        if self._blocked or time.time() < self._resume_after:
-            raise GenerationError("Groq quota/error stop; resume manually after checking limits")
-        for name, window, cap, tokens in (
-            ("RPM", 60, 30, False),
-            ("RPD", 86400, min(1000, self.rate_limits.get("rpd_limit", 1000)), False),
-            ("TPM", 60, min(8000, self.rate_limits.get("tpm_limit", 8000)), True),
-            ("TPD", 86400, 200000, True),
-        ):
-            entries = [e for e in self._history if now - e[0] < window]
-            used = sum(e[1] for e in entries) if tokens else len(entries)
-            if used + (reserve if tokens else 1) > cap:
-                raise GenerationError(f"Groq local {name} budget reached; wait/resume manually")
-        for name, required in (("rpd", 1), ("tpm", reserve)):
-            remaining = self.rate_limits.get(f"{name}_remaining")
-            reset = self.rate_limits.get(f"{name}_reset_seconds", 86400 if name == "rpd" else 60)
-            if remaining is not None and now - self._headers_at < reset and remaining < required:
-                raise GenerationError(
-                    f"Groq reported {name.upper()} budget reached; resume manually"
-                )
         entry = [now, reserve]
         self._history.append(entry)  # Failed requests keep their conservative reservation.
         self._observe()  # Save reservation before sending, even if the process is interrupted.
+        # A recovered 429 must not make a later transport/format error resumable.
+        self._rate_limit_stop = False
         try:
             http_started = time.perf_counter()
             response = self.client.post(
@@ -262,6 +314,7 @@ class GroqLLM:
         self._headers_at = time.monotonic()
         if response.status_code != 200:
             self._blocked = True
+            self._rate_limit_stop = response.status_code == 429
             delay = self.rate_limits.get("retry_after_seconds", 60)
             for kind in ("rpd", "tpm"):
                 if self.rate_limits.get(f"{kind}_remaining") == 0:
@@ -287,6 +340,8 @@ class GroqLLM:
             )
             error.status_code = response.status_code
             error.rate_limits = dict(self.rate_limits)
+            if response.status_code == 429:
+                error.rate_limits["retry_after_seconds"] = math.ceil(delay)
             raise error
         try:
             data = response.json()
@@ -328,6 +383,7 @@ class GroqLLM:
                 content=content,
                 tool_calls=normalized,
                 response_metadata={
+                    "quota_wait_ms": quota_wait_ms,
                     "http_elapsed_ms": http_elapsed_ms,
                     "finish_reason": choice["finish_reason"],
                     "provider": "groq",

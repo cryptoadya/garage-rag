@@ -28,9 +28,27 @@ Use at most 6 concise claims, each directly supported by its evidence.
 Write claim text without references, square brackets or page numbers.
 Copy each quote verbatim from the identified source text (at least 12 characters).
 Sources may be EN/DE/RU or mixed. Keep quotes in their source language regardless
-of answer language. Never translate, add ellipses or join separate sentences.
-Include the full necessary passage and applicability conditions.
+of answer language. Never translate, add ellipses or join noncontiguous text.
+Select the passage needed to support the claim, retaining applicability conditions.
 Use only source_id values from sources. Page references will be added locally.
+"""
+
+PROCEDURE_INSTRUCTIONS = """
+For procedural questions include EVERY prerequisite and source action in order,
+waiting times, completion criteria and all warnings for that procedure, even when
+not repeated in the question. A control's location alone does not state its action.
+Check source prerequisites for temperature, vehicle orientation, engine/ignition
+state, waiting time and required materials; state each applicable prerequisite explicitly.
+Keep actions for distinct controls explicit. Cover every part of the question.
+Keep separately headed stages, such as unlocking and opening, as distinct actions;
+state each stage's action even when also giving the control's location.
+Use at most 6 claims and 4 evidence entries per claim. Combine related steps when
+needed, but never omit an action or prerequisite to make the answer shorter.
+Use digits for measured quantities, retaining source values and units.
+State what the source instructs, without adding reasons or benefits it does not
+state. A waiting time alone does not establish why waiting helps.
+Avoid adding an unrequested procedure. Preserve the conditions and warnings
+for every procedure you include.
 """
 
 
@@ -194,16 +212,23 @@ def validate_draft(draft, context, language):
     return Candidate(Answer(True, "\n\n".join(lines), "verified_citations", language), draft)
 
 
-def generate_candidate(question, context, llm, language):
+def generate_candidate(question, context, llm, language, *, revision=False):
     if not context.sources:
         return Candidate(Answer(False, REFUSALS[language], "no_context", language))
     messages = [
-        SystemMessage(content=SYSTEM_PROMPT + f"\nWrite every claim in {LANGUAGES[language]}."),
+        SystemMessage(content=SYSTEM_PROMPT + PROCEDURE_INSTRUCTIONS
+            + f"\nWrite every claim in {LANGUAGES[language]}."),
         HumanMessage(
             content=json.dumps(
                 {
                     "question": question,
                     "sources": json.loads(context.text),
+                    **({"revision_instruction": (
+                        "The previous draft was incomplete. Include EVERY prerequisite, "
+                        "distinct control, step and warning for this procedure "
+                        "in the full sources, "
+                        "even when the question does not repeat them. Keep exact source quotes."
+                    )} if revision else {}),
                 },
                 ensure_ascii=False,
             )

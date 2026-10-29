@@ -1,6 +1,7 @@
 """Single-process HTTP adapter for the existing Direct/Grounded workflows."""
 
 import hashlib
+import math
 import os
 import shutil
 import stat
@@ -358,6 +359,15 @@ def create_app(
             except Exception:
                 raise HTTPException(500, "Local operation failed.") from None
             if run.error:
+                for failure in run.trace.provider_errors:
+                    if failure.get("http_status") == 413:
+                        raise HTTPException(413, "Request exceeds Groq single-request allowance.")
+                    if failure.get("http_status") == 429:
+                        delay = max(1, math.ceil(failure.get("retry_after_seconds", 60)))
+                        raise HTTPException(
+                            429, f"Groq quota reached. Try again in {delay} seconds.",
+                            headers={"Retry-After": str(delay)},
+                        )
                 if run.answer.reason == "retrieval_error":
                     raise HTTPException(503, "Local retrieval failed.")
                 raise HTTPException(502, "Answer generation failed.")
