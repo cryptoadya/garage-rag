@@ -45,7 +45,7 @@ three monolingual PDFs, one concatenated mixed PDF, DE/RU bilingual, alternating
 languages across pages, three languages within each page, and a collection of
 three monolingual PDFs. Source passages were not translated or rewritten.
 
-The [dataset](../bosch_c3_multilingual.v1.json) has 12 question triples with
+The [dataset](../datasets/bosch_c3_multilingual.v1.json) has 12 question triples with
 source-page and evidence anchors checked before retrieval. Gold is an anchored
 **chunk**, not a related page. Eight layouts × 12 needs × three question languages
 produce 288 correlated cases. Metadata deliberately says English even for DE/RU

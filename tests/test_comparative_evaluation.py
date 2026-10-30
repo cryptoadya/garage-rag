@@ -19,7 +19,7 @@ from garage_rag.answer_evaluation import (
 from garage_rag.generation import GenerationError
 
 MODES = ["direct", "grounded", "agentic"]
-DATASET = Path("benchmarks/aurora-comparative.v1.json")
+DATASET = Path("benchmarks/datasets/aurora-comparative.v1.json")
 
 
 def dataset():

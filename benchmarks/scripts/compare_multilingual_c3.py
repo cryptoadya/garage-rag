@@ -228,7 +228,7 @@ def main():
     parser.add_argument('--previous-merge', action='store_true',
                         help='Reproduce the previous maximum-cosine merge without reranking')
     args = parser.parse_args()
-    dataset = json.loads(Path('benchmarks/bosch_c3_multilingual.v1.json').read_text())
+    dataset = json.loads(Path('benchmarks/datasets/bosch_c3_multilingual.v1.json').read_text())
     result = evaluate(args.pdf, args.work_dir, dataset, args.previous_merge)
     summarize(result)
     # Keep complete rankings inspectable without exporting any source passage text.

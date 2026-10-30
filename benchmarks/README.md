@@ -19,16 +19,17 @@ contracts, not real-model quality. See each report for denominators and limits.
 
 ## Inputs
 
-Input paths remain stable for evaluator defaults and existing commands.
+Frozen inputs live in `datasets/`; evaluator defaults and reproduction commands
+use those paths.
 
 | Dataset | Contents |
 | --- | --- |
-| [BMW baseline](bmw_e39_2002.v1.json) | 18 answerable needs in EN/DE/RU, separate negatives and diagnostic probes |
-| [BMW development](bmw_e39_2002.phase2b-dev.v1.json) | 12 needs used to select a retrieval candidate |
-| [BMW held-out](bmw_e39_2002.phase2b-heldout.v1.json) | 12 disjoint needs for the selected comparison |
-| [Aurora answering](aurora-grounded-answering.v1.json) | 14 fictional needs for Direct/Grounded evaluation |
-| [Aurora comparative](aurora-comparative.v1.json) | Seven fictional needs for the three-mode comparison |
-| [Bosch C3](bosch_c3_multilingual.v1.json) | 12 EN/DE/RU question triples with source-page and chunk anchors |
+| [BMW baseline](datasets/bmw_e39_2002.v1.json) | 18 answerable needs in EN/DE/RU, separate negatives and diagnostic probes |
+| [BMW development](datasets/bmw_e39_2002.phase2b-dev.v1.json) | 12 needs used to select a retrieval candidate |
+| [BMW held-out](datasets/bmw_e39_2002.phase2b-heldout.v1.json) | 12 disjoint needs for the selected comparison |
+| [Aurora answering](datasets/aurora-grounded-answering.v1.json) | 14 fictional needs for Direct/Grounded evaluation |
+| [Aurora comparative](datasets/aurora-comparative.v1.json) | Seven fictional needs for the three-mode comparison |
+| [Bosch C3](datasets/bosch_c3_multilingual.v1.json) | 12 EN/DE/RU question triples with source-page and chunk anchors |
 
 The original [Aurora corpus fixture](../tests/fixtures/corpus.json) generates
 synthetic test PDFs. Real-manual datasets identify exact source hashes; another
@@ -38,16 +39,14 @@ edition requires new reviewed labels rather than bypassing identity checks.
 
 | Artifact | Evidence |
 | --- | --- |
-| [Baseline](results/phase2a-baseline.v1.json) | Per-query ranks, timings and corpus/model bindings |
-| [Vector audit](results/phase2a-tire-audit.v1.json) | Nine re-embedded chunks and their identities |
-| [Retrieval comparison](results/phase2b-results.v1.json) | Development decision, final rankings and repeatability |
 | [BMW query comparison](results/multilingual-ru-en.v1.json) | All 42 paired rankings |
 | [Bosch query comparison](results/multilingual-c3.v2.json) | All 288 original, previous, pre-audit and corrected rankings |
 | [Retrieval performance](results/multilingual-retrieval-performance.v1.json) | All 18 fresh-process measurements and implementation hashes |
 
-These six results and six inputs have distinct roles. Keep their bytes unchanged;
-use a new version for revised labels or published measurements. The filenames'
-stage identifiers preserve provenance, rather than defining the documentation layout.
+Keep the six inputs and three current result files unchanged; use a new version
+for revised labels or published measurements. Earlier baseline, vector-audit and
+profile-comparison results remain available at fixed Git commits linked from the
+[retrieval report](reports/retrieval.md). Filenames retain their original provenance.
 
 ## Reproduction
 
@@ -61,5 +60,7 @@ and private indexes. The standalone scripts are:
 
 Every script accepts `--help`. Use a fresh explicit output path; inspect results
 before publishing. No new provider call is needed to inspect retained results or
-run [offline tests](../docs/testing.md). Historical live answers require private
-captures for exact review; a fresh clone cannot reproduce them from public data alone.
+run [offline tests](../docs/testing.md). Result metadata retains paths recorded
+by historical runs; use `datasets/` for current input files. Historical live answers
+require private captures for exact review; a fresh clone cannot reproduce them
+from public data alone.

@@ -8,7 +8,7 @@ The PDF is not distributed. Obtain a permitted copy from the source in the
 
 ## Method
 
-The [baseline dataset](../bmw_e39_2002.v1.json) has 18 answerable needs, four
+The [baseline dataset](../datasets/bmw_e39_2002.v1.json) has 18 answerable needs, four
 separate negatives and two diagnostic tire-pressure probes, each asked in EN/DE/RU.
 Labels were established by agent inspection of original PDF text and rendered
 pages before ranking; `human_verified` is false. Equipment/market qualifiers
@@ -29,7 +29,7 @@ hardware-independent limits. No generation calls were made.
 
 ## E5 Small baseline
 
-[Full results](../results/phase2a-baseline.v1.json), 18 answerable needs per language:
+[Archived full results](https://github.com/cryptoadya/garage-rag/blob/ca6dd1f906c4e631a0dbdac3fc5d0d54268e72ce/benchmarks/results/phase2a-baseline.v1.json), 18 answerable needs per language:
 
 | Language | Hit@1 | Hit@5 | Hit@10 | MRR@10 | Warm p50 / p95, ms |
 | --- | ---: | ---: | ---: | ---: | ---: |
@@ -38,7 +38,7 @@ hardware-independent limits. No generation calls were made.
 | RU | 33.3% | 61.1% | 66.7% | 0.4398 | 12.85 / 15.29 |
 
 All 72 rankings were stable across three passes; another process reproduced
-all 216 ordered top-ten lists and scores. The [vector audit](../results/phase2a-tire-audit.v1.json)
+all 216 ordered top-ten lists and scores. The [vector audit](https://github.com/cryptoadya/garage-rag/blob/ca6dd1f906c4e631a0dbdac3fc5d0d54268e72ce/benchmarks/results/phase2a-tire-audit.v1.json)
 re-embedded nine selected chunks with maximum absolute difference 0.0. This does
 not isolate a cause for multilingual misses. Extracted pressure tables lost
 column/pictogram relationships even when the correct page was retrieved.
@@ -55,7 +55,7 @@ metric definitions were retained. Models/revisions and remote-code settings were
 pinned. BM25 used Unicode terms, k1=1.5 and b=0.75; hybrid combined top-20 dense
 and BM25 ranks with equal-weight reciprocal rank fusion. The reranker scored a
 bounded dense candidate pool. These were offline adapters, without translation
-or generation. See the [complete artifact](../results/phase2b-results.v1.json).
+or generation. See the [complete artifact](https://github.com/cryptoadya/garage-rag/blob/ca6dd1f906c4e631a0dbdac3fc5d0d54268e72ce/benchmarks/results/phase2b-results.v1.json).
 
 Development cells show Hit@5 / MRR@10:
 
@@ -101,13 +101,13 @@ Cache the pinned weights before running offline. From the repository root:
 ```bash
 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 GROQ_API_KEY= \
 python -m garage_rag.evaluation \
-  --dataset benchmarks/bmw_e39_2002.v1.json \
+  --dataset benchmarks/datasets/bmw_e39_2002.v1.json \
   --pdf data/private/bmw_e39_2002_manual.pdf --index-dir data/qdrant \
   --output output/evaluation/e39-baseline.json --repeats 3 --seed 20261025 --device cpu
 
 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 GROQ_API_KEY= \
 python -m garage_rag.optimization \
-  --dataset benchmarks/bmw_e39_2002.phase2b-dev.v1.json \
+  --dataset benchmarks/datasets/bmw_e39_2002.phase2b-dev.v1.json \
   --pdf data/private/bmw_e39_2002_manual.pdf \
   --index-dir data/qdrant-bge-m3 --profile bge-m3 --method dense \
   --output output/evaluation/bge-dev.json --repeats 3 --seed 20261025
@@ -127,4 +127,4 @@ quality. Translations and repeated runs are correlated; no human/native-speaker
 review, significance test, MPS validation or answer-quality measurement occurred.
 Page matches can overstate evidence sufficiency, especially for tables. Full
 rankings, model revisions, environment details and legacy scores remain in the
-frozen JSON; [multilingual experiments](multilingual.md) study later query routing.
+linked historical artifacts; [multilingual experiments](multilingual.md) study later query routing.

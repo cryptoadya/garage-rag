@@ -135,7 +135,7 @@ PDF; generated answers do not replace professional diagnosis.
 
 `src/garage_rag/` contains the Python application; `frontend/` the React client;
 `tests/` the offline contracts and synthetic corpus. `benchmarks/` keeps frozen
-inputs at its root, numeric artifacts in `results/`, reproduction code in
+inputs in `datasets/`, numeric artifacts in `results/`, reproduction code in
 `scripts/` and three thematic reports in `reports/`. Local PDFs/indexes, captures
 and model caches belong in ignored private directories, outside these public sources.
 

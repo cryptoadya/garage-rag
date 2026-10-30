@@ -7,8 +7,8 @@ quality from tests or same-model audit verdicts.
 
 ## Method and review
 
-The [Aurora answering dataset](../aurora-grounded-answering.v1.json) contains
-14 fictional needs; the [comparative dataset](../aurora-comparative.v1.json)
+The [Aurora answering dataset](../datasets/aurora-grounded-answering.v1.json) contains
+14 fictional needs; the [comparative dataset](../datasets/aurora-comparative.v1.json)
 contains seven, each asked in EN/DE/RU. Controlled model replies and rankings
 exercise missing evidence, omitted conditions/warnings, conflicts, refusals and
 reference following. They are authored fixtures, not natural model behavior.
@@ -123,13 +123,13 @@ The default evaluator is scripted and makes no provider calls:
 ```bash
 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 GROQ_API_KEY= \
 python -m garage_rag.answer_evaluation \
-  --dataset benchmarks/aurora-comparative.v1.json \
+  --dataset benchmarks/datasets/aurora-comparative.v1.json \
   --modes direct grounded agentic --trials 3 --seed 20261026 \
   --output output/benchmarks/comparative.json \
   --private-captures output/private/comparative.json
 ```
 
-For the two-mode suite, use `benchmarks/aurora-grounded-answering.v1.json` and
+For the two-mode suite, use `benchmarks/datasets/aurora-grounded-answering.v1.json` and
 `--modes direct grounded`. Use fresh output/capture paths. Existing output requires
 explicit resume with matching dataset/code/settings; it is not silently replaced.
 `python -m garage_rag.answer_evaluation --help` lists selection and rescoring flags.

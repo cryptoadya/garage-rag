@@ -16,9 +16,9 @@ from garage_rag.index import Index
 from garage_rag.retrieval import AnswerSearch
 
 DATASETS = (
-    "benchmarks/bmw_e39_2002.v1.json",
-    "benchmarks/bmw_e39_2002.phase2b-dev.v1.json",
-    "benchmarks/bmw_e39_2002.phase2b-heldout.v1.json",
+    "benchmarks/datasets/bmw_e39_2002.v1.json",
+    "benchmarks/datasets/bmw_e39_2002.phase2b-dev.v1.json",
+    "benchmarks/datasets/bmw_e39_2002.phase2b-heldout.v1.json",
 )
 
 

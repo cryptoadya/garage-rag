@@ -5,7 +5,7 @@ import pytest
 
 
 def dataset():
-    return json.loads(Path("benchmarks/aurora-grounded-answering.v1.json").read_text())
+    return json.loads(Path("benchmarks/datasets/aurora-grounded-answering.v1.json").read_text())
 
 
 def test_scripted_paired_evaluation_distinguishes_refusals_and_grounding():
@@ -574,7 +574,7 @@ def test_claim_review_requires_named_reviewer_without_mutation(reviewer):
 def test_default_report_stays_in_local_output(tmp_path, monkeypatch):
     from garage_rag.answer_evaluation import main
 
-    source = Path("benchmarks/aurora-grounded-answering.v1.json").resolve()
+    source = Path("benchmarks/datasets/aurora-grounded-answering.v1.json").resolve()
     monkeypatch.chdir(tmp_path)
     assert main(["--dataset", str(source), "--cases", "cold_pressure", "--languages", "en"]) == 0
     report = json.loads((tmp_path / "output/benchmarks/answers.json").read_text())

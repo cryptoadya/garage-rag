@@ -165,7 +165,7 @@ def test_missing_index_cli_does_not_create_storage(tmp_path, pdf_path, capsys):
 
 
 def test_public_dataset_has_valid_labels():
-    path = Path(__file__).parents[1] / "benchmarks/bmw_e39_2002.v1.json"
+    path = Path(__file__).parents[1] / "benchmarks/datasets/bmw_e39_2002.v1.json"
     data = ev.validate_dataset(json.loads(path.read_text()))
     assert len([c for c in data["cases"] if c["kind"] == "answerable"]) >= 15
     assert all(not c["review"]["human_verified"] for c in data["cases"])

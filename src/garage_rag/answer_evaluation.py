@@ -34,7 +34,7 @@ from .source_evaluation import (
 )
 from .workflow import run_direct, run_workflow
 
-DEFAULT_DATASET = Path("benchmarks/aurora-grounded-answering.v1.json")
+DEFAULT_DATASET = Path("benchmarks/datasets/aurora-grounded-answering.v1.json")
 MODE_CALL_CAPS = {"direct": 1, "grounded": 4, "agentic": 6}
 
 

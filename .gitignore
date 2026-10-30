@@ -7,9 +7,6 @@
 /outputs/
 # New benchmark runs stay private; only frozen, reviewed results are versioned.
 /benchmarks/results/*.json
-!/benchmarks/results/phase2a-baseline.v1.json
-!/benchmarks/results/phase2a-tire-audit.v1.json
-!/benchmarks/results/phase2b-results.v1.json
 !/benchmarks/results/multilingual-ru-en.v1.json
 !/benchmarks/results/multilingual-c3.v2.json
 !/benchmarks/results/multilingual-retrieval-performance.v1.json

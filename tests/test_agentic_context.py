@@ -271,7 +271,7 @@ def test_evaluation_captures_include_store_without_publishing_passages():
     from garage_rag.answer_evaluation import evaluate_synthetic
     from garage_rag.config import digest
 
-    dataset = json.loads(Path("benchmarks/aurora-comparative.v1.json").read_text())
+    dataset = json.loads(Path("benchmarks/datasets/aurora-comparative.v1.json").read_text())
     report, captures = evaluate_synthetic(
         dataset, modes=["agentic"], languages=["en"], case_ids=["simple"]
     )
