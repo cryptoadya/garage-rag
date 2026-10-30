@@ -5,6 +5,8 @@ is available in [Git commits](https://github.com/cryptoadya/garage-rag/commits/m
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-10-30
+
 ### Fixed
 
 - Pace Groq calls before sending against RPM/RPD/TPM/TPD and observed reset
@@ -213,7 +215,8 @@ for results and limitations.
   and quote validation, and local PDF page references.
 - Synthetic test corpus, automated tests, CI and MIT-licensed project code.
 
-[Unreleased]: https://github.com/cryptoadya/garage-rag/compare/v0.5.0...main
+[Unreleased]: https://github.com/cryptoadya/garage-rag/compare/v0.5.1...main
+[0.5.1]: https://github.com/cryptoadya/garage-rag/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/cryptoadya/garage-rag/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/cryptoadya/garage-rag/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/cryptoadya/garage-rag/compare/v0.2.0...v0.3.0
