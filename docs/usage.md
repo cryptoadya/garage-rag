@@ -46,7 +46,7 @@ garage-rag --index-dir data/qdrant-experiment --chunk-tokens 320 search 'your qu
 
 Changing chunking, embeddings or their fingerprinted dependencies requires a
 **new index directory**. The multilingual answer settings do not require
-re-embedding an existing Phase 1 index.
+re-embedding an existing compatible index.
 
 Each PDF filename is a document identity and must be unique within an index.
 Another `index` command adds another PDF; changed content or metadata replaces
@@ -73,7 +73,7 @@ over that directory default; use explicit `--index-dir` for experiments.
 Profiles never convert an existing index. A wrong profile fails as incompatible.
 Use the same profile for `index`, `stats`, `search` and `ask`.
 
-See the [Phase 2B comparison and complete commands](benchmarks/phase2b-retrieval.md).
+See the [retrieval comparison and reproduction](../benchmarks/reports/retrieval.md).
 Every profile retains raw dense cosine search and the original CLI limits.
 Do not transfer score thresholds between models without separate calibration.
 Direct/Grounded `ask` retains the original question for retrieval, writing and
@@ -110,9 +110,9 @@ stop without retries or fallback. `GARAGE_RAG_TRANSLATE_QUERY=false` disables
 expansion. Low-level callers without source-language hints retain original-only
 behavior. Source text is never sent to the translation request.
 
-The [matched BMW comparison](benchmarks/multilingual-ru-en.md) shows why replacing
+The [matched BMW comparison](../benchmarks/reports/multilingual.md#english-bmw-manual) shows why replacing
 the original query with English and removing translation entirely are both
-insufficient. The [real EN/DE/RU PDF matrix](benchmarks/multilingual-c3.md) records the
+insufficient. The [real EN/DE/RU PDF matrix](../benchmarks/reports/multilingual.md#bosch-c3-language-matrix) records the
 mixed-language cosine regression and the local reranking correction. Search
 quality is still model-dependent, including top-one ordering.
 CLI `search` remains dense. BM25 is also available to opt-in agentic retrieval;
@@ -192,8 +192,8 @@ tokens and twelve graph steps. `--max-total-tokens` changes its reservation cap
 (1–48,000); `--top-k` caps each tool at 1–5. Direct/grounded retain their existing
 answer budgets plus optional one-call expansion and ignore this agentic token flag.
 With Groq, the per-call output budget
-is `GROQ_MAX_TOKENS`. See [agentic architecture](architecture.md#agentic-retrieval-phase-4a)
-for stopping rules and [live acceptance](providers.md#phase-4a-live-acceptance)
+is `GROQ_MAX_TOKENS`. See [agentic architecture](architecture.md#agentic-retrieval)
+for stopping rules and [answering evaluation](../benchmarks/reports/answering.md)
 for what has been confirmed and what remains unproven.
 
 ## HTTP API
@@ -224,7 +224,7 @@ the printed page label; `quote` preserves the verified quotation verbatim.
 `pdf_sha256` identifies the source PDF content for the viewer and is `null` when
 the source metadata has no content hash.
 Refusals always return `claims: []`, including after an audit rejects a draft.
-CLI output is unchanged. Private context, drafts and raw provider errors are omitted.
+Private context, drafts and raw provider errors are omitted.
 Retrieval uses the CLI defaults (top-k 5, no score threshold) and the existing
 workflow budgets. Valid refusals return HTTP 200 with `supported: false`.
 OpenAPI schemas and interactive API documentation are available at `/docs`.
@@ -318,11 +318,10 @@ PDFs are never committed to Git.
 Wrong media types return 415, unsafe filenames 400, oversized uploads 413,
 unreadable/damaged/encrypted PDFs or PDFs without text 422, and unexpected local
 storage/embedding failures 500 with sanitized messages. Scans need an existing
-text layer; this MVP performs no OCR. No document deletion, authentication,
-background queue or Agentic changes are included.
+text layer; OCR, document deletion, authentication and background queues are not supported.
 
 The browser posts to `/api/ask`; the local Vite proxy forwards to the existing
-`POST http://127.0.0.1:8000/ask`. Backend behavior and provider settings are unchanged.
+`POST http://127.0.0.1:8000/ask`.
 Keep credentials in the backend's `.env`; the frontend needs no environment file
 or API key. Both servers bind to loopback. Stop other CLI/server processes using
 the same index before starting FastAPI.
@@ -333,7 +332,7 @@ the frontend does not verify evidence or run RAG logic.
 
 For a local build check, run `npm run build` and `npm run preview` from `frontend`,
 then open [the preview](http://127.0.0.1:4173) with the backend still running.
-Preview uses the same local API proxy. This MVP uses Vite's local servers;
+Preview uses the same local API proxy. The UI uses Vite's local servers;
 the `dist` files alone do not provide an API proxy.
 
 ### Original PDF viewer
@@ -353,7 +352,7 @@ There is no arbitrary file path or remote-URL parameter, and symlinks are reject
 Earlier CLI imports may have no retained original. Uploading the identical file
 with the same filename makes its original available without re-embedding unchanged
 content. Custom CLI metadata still follows the existing ingestion revision rules.
-Existing API uploads work without migration. Local files outside the private upload
+Local files outside the private upload
 store and superseded revisions are never served. This remains a loopback-only,
 single-user API without authentication; do not expose it to a network.
 

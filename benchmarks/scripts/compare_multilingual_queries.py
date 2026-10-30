@@ -26,8 +26,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--index-dir", type=Path, default=Path("data/qdrant"))
     parser.add_argument("--pdf", type=Path, default=Path("data/private/bmw_e39_2002_manual.pdf"))
-    parser.add_argument("--output", type=Path,
-                        default=Path("docs/benchmarks/multilingual-ru-en.v1.json"))
+    parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     sha = hashlib.sha256(args.pdf.read_bytes()).hexdigest()
     rows = []

@@ -5,17 +5,14 @@
 /data/
 /output/
 /outputs/
-# Benchmark runs belong in /output/; /benchmarks/ holds versioned input datasets.
-# Publish reviewed summaries and explicitly retained source-text-free results.
-/docs/benchmarks/*.json
-# Frozen public baselines must also remain available in source distributions.
-!/docs/benchmarks/phase2a-baseline.v1.json
-!/docs/benchmarks/phase2a-tire-audit.v1.json
-!/docs/benchmarks/phase2b-results.v1.json
-# Reviewed multilingual comparison evidence, also required in source distributions.
-!/docs/benchmarks/multilingual-ru-en.v1.json
-!/docs/benchmarks/multilingual-c3.v2.json
-!/docs/benchmarks/multilingual-retrieval-performance.v1.json
+# New benchmark runs stay private; only frozen, reviewed results are versioned.
+/benchmarks/results/*.json
+!/benchmarks/results/phase2a-baseline.v1.json
+!/benchmarks/results/phase2a-tire-audit.v1.json
+!/benchmarks/results/phase2b-results.v1.json
+!/benchmarks/results/multilingual-ru-en.v1.json
+!/benchmarks/results/multilingual-c3.v2.json
+!/benchmarks/results/multilingual-retrieval-performance.v1.json
 __pycache__/
 *.py[cod]
 .DS_Store

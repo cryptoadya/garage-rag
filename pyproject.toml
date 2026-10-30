@@ -50,6 +50,8 @@ packages = ["src/garage_rag"]
 include = [
   "/src", "/tests", "/docs", "/README.md", "/CHANGELOG.md",
   "/LICENSE", "/pyproject.toml", "/.env.example", "/benchmarks/*.json",
+  "/benchmarks/README.md", "/benchmarks/reports/*.md",
+  "/benchmarks/results/*.json", "/benchmarks/scripts/*.py",
   "/frontend/index.html", "/frontend/package.json", "/frontend/package-lock.json",
   "/frontend/tsconfig.json", "/frontend/vite.config.ts", "/frontend/src",
 ]

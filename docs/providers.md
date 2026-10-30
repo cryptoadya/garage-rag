@@ -110,7 +110,7 @@ remain unchanged and must use a separate output path.
 The existing five-attempt worst-case reservation per unfinished pair remains.
 With `--modes direct grounded agentic`, the bound is eleven per unfinished
 case/language/trial. Comparative runs additionally require a session token cap
-and private captures; see the [Phase 4B comparison](benchmarks/phase4b-comparison.md).
+and private captures; see the [answering evaluation](../benchmarks/reports/answering.md).
 Shared pacing is unchanged (1–15 RPM); Groq additionally checks token/day windows.
 
 Results are atomically replaced after each completed **mode**, including errors.
@@ -173,7 +173,7 @@ JSON-object mode. Planner requests keep `reasoning_effort=low` and
 `include_reasoning=false`; hidden reasoning consumes the completion allowance.
 Full schemas plus framing are reserved alongside input/output, including in
 pinned-tokenizer mode. Bound requests share session and RPM/TPM/RPD/TPD guards.
-See [planner validation and dispatch](architecture.md#agentic-retrieval-phase-4a)
+See [planner validation and dispatch](architecture.md#agentic-retrieval)
 for the closed contract and optional native tool path. Neither protocol is a
 fallback for the other. Captures bind exact formats and sent sources; offline
 transport checks do not establish inference reliability.
@@ -182,16 +182,3 @@ Different `ask` processes do not share quota history, and other clients' usage i
 unknown until headers/errors; run one experiment sequentially and verify available
 organization quota first. API-reported RPD/TPM reductions are enforced. Neither
 mode can enforce a Free Plan if someone externally upgrades the account.
-
-## Phase 4A live acceptance
-
-Historical October 26 synthetic Aurora runs confirmed native tool/result delivery,
-a RU dense → EN BM25 change, cited writing and mandatory audit. The completed
-RU pair used Agentic 4 calls / 4,177 actual tokens versus Grounded 3 / 3,904;
-both answered, both omitted the explicit hot-system warning. A prior 512-token
-Grounded attempt failed output validation; the completed pair used 1,024 tokens.
-This was AI source checking, not independent human or vehicle acceptance, and
-showed no Agentic quality/resource advantage. Full measurements remain in the
-[immutable Phase 4A record](https://github.com/cryptoadya/garage-rag/blob/de6a96577322feffcb2ea59c649070402f3ac1f1/docs/providers.md#phase-4a-live-acceptance).
-For subsequent real-corpus results and current experimental status, see the
-[Phase 4B comparison](benchmarks/phase4b-comparison.md).
