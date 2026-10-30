@@ -29,7 +29,7 @@ is available in [Git commits](https://github.com/cryptoadya/garage-rag/commits/m
 - Correct expanded mixed-language retrieval with the pinned local reranker:
   reserve each query's top five within 20 candidates / 60 intact pairs. Model
   loading is lazy; oversized pairs retain dense order. BM25 statistics are built
-  only for lexical search. See the [multilingual benchmark](docs/benchmarks/multilingual-c3.md)
+  only for lexical search. See the [multilingual benchmark](benchmarks/reports/multilingual.md)
   for measured recall, top-one tradeoffs and added local CPU/memory cost.
 
 ## [0.5.0] - 2026-10-29

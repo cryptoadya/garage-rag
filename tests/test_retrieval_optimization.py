@@ -137,7 +137,7 @@ def test_public_splits_are_disjoint_and_frozen():
         "bmw_e39_2002.phase2b-heldout.v1.json",
     ]:
         data = validate_dataset(
-            json.loads((Path(__file__).parents[1] / "benchmarks" / name).read_bytes())
+            json.loads((Path(__file__).parents[1] / "benchmarks" / "datasets" / name).read_bytes())
         )
         validate_evidence(data)
         datasets.append({c["id"] for c in data["cases"]})

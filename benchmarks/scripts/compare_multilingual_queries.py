@@ -16,9 +16,9 @@ from garage_rag.index import Index
 from garage_rag.retrieval import AnswerSearch
 
 DATASETS = (
-    "benchmarks/bmw_e39_2002.v1.json",
-    "benchmarks/bmw_e39_2002.phase2b-dev.v1.json",
-    "benchmarks/bmw_e39_2002.phase2b-heldout.v1.json",
+    "benchmarks/datasets/bmw_e39_2002.v1.json",
+    "benchmarks/datasets/bmw_e39_2002.phase2b-dev.v1.json",
+    "benchmarks/datasets/bmw_e39_2002.phase2b-heldout.v1.json",
 )
 
 
@@ -26,8 +26,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--index-dir", type=Path, default=Path("data/qdrant"))
     parser.add_argument("--pdf", type=Path, default=Path("data/private/bmw_e39_2002_manual.pdf"))
-    parser.add_argument("--output", type=Path,
-                        default=Path("docs/benchmarks/multilingual-ru-en.v1.json"))
+    parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     sha = hashlib.sha256(args.pdf.read_bytes()).hexdigest()
     rows = []

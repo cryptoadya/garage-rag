@@ -64,17 +64,14 @@ garage-rag ask 'Как проверить уровень моторного ма
 garage-rag ask 'How do I check the engine oil level?' --workflow direct
 ```
 
-Grounded is the default, with at most four completion attempts and two local
-search batches. Direct uses one answer completion. Both retain the original
-question. If local source text indicates another language, one Groq call adds
-translations into those corpus languages (at most two); same-language questions
-need none. Each retrieval round merges at most three dense queries in one local
-batch. Expanded mixed-language results also use the existing pinned local MiniLM
-reranker over at most 20 candidates; its weights load on the first mixed answer.
-This adds local CPU/memory use and may download cached weights, without another
-Groq call. Claims use the requested answer language; quotes keep the source language.
-Existing indexes need no reindexing. For Groq setup, quotas and experimental
-Agentic usage, see [providers](docs/providers.md) and [CLI usage](docs/usage.md).
+Grounded is the default: a bounded draft/audit workflow with one local recovery
+round. Direct uses one answer completion. Both retain the original question and
+quote evidence in its source language. When needed, one extra Groq request adds
+source-language queries; expanded mixed-language search also loads a pinned local
+reranker, adding CPU/memory cost and potentially a first-use weight download.
+See [usage](docs/usage.md) for budgets/configuration,
+[provider setup](docs/providers.md) for quotas, and
+[evaluation](benchmarks/README.md) for measured tradeoffs.
 
 ### HTTP API
 
@@ -111,8 +108,8 @@ See [UI behavior and preview builds](docs/usage.md#local-web-ui).
 
 ## Limitations and privacy
 
-This is an alpha engineering project. Check vehicle/model/market applicability
-and numerical tables in the original PDF; it does not replace professional diagnosis.
+Check vehicle/model/market applicability and numerical tables in the original
+PDF; generated answers do not replace professional diagnosis.
 
 - No OCR, table/layout reconstruction or figure understanding.
 - Retrieval can miss evidence. Valid quotes and same-model audit acceptance do
@@ -125,7 +122,7 @@ and numerical tables in the original PDF; it does not replace professional diagn
 - Keep `.env`, PDFs, indexes, caches and captures private, including custom paths.
   Indexes contain source text; `.gitignore` cannot protect already tracked files.
 
-## Development and documentation
+## Project structure
 
 | Guide | Contents |
 | --- | --- |
@@ -133,8 +130,14 @@ and numerical tables in the original PDF; it does not replace professional diagn
 | [Architecture](docs/architecture.md) | Indexing, workflows and trust boundaries |
 | [Providers](docs/providers.md) | Credentials, billing boundaries and quotas |
 | [Testing](docs/testing.md) | Python/frontend checks, packaging and release validation |
-| [Benchmark inventory](docs/benchmarks/README.md) | Frozen datasets, published results, reproduction and archive policy |
+| [Evaluation](benchmarks/README.md) | Questions, measured results, limitations and reproduction |
 | [Changelog](CHANGELOG.md) | Versioned user-facing changes |
+
+`src/garage_rag/` contains the Python application; `frontend/` the React client;
+`tests/` the offline contracts and synthetic corpus. `benchmarks/` keeps frozen
+inputs in `datasets/`, numeric artifacts in `results/`, reproduction code in
+`scripts/` and three thematic reports in `reports/`. Local PDFs/indexes, captures
+and model caches belong in ignored private directories, outside these public sources.
 
 ## License
 

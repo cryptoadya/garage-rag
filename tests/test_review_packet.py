@@ -8,7 +8,7 @@ def test_packet_binds_answers_and_exact_sources_and_escapes_private_text(tmp_pat
     from garage_rag.answer_evaluation import evaluate_synthetic
     from garage_rag.review_packet import write_packet
 
-    data = json.loads(Path("benchmarks/aurora-grounded-answering.v1.json").read_text())
+    data = json.loads(Path("benchmarks/datasets/aurora-grounded-answering.v1.json").read_text())
     report, captures = evaluate_synthetic(data, languages=["en"], case_ids=["recovery"])
     captures[0]["answer"]["text"] += "<script>private</script>"
     # Tampered captures are rejected before anything is written.
@@ -36,7 +36,7 @@ def test_packet_rejects_changed_question_even_with_unchanged_sources(tmp_path):
     from garage_rag.answer_evaluation import evaluate_synthetic
     from garage_rag.review_packet import write_packet
 
-    data = json.loads(Path("benchmarks/aurora-grounded-answering.v1.json").read_text())
+    data = json.loads(Path("benchmarks/datasets/aurora-grounded-answering.v1.json").read_text())
     report, captures = evaluate_synthetic(data, languages=["en"], case_ids=["recovery"])
     message = captures[0]["model_calls"][0]["messages"][1]
     payload = json.loads(message["content"])
@@ -55,7 +55,7 @@ def test_packet_includes_failed_calls_without_inventing_response_or_review(tmp_p
         def invoke(self, messages):
             raise GenerationError("Groq request failed")
 
-    data = json.loads(Path("benchmarks/aurora-grounded-answering.v1.json").read_text())
+    data = json.loads(Path("benchmarks/datasets/aurora-grounded-answering.v1.json").read_text())
     report, captures = evaluate_synthetic(
         data, languages=["en"], case_ids=["cold_pressure"], llm=Broken()
     )
@@ -68,7 +68,7 @@ def test_packet_does_not_expose_existing_quality_judgments(tmp_path):
     from garage_rag.answer_evaluation import evaluate_synthetic
     from garage_rag.review_packet import write_packet
 
-    data = json.loads(Path("benchmarks/aurora-grounded-answering.v1.json").read_text())
+    data = json.loads(Path("benchmarks/datasets/aurora-grounded-answering.v1.json").read_text())
     report, captures = evaluate_synthetic(data, languages=["en"], case_ids=["cold_pressure"])
     for row in report["rows"]:
         row["claim_review_provenance"] = {"reviewer": "Agent-label-sentinel"}

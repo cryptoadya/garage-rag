@@ -49,7 +49,9 @@ packages = ["src/garage_rag"]
 [tool.hatch.build.targets.sdist]
 include = [
   "/src", "/tests", "/docs", "/README.md", "/CHANGELOG.md",
-  "/LICENSE", "/pyproject.toml", "/.env.example", "/benchmarks/*.json",
+  "/LICENSE", "/pyproject.toml", "/.env.example", "/benchmarks/datasets/*.json",
+  "/benchmarks/README.md", "/benchmarks/reports/*.md",
+  "/benchmarks/results/*.json", "/benchmarks/scripts/*.py",
   "/frontend/index.html", "/frontend/package.json", "/frontend/package-lock.json",
   "/frontend/tsconfig.json", "/frontend/vite.config.ts", "/frontend/src",
 ]
